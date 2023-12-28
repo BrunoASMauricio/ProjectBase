@@ -14,9 +14,6 @@ SET(repository_source_files
     ${src_path}/exampleSource.cpp
 )
 
-
 add_executable(${RepositoryName}_test ${REPO_PATH}/executables/tests/test.cpp)
-
 target_link_libraries(${RepositoryName}_test ${RepositoryName}_lib)
-
-list(APPEND EXECUTABLES ${RepositoryName}_test)
+list(APPEND TESTS ${RepositoryName}_test)
