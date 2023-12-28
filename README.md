@@ -52,3 +52,6 @@ ProjectBase is licensed under GNU General Public License Version 3
 - [ ] Add support for a configuration system (i.e. Kconfig)
 - [ ] Add support for some documentation system (i.e. doxygen)
 - [ ] Investigate necessity/feasibility of sending strings into code
+- [ ] gitall tasks
+  - [ ] Add single repo manipulation by providing a semi-independent console,
+already in the relevant directory
