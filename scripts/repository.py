@@ -271,8 +271,8 @@ class Repository(dict):
             if not repository.hasFlag("independent project") and not repository.hasFlag("no auto build"):
                 link_libraries.append(repository["name"]+'_lib')
 
-        if repository["test_headers"] != "":
-            test_headers = repository["test_headers"].split(",")
+        if self["test_headers"] != "":
+            test_headers = self["test_headers"].split(",")
             test_headers = [self["full_local_path"]+"/"+header for header in test_headers]
 
 
