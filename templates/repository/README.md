@@ -6,9 +6,17 @@ Description of this project. What it is.
 
 Instructions on how to use this project, or interface with it
 
-## Configurations [Optional]
+### How to setup the project
 
-In case there is a need/possibility to configure the project, what can/should be done?
+This project is built on top of [ProjectBase](https://gitlab.com/brunoasmauricio/ProjectBase), which is needed to setup the correct dependencies.
+
+To use it, checkout [an example here](https://gitlab.com/brunoasmauricio/ProjectBase/-/wikis/Setup-and-Run#testrepo1-example).
+
+The base invocation of ProjectBase should be:
+
+```shell
+./run.sh --url https://gitlab.com/XXXXX/YYYYY
+```
 
 ## Concept
 
