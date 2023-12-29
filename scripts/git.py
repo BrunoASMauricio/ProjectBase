@@ -17,6 +17,8 @@ class Git():
     @staticmethod
     def getDefaultBranch(target_directory=""):
         default_branch = multipleCDLaunch("git branch", target_directory, 5)
+        if default_branch == "":
+            raise Exception("There is no default branch for " + Git.getURL(target_directory) + " cannot proceed")
         return default_branch.split("\n")[0].split(" ")[1]
 
     @staticmethod
@@ -182,7 +184,6 @@ def getStatus():
     """
     Retrieves the status of the current repository
     """
-    global operation_status
     
     url = Git.getURL()
     repository_name = getRepoName(url)
@@ -190,19 +191,15 @@ def getStatus():
     remote_commit = Git.getRemoteCommit()
 
     lines = list()
+    operation_status = None
 
-    if operation_status == None:
-        operation_status = [False, 0, []]
-    
     if Git.isRepositoryClean():
         lines.append("|"+Fore.BLUE+repository_name+Style.RESET_ALL+" ("+Fore.GREEN+"clean"+Style.RESET_ALL+")" + Fore.YELLOW + " URL: " + Style.RESET_ALL + url)
         print('\n|'.join(lines))
     else:
         lines.append("|"+Fore.BLUE+repository_name+Style.RESET_ALL+" ("+Fore.RED+"dirty"+Style.RESET_ALL+")")
         lines.append("\n|"+Git.getStatus().replace("\n","\n|"))
-        operation_status[0] = True
-        operation_status[1] += 1
-        operation_status[2].append(repository_name)
+        operation_status = repository_name
 
         if local_commit == remote_commit:
             lines.append(Fore.YELLOW+"Commit: "+Style.RESET_ALL+local_commit)
@@ -215,6 +212,8 @@ def getStatus():
         print("-"*79)
         print('\n|'.join(lines))
         print("-"*79)
+
+    return operation_status
 
 
 def checkoutBranch(branch):
@@ -263,14 +262,13 @@ def globalPush():
     launchVerboseProcess("git push")
 
 def registerDirtyRepo():
-    global operation_status
-    
+    operation_status = []
+
     if not Git.isRepositoryClean():
-        if operation_status == None:
-            operation_status = []
         url = Git.getURL()
         name = getRepoName(url)
         operation_status.append([name, url, os.getcwd()])
+    return operation_status
 
 
 
@@ -278,10 +276,6 @@ def getAllStatus(path_to_dir):
     """
     Perform git status on all subsequent directories
     """
-
-def resetOperationStatus():
-    global operation_status
-    operation_status = None
 
 def userChooseProject():
     """

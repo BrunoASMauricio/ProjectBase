@@ -1,26 +1,31 @@
+from time import sleep
 import sys
+
 from common import *
 from git import *
 
 def runOnAllGitRepos(path_to_dir, function_on_repo, list_arguments={}):
-    global operation_status
+    operation_status = []
 
     if not os.path.isdir(path_to_dir):
-        logging.error(path_to_dir+" is not a valid directory")
-        return
+        raise Exception(path_to_dir+" is not a valid directory")
 
     cwd = os.getcwd()
     os.chdir(path_to_dir)
 
     if launchSilentProcess("find -maxdepth 1 -name .git")["stdout"] != "":
-        function_on_repo(**list_arguments)
+        result = function_on_repo(**list_arguments)
+        if result != None:
+            operation_status.append(result)
         sleep(0.05)
 
     os.chdir(cwd)
 
     for inode in os.listdir(path_to_dir):
         if os.path.isdir(path_to_dir+"/"+inode) and inode != ".git":
-            runOnAllGitRepos(path_to_dir+"/"+inode, function_on_repo, list_arguments)
+            result_list = runOnAllGitRepos(path_to_dir+"/"+inode, function_on_repo, list_arguments)
+            if len(result_list) > 0:
+                operation_status = operation_status + result_list
 
     return operation_status
 
@@ -28,10 +33,10 @@ def __handleGitStatus(path):
     dirty = runOnAllGitRepos(path, getStatus)
 
     message = "\nProject is: "  
-    if dirty == None or dirty[0] == False:
+    if dirty == None or len(dirty) == 0:
         message += Fore.GREEN+"clean"+Style.RESET_ALL
     else:
-        message += Fore.RED+"dirty ("+str(dirty[1])+" "+','.join(dirty[2])+")"+Style.RESET_ALL
+        message += Fore.RED+"dirty ("+str(len(dirty))+": "+', '.join(dirty)+")"+Style.RESET_ALL
     
     print(message)
 
@@ -100,7 +105,6 @@ def runGitall(path):
     again = True
     while again:
         again = False
-        resetOperationStatus()
         if option == None:
             printOptions()
             option = input("Option:")
