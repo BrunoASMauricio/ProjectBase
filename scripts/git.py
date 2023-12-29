@@ -156,15 +156,24 @@ class Git():
         if commit_ish_type == "branch":
             logging.info("Adding new branch based worktree ("+commit_ish+")")
             # add new worktree
+
+            # Setup so we can have a remote branch checked out in multiple local worktrees
             # -b so the $local_branch is created
             # --track so the $local_branch tracks the $remote_branch
-            # -f so it overrides any previous worktrees defined for te same pat
+
+            # -f so it overrides any previous worktrees defined in the same path
+            # (project might have been present before and removed)
             cdLaunchReturn("git worktree add "+repo["source"]+" --track -f --checkout -b "+local_name+" "+commit_ish, repo["bare_path"])
 
-            cdLaunchReturn("git config branch."+local_name+".remote origin", repo["source"])
+            cdLaunchReturn('git config --add remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"', repo["source"])
+
+            # Ensure git push is for upstream
+            cdLaunchReturn("git config push.default upstream", repo["source"])
+
+            # Make `git branch/switch/checkout` always merge from the starting point branch
             cdLaunchReturn("git config branch.autoSetupMerge always", repo["source"])
-            cdLaunchReturn("git config push.default tracking", repo["source"])
             cdLaunchReturn("git config pull.rebase true", repo["source"])
+
             #git config branch.branchB.merge refs/heads/branchB
 
         # Commit worktrees cant be updated (currently) so we snip the .git
