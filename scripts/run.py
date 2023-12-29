@@ -29,7 +29,7 @@ First argument must be the URL of the target project
 5) Run single test
 8) Run gitall.sh script
 9) Clean binaries (remove all object and executable files, as well as the CMakeLists cache)
-"""+Fore.GREEN+"Ctrl + C to exit"+Style.RESET_ALL)
+"""+Fore.GREEN+"Ctrl + D to exit"+Style.RESET_ALL)
 
 
 def parse_arguments():
@@ -52,8 +52,9 @@ def parse_arguments():
 
 
 if __name__ != "__main__":
-    print(sys.argv[0]+" is not supposed to be imported, but run directly")
-    sys.exit(0)
+    print("This script is not meant to be imported, please run directly")
+    sys.stdout.flush()
+    sys.exit(-1)
 
 # Configure logging
 logging.basicConfig(stream = sys.stdout, level = logging.INFO)
