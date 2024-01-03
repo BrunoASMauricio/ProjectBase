@@ -1,13 +1,30 @@
-```
- ______              __              __   ______                    
-|   __ \.----.-----.|__|.-----.----.|  |_|   __ \.---.-.-----.-----.
-|    __/|   _|  _  ||  ||  -__|  __||   _|   __ <|  _  |__ --|  -__|
-|___|   |__| |_____||  ||_____|____||____|______/|___._|_____|_____|
-                   |___|
-```
+# ProjectBase
 
-ProjecBase is a project orchestrator.
-It helps setup and manage large projects, providing the necessary tooling for
+ProjecBase helps managing a codebase composed of several code snippets or
+libraries.
+
+Instead of copy pasting bits and pieces of code from one project to another,
+or setting up a library and having to deal with "how do I install, how do I
+setup the headers, how do I link", simply create a git repository for that code
+and set its' URL as a dependency for your projects!
+
+ProjectBase takes care of downloading and setting everything up!
+
+Some neat features are:
+
+1. Configure only what you want to use;
+2. Use existing projects, imposing custom configurations on them (i.e. where are
+the headers? do we need to run some commands after downloading?);
+3. Specify a commit so updates to a library don't break older projects;
+4. Deal with diamond dependency! (*as long as configuration matches*).
+
+And more
+
+See more on how to set up your project with Project Base [here](https://gitlab.com/brunoasmauricio/ProjectBase/-/wikis/Setup-and-Run#setting-up-a-project)
+
+## Concept
+
+ProjectBase helps setup and manage large projects, providing the necessary tooling for
 working with each of the components.
 
 Each component of the project can be viewed, executed and tested as a project
@@ -41,7 +58,7 @@ See all available information in the [wiki](https://gitlab.com/brunoasmauricio/P
 
 ProjectBase is licensed under GNU General Public License Version 3
 
-# TODO
+## TODO
 
 - [ ] Allow config customization when creating a new project with new.py
   - [ ] Initial directory
