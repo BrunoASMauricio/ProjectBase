@@ -150,7 +150,7 @@ class Git():
 
         # Assume current time will lead to a unique branch
         now = str(datetime.datetime.now()).replace(" ", "_").replace(":","_").replace(".","_").replace("-","_")
-        local_name = commit_ish+"_"+now
+        local_name = commit_ish+"_Local_"+now
 
         launchProcess("rm -rf "+repo["source"])
         if commit_ish_type == "branch":
@@ -259,16 +259,12 @@ def globalCommit(commit_message=""):
         # Include removed/moved files
         launchVerboseProcess("git add -u")
         launchVerboseProcess('git commit -m "'+commit_message+'"')
-        x = 0
-        while Git.isRepositoryClean() == False:
-            if x > 5:
-                print(Fore.RED+"ERROR, failed to push changes after 5 attempts"+Style.RESET_ALL)
-                return
-            launchVerboseProcess("git push -f")
-            x = x + 1
+        # Push to local
+        launchVerboseProcess("git push -f")
 
 def globalPush():
-    launchVerboseProcess("git push")
+    x = 0
+    launchVerboseProcess("git push -u origin $(git branch --show-current)")
 
 def registerDirtyRepo():
     operation_status = []

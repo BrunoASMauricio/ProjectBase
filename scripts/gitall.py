@@ -81,7 +81,7 @@ GitallOperations = {
     "4": [__handleGitCheckout         , "Checkout a branch where it exists"],
     "5": [__handleDirtyGitUpdate      , "Pull only the clean repos"],
     "6": [__handleCleanGitUpdate      , "Clean and Pull everything"],
-    "7": [__handleGlobalCommit        , "Add and Push"],
+    "7": [__handleGlobalCommit        , "Add and Commit"],
     "8": [__handleGlobalPush          , "Push"]
 }
 
