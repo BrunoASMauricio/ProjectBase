@@ -259,8 +259,6 @@ def globalCommit(commit_message=""):
         # Include removed/moved files
         launchVerboseProcess("git add -u")
         launchVerboseProcess('git commit -m "'+commit_message+'"')
-        # Push to local
-        launchVerboseProcess("git push -f")
 
 def globalPush():
     x = 0
