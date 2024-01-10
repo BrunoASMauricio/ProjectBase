@@ -19,17 +19,17 @@ def runProjectTests(remote_repo_url, project_branch, project_commit):
     for test in tests:
         test_name = test.name
         try:
-            print(Fore.BLUE+"\n\tRUNNING "+test_name+Style.RESET_ALL)
+            print(ColorFormat(Colors.Blue, "\n\tRUNNING "+test_name))
 
             result = subprocess.run(project.paths["tests"]+"/"+test_name, shell=True)
 
-            print(Fore.BLUE+"\t"+test_name+" finished"+Style.RESET_ALL)
+            print(ColorFormat(Colors.Blue, "\t"+test_name+" finished"))
 
             if result.returncode != 0:
-                print(Fore.RED+"Return code = "+str(result.returncode)+Style.RESET_ALL)
+                print(ColorFormat(Colors.Red, "Return code = "+str(result.returncode)))
                 error_names.append(test_name)
             else:
-                print(Fore.GREEN+"Return code = "+str(result.returncode)+Style.RESET_ALL)
+                print(ColorFormat(Colors.Green, "Return code = "+str(result.returncode)))
                 successes = successes + 1
 
         except Exception as ex:
@@ -39,13 +39,11 @@ def runProjectTests(remote_repo_url, project_branch, project_commit):
     print("\n")
 
     if len(error_names) == 0:
-        print(Fore.GREEN+"No errors on "+str(successes)+" tests!"+Style.RESET_ALL)
+        print(ColorFormat(Colors.Green, "No errors on "+str(successes)+" tests!"))
     else:
-        print(Fore.RED+("="*40)+"\n          Some errors reported\n"+("="*40)+Style.RESET_ALL)
-        print(Fore.GREEN+"Successes: ["+str(successes)+"]"+Style.RESET_ALL)
-        print(Fore.RED+"Errors: ["+str(len(error_names))+"]")
-        print("\n".join(error_names))
-        print(Style.RESET_ALL)
+        print(ColorFormat(Colors.Red, ("="*40)+"\n          Some errors reported\n"+("="*40)))
+        print(ColorFormat(Colors.Green, "Successes: ["+str(successes)+"]"))
+        print(ColorFormat(Colors.Red, "Errors: ["+str(len(error_names))+"]\n"+"\n".join(error_names)))
 
 if __name__ == "__main__":
     logging.basicConfig(stream = sys.stdout, level = logging.WARNING)

@@ -19,7 +19,7 @@ def runProjectExecutable(remote_repo_url, project_branch, project_commit, path):
     print("Available executables to run, found in "+path+" (Ctrl-C to exit):")
     for entry in os.scandir(path):
 
-        print("\t["+str(index)+"] "+Fore.BLUE+entry.name+Style.RESET_ALL)
+        print("\t["+str(index)+"] "+ColorFormat(Colors.Blue, entry.name))
         executables_available.append(entry.name)
         index += 1
     
@@ -82,9 +82,9 @@ def runProjectExecutable(remote_repo_url, project_branch, project_commit, path):
         try:
             result = subprocess.run(command_fragments, shell=True)
             if result.returncode != 0:
-                print(Fore.RED+"Return code = "+str(result.returncode)+Style.RESET_ALL)
+                print(ColorFormat(Colors.Red, command_fragments+" returned code = "+str(result.returncode)))
             else:
-                print(Fore.GREEN+"Return code = "+str(result.returncode)+Style.RESET_ALL)
+                print(ColorFormat(Colors.Green, command_fragments+" returned code = "+str(result.returncode)))
         except KeyboardInterrupt:
             print("Keyboard Interrupt")
 

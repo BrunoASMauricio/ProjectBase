@@ -34,9 +34,9 @@ def __handleGitStatus(path):
 
     message = "\nProject is: "  
     if dirty == None or len(dirty) == 0:
-        message += Fore.GREEN+"clean"+Style.RESET_ALL
+        message += ColorFormat(Colors.Green, "clean")
     else:
-        message += Fore.RED+"dirty ("+str(len(dirty))+": "+', '.join(dirty)+")"+Style.RESET_ALL
+        message += ColorFormat(Colors.Red, "dirty ("+str(len(dirty))+": "+', '.join(dirty)+")")
     
     print(message)
 
@@ -88,7 +88,7 @@ GitallOperations = {
 def printOptions():
     for key in GitallOperations:
         print("\t"+key+") "+GitallOperations[key][1])
-    print("\t"+Fore.GREEN+"Ctrl+C to exit"+Style.RESET_ALL)
+    print("\t"+ColorFormat(Colors.Green, "Ctrl+C to exit"))
 
 def runGitall(path):
     if path[-1] == "/":

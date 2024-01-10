@@ -23,7 +23,7 @@ class Repository(dict):
         self.paths = self.project.paths
 
         self["url"] = url
-        self["name"] = getRepoName(url)
+        self["name"] = getRepoNameFromURL(url)
         self["bare_tree_path"] = getRepoBareTreePath(url)
         self["branch"] = branch
         self["commit"] = commit
@@ -302,7 +302,7 @@ class Repository(dict):
 class FakeProject(dict):
     def __init__(self, url, branch, commit):
 
-        name = getRepoName(url)
+        name = getRepoNameFromURL(url)
 
         self.paths = get_paths(name)
         self.paths["project_code"] = self.paths["temporary"] + "/" + name + ".ProjectBase"

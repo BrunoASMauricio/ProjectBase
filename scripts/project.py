@@ -11,7 +11,7 @@ class Project(dict):
     # Load constant and known variables
     def __init__(self, url, branch, commit):
 
-        name = getRepoName(url)
+        name = getRepoNameFromURL(url)
 
         self.paths = get_paths(name)
 

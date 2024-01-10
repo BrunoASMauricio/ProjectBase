@@ -1,23 +1,44 @@
-import os
-import sys
-import json
-import logging
-from time import time
 from colorama import Fore, Style
+from time import time
+import argparse
+import logging
+import sys
+import os
 
 from common import *
 from git import *
 
+if __name__ != "__main__":
+    print("This script is not meant to be imported, please run directly")
+    sys.stdout.flush()
+    sys.exit(-1)
+
 logging.basicConfig(stream = sys.stdout, level = logging.DEBUG)
 
-   
+def parse_arguments():
+    # Initialize parser
+    parser = argparse.ArgumentParser()
+
+    # Adding optional argument
+    parser.add_argument("-u", "--url", help = "Repository to setup", default=None, required=False)
+
+    parser.add_argument("-s", "--simple",
+                        help = "Basic setup, only ",
+                        default=None, required=False, nargs=1)
+
+    parser.add_argument("-", "--branch",
+                        help = "Root repository's branch",
+                        default=None, required=False, type=str, nargs=1)
+
+    # Read arguments from command line
+    return parser.parse_known_args()
+
 # Get remote repository
 if len(sys.argv) > 1:
     remote_repo_url = sys.argv[1]
-else:
-    remote_repo_url = input("Remote repository must already exist, please introduce url: ")
 
-main_repo_name = getRepoName(remote_repo_url)
+
+main_repo_name = getRepoNameFromURL(remote_repo_url)
 repo_dir = "/tmp/"+main_repo_name+"_"+str(time())
 
 ret = launchProcess("git clone \""+remote_repo_url+"\" \""+repo_dir+"\"")
@@ -30,7 +51,6 @@ repository_structure = [
     "configs",
     "code/source",
     "code/headers",
-    "scripts"#,
     "executables",
     "executables/tests",
 ]
@@ -43,6 +63,8 @@ launchProcess('echo "{}" > '+repo_dir+'/configs/configs.json')
 setupScript("repository/README.md", repo_dir+"/README.md", {"PROJECTNAME":main_repo_name})
 
 setupScript("repository/gitIgnore", repo_dir+"/.gitignore")
+
+
 
 # Setup example CMakeLists.txt
 setupScript("examples/exampleCustomCMakeLists.txt", repo_dir+"/configs/CMakeLists.txt")
@@ -64,7 +86,7 @@ launchVerboseProcess("git add .gitignore")
 
 status = Git.getStatus(repo_dir)
 
-print(Fore.GREEN+"""
+print(ColorFormat(Colors.Green, """
 Repository set up in """+repo_dir+""", verify and commit the changes
 
 Keep in mind that if even 1 source file is listed, a library and a test are automatically generated.
@@ -73,7 +95,7 @@ For now, validation isn't automatic.
 
 These are the changes to commit, please insert a commit message (or Ctrl+C to cancel)
 ( You can always cancel, go to """+repo_dir+""" and adapt these changes to your will )
-"""+Style.RESET_ALL)
+"""))
 print(status)
 print("Dont use \" in your commit message")
 commit_message = input("[commit message >]")

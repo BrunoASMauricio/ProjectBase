@@ -7,6 +7,7 @@ import logging
 import subprocess
 import unicodedata
 from colorama import Fore, Style
+from common import ColorFormat, Colors
 
 #                           PIPE OPERATIONS
 def setPipeNonBlocking(pipe):
@@ -111,13 +112,16 @@ def launchProcess(command, to_print=False):
 
         returned["code"] = str(process.poll())
         command = command.replace(";", ";\n")
-        logging.debug(Fore.MAGENTA+"\n$ "+command+Style.RESET_ALL+" \n "+getProcessResponse(returned))
+        logging.debug(ColorFormat(Colors.Magenta, "\n$ "+command)+" \n "+getProcessResponse(returned))
 
-        logging.debug("Return code: "+returned["code"])
+        logging.debug(str(command)+" returned code: "+returned["code"])
 
     finally:
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
         setPipeBlocking(sys.stdin)
+
+    if to_print == True:
+        print()
 
     return returned
 
@@ -130,17 +134,17 @@ def getProcessResponse(response):
     responses = []
     if response["stdout"] != "":
         stdout_str = response["stdout"].lstrip().rstrip()
-        responses.append(Fore.GREEN+"stdout: ["+Style.RESET_ALL+stdout_str+Fore.GREEN+"]"+Style.RESET_ALL)
+        responses.append(ColorFormat(Colors.Green, "stdout: [")+stdout_str+ColorFormat(Colors.Green,"]"))
 
     if response["stderr"] != "":
         stderr_str = response["stderr"].lstrip().rstrip()
-        responses.append(Fore.BLUE+"stderr: ["+Style.RESET_ALL+stderr_str+Fore.BLUE+"]"+Style.RESET_ALL)
+        responses.append(ColorFormat(Colors.Blue, "stderr: [")+stderr_str+ColorFormat(Colors.Blue, "]"))
 
     if len(responses) == 0:
-        responses.append(Fore.YELLOW+"NO OUTPUT"+Style.RESET_ALL)
+        responses.append(ColorFormat(Colors.Yellow, "NO OUTPUT"))
 
     if response["code"]:
-        responses.append(Fore.MAGENTA+"Code: "+Style.RESET_ALL+str(response["code"]))
+        responses.append(ColorFormat(Colors.Magenta, "Code: ")+str(response["code"]))
 
     return '\n'.join(responses)
 

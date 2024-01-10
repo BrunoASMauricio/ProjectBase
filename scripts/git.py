@@ -193,49 +193,57 @@ def getStatus():
     """
     Retrieves the status of the current repository
     """
-    
+
     url = Git.getURL()
-    repository_name = getRepoName(url)
+    repository_name = getRepoNameFromURL(url)
     local_commit = Git.getLocalCommit()
     remote_commit = Git.getRemoteCommit()
 
     lines = list()
     operation_status = None
 
+    status_string = "|"+ColorFormat(Colors.Blue, repository_name)
     if Git.isRepositoryClean():
-        lines.append("|"+Fore.BLUE+repository_name+Style.RESET_ALL+" ("+Fore.GREEN+"clean"+Style.RESET_ALL+")" + Fore.YELLOW + " URL: " + Style.RESET_ALL + url)
+        status_string += " ("+ColorFormat(Colors.Green, "clean")+")"
+        status_string  += ColorFormat(Colors.Yellow, " URL: ") + url
+        lines.append(status_string)
         print('\n|'.join(lines))
     else:
-        lines.append("|"+Fore.BLUE+repository_name+Style.RESET_ALL+" ("+Fore.RED+"dirty"+Style.RESET_ALL+")")
+        status_string += " ("+ColorFormat(Colors.Red,"dirty")+")"
+        lines.append(status_string)
         lines.append("\n|"+Git.getStatus().replace("\n","\n|"))
         operation_status = repository_name
 
         if local_commit == remote_commit:
-            lines.append(Fore.YELLOW+"Commit: "+Style.RESET_ALL+local_commit)
+            lines.append(ColorFormat(Colors.Yellow, "Commit: ")+local_commit)
         else:
-            lines.append(Fore.RED+"Commit: "+Style.RESET_ALL+local_commit+" != "+remote_commit)
+            lines.append(ColorFormat(Colors.Red, "Commit: ")+local_commit+" != "+remote_commit)
 
-        lines.append(Fore.YELLOW+"URL: "+Style.RESET_ALL+url)
-        lines.append(Fore.YELLOW+"Local Path: "+Style.RESET_ALL+os.getcwd())
+        lines.append(ColorFormat(Colors.Yellow, "URL: ")+url)
+        lines.append(ColorFormat(Colors.Yellow, "Local Path: ")+os.getcwd())
 
         print("-"*79)
         print('\n|'.join(lines))
         print("-"*79)
+    print("\n")
 
     return operation_status
 
 
 def checkoutBranch(branch):
+    logging.info("Cleaning up "+getRepoNameFromPath(os.getcwd()))
+
     launchProcess("git pull")
     result = launchProcess("git checkout "+branch)
     if result["stdout"] != "":
-        repo_name = getRepoName(launchProcess("git config --get remote.origin.url")["stdout"][:-1])
+        repo_name = getRepoNameFromURL(launchProcess("git config --get remote.origin.url")["stdout"][:-1])
         print(repo_name+": "+result["stdout"])
 
 def fullCleanUpdate():
     """
     Fully cleans the repository before pulling
     """
+    logging.info("Cleaning up "+getRepoNameFromPath(os.getcwd()))
     Git.resetHard()
     Git.cleanUntracked()
     launchVerboseProcess("git pull")
@@ -261,31 +269,33 @@ def globalCommit(commit_message=""):
         launchVerboseProcess('git commit -m "'+commit_message+'"')
 
 def globalPush():
-    x = 0
-    launchVerboseProcess("git push -u origin $(git branch --show-current)")
+    logging.info("Pushing "+getRepoNameFromPath(os.getcwd()))
+    push_status = launchVerboseProcess("git push -u origin $(git branch --show-current)")
+
+    if len(push_status["stdout"]) == 0:
+        logging.error("Could not push!\n "+ColorFormat(Colors.Red, push_status["stderr"]))
+        logging.error("Local path: "+ColorFormat(Colors.Yellow, os.getcwd()))
+        force_push = UserYesNoChoice("Try force push?")
+        if force_push == True:
+            push_status = launchVerboseProcess("git push -u origin $(git branch --show-current) -f")
+            if len(push_status["stdout"]) == 0:
+                logging.error(ColorFormat(Colors.Red, "Could not force push: "+push_status["stderr"]))
 
 def registerDirtyRepo():
     operation_status = []
 
     if not Git.isRepositoryClean():
         url = Git.getURL()
-        name = getRepoName(url)
+        name = getRepoNameFromURL(url)
         operation_status.append([name, url, os.getcwd()])
     return operation_status
-
-
-
-def getAllStatus(path_to_dir):
-    """
-    Perform git status on all subsequent directories
-    """
 
 def userChooseProject():
     """
     Print currently available projects and ask user
     to choose one of them
     """
-    
+
     index = 0
     projects_available = []
     print("Installed projects:")
@@ -310,14 +320,14 @@ def userChooseProject():
             with open(file_path, "r") as file:
                 url = file.read()[:-1].strip()
         else:
-            print(Fore.RED+"Cannot open project "+entry.name+", root_url.txt not found"+Style.RESET_ALL)
+            print(ColorFormat(Colors.Red, "Cannot open project "+entry.name+", root_url.txt not found"))
             continue
 
         if url == "":
             continue
 
-        name = getRepoName(url)
-        print("\t["+str(index)+"] "+Fore.BLUE+name+Style.RESET_ALL+" : "+url)
+        name = getRepoNameFromURL(url)
+        print("\t["+str(index)+"] "+ColorFormat(Colors.Blue, name)+" : "+url)
         projects_available.append(url)
         index += 1
     if index == 0:
@@ -330,19 +340,25 @@ def userChooseProject():
         # User chose an index
         remote_repo_url = projects_available[inserted_index]
     except Exception as ex:
+        # Not an index, assume URL
         remote_repo_url = user_input
     
     return remote_repo_url
 
-
-def getRepoName(url):
-    if len(url) == 0:
-        logging.error("Empty URL")
-        return
+def getRepoNameFromURL(url):
+    if url == None or len(url) == 0:
+        raise Exception("Requested URL ("+url+") is empty")
 
     if url[-1] == '/':
         url = url[:-1]
     return url.split('/')[-1]
+
+def getRepoNameFromPath(path):
+    url_output = launchProcess("git config --get remote.origin.url")
+    if url_output == None or len(url_output["stdout"]) == 0:
+        raise Exception("Requested path ("+path+") does not exist")
+
+    return getRepoNameFromURL(url_output["stdout"])
 
 def getRepoBareTreePath(url):
     if url[-1] == '/':

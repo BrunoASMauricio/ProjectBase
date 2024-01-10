@@ -133,7 +133,7 @@ while condition == True:
 
         #                       Run gitall
         elif next_input == "8":
-            paths = get_paths(getRepoName(project_url))
+            paths = get_paths(getRepoNameFromURL(project_url))
             runGitall(paths["project_main"])
 
         #                   Clean project binaries

@@ -49,7 +49,6 @@ def get_paths(project_name):
     return paths
 
 def programIsInstalled(program):
-    print(">>"+str(launchVerboseProcess("command -v "+program)))
     return parseProcessResponse(launchSilentProcess("command -v "+program)) != ""
 
 def installProgram(program):
@@ -117,6 +116,42 @@ def loadJsonFile(path, error_value=None, variable_substitutions={}):
         if error_value == None:
             raise Exception("Could not load json from file "+path+" "+traceback.format_exc())
     return error_value
+
+from enum import Enum
+
+class Colors(Enum):
+    Red = 1
+    Blue = 2
+    Yellow = 3
+    Green = 4
+    Magenta = 5
+
+globals().update({color.name: color for color in Colors})
+
+ColorDict = {
+    Colors.Red: Fore.RED,
+    Colors.Blue: Fore.BLUE,
+    Colors.Yellow: Fore.YELLOW,
+    Colors.Green: Fore.GREEN,
+    Colors.Magenta: Fore.MAGENTA
+}
+
+def ColorFormat(Color, Message):
+    return ColorDict[Color] + Message + Style.RESET_ALL
+
+def UserYesNoChoice(Message):
+    try:
+        print(Message)
+        answer = input("("+ColorFormat(Colors.Green,"Yy")+"/"+ColorFormat(Colors.Red,"Nn")+"): ")
+        if answer in ["y", "Y"]:
+            answer = True
+        else:
+            answer = False
+
+    except Exception as ex:
+        answer = False
+
+    return answer
 
 
 def loadPickleFile(path, error_value=None):
