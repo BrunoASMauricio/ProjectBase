@@ -66,7 +66,6 @@ class Project(dict):
         self.__setupCMakeLists()
 
     def build(self):
-        self.load()
         for repo_id in self.loaded_repos:
             self.loaded_repos[repo_id].before_build()
 

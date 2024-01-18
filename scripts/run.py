@@ -117,6 +117,7 @@ while condition == True:
 
         #                       Build project
         elif next_input == "2":
+            project.load()
             project.build()
 
         #                     Run executable
