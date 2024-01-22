@@ -5,6 +5,7 @@ import hashlib
 import logging
 import traceback
 from git import *
+from time import sleep
 
 from colorama import Fore, Style
 from process import *
@@ -48,6 +49,12 @@ def get_paths(project_name):
 
     return paths
 
+"""
+Remove 'None' elements from a list
+"""
+def RemoveNone(list):
+    return [x for x in list if x != None]
+
 def programIsInstalled(program):
     return parseProcessResponse(launchSilentProcess("command -v "+program)) != ""
 
@@ -61,6 +68,35 @@ def installProgram(program):
         launchVerboseProcess("sudo apt-get install "+program)
     else:
         raise Exception("No installer found to install program "+program)
+
+"""
+For each path, change directory to it, execute the provided function with the
+provided arguments, concatenate result into list and return said list
+"""
+def runOnFolders(paths, function_to_run, list_arguments={}):
+    operation_status = []
+    cwd = os.getcwd()
+
+    for path in paths:
+        if not os.path.isdir(path):
+            raise Exception(path+" is not a valid directory, cannot perform "+str(function_to_run))
+
+        os.chdir(path)
+
+        result = function_to_run(**list_arguments)
+        operation_status.append(result)
+        # Sleep to prevent what?
+        sleep(0.05)
+
+    os.chdir(cwd)
+
+    # for inode in os.listdir(path_to_dir):
+    #     if os.path.isdir(path_to_dir+"/"+inode) and inode != ".git":
+    #         result_list = runOnFolders(path_to_dir+"/"+inode, function_to_run, list_arguments)
+    #         if len(result_list) > 0:
+    #             operation_status = operation_status + result_list
+
+    return operation_status
 
 def getRepoConfig(installed_repos, repository_url):
     for repo in installed_repos:
