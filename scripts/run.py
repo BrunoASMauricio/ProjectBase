@@ -96,7 +96,7 @@ while condition == True:
     # Reset directory
     os.chdir(pwd)
 
-    menu(project_url)
+    menu(project_url, project.paths["project_main"])
 
     if next_input != -1:
         print("Previous command: "+str(next_input))
