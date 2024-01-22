@@ -274,6 +274,8 @@ class Repository(dict):
         if self["test_headers"] != "":
             test_headers = self["test_headers"].split(",")
             test_headers = [self["full_local_path"]+"/"+header for header in test_headers]
+        else:
+            test_headers = ""
 
 
         # Only add repo-wide CMakeLists.txt if one isn't already present
