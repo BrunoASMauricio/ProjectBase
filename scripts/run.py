@@ -12,7 +12,7 @@ from gitall import runGitall
 
 from project import Project
 
-def menu(project_url):
+def menu(project_url, project_path):
     print(Fore.YELLOW+"""
  ______              __              __   ______                    
 |   __ \.----.-----.|__|.-----.----.|  |_|   __ \.---.-.-----.-----.
@@ -21,6 +21,7 @@ def menu(project_url):
                    |___|                                            
 """+Style.RESET_ALL+"""
 ("""+project_url+""")
+("""+project_path+""")
 First argument must be the URL of the target project
 1) Generate project (build/pull from templates and configs)
 2) Build project (launches the build environment for this purpose)
@@ -134,8 +135,17 @@ while condition == True:
 
         #                       Run gitall
         elif next_input == "8":
-            paths = get_paths(getRepoNameFromURL(project_url))
-            runGitall(paths["project_main"])
+            # Only run load here if there was no previous load
+            if len(project.loaded_repos) == 0:
+                project.load()
+
+            all_repositories = []
+            for repo_id in project.loaded_repos:
+                repo = project.loaded_repos[repo_id]
+                if not repo.hasFlag("no commit"):
+                    all_repositories.append(repo['full_local_path'])
+
+            runGitall(all_repositories)
 
         #                   Clean project binaries
         elif next_input == "9":

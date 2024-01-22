@@ -42,12 +42,9 @@ class Project(dict):
 
         # Already loaded, skip
         if new_repo_id in self.loaded_repos.keys():
-            #print("Reloading repo from "+url) 
-            #repo = self.loaded_repos[new_repo_id]
             return
-        #else:
-        print("Loading repo from "+url)
-        repo = Repository(self, url, branch, commit)
+
+        repo = Repository(self, new_repo_id, url, branch, commit)
 
         repo.loadRepo(configs)
 

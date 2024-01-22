@@ -13,7 +13,7 @@ Performs operations on a single repository
 Is represented by a simple dictionary
 """
 class Repository(dict):
-    def reset(self, project, url, branch, commit):
+    def reset(self, project, new_repo_id, url, branch, commit):
         key_list = list(self.keys())
 
         for key in key_list:
@@ -23,6 +23,7 @@ class Repository(dict):
         self.paths = self.project.paths
 
         self["url"] = url
+        self["id"] = new_repo_id
         self["name"] = getRepoNameFromURL(url)
         self["bare_tree_path"] = getRepoBareTreePath(url)
         self["branch"] = branch
@@ -35,8 +36,8 @@ class Repository(dict):
         self["bare_path"] = None
 
 
-    def __init__(self, project, url, branch=None, commit=None):
-        self.reset(project, url, branch, commit)
+    def __init__(self, project, new_repo_id, url, branch=None, commit=None):
+        self.reset(project, new_repo_id, url, branch, commit)
 
     """
     Checks if a given name and value pair exist in the configuration of this repository
@@ -67,8 +68,6 @@ class Repository(dict):
             self["source"] = temp_repo_clone["source"]
             self.loadConfigs(dependent_configs)
 
-            print(self, end="\n\n")
-
             os.makedirs(self["full_local_path"], exist_ok=True)
 
             Git.addWorktree(self, self["full_local_path"])
@@ -78,7 +77,7 @@ class Repository(dict):
             source_path = self["full_local_path"]
 
         # Reload metadata (only keep source)
-        self.reset(self.project, self["url"], self["branch"], self["commit"])
+        self.reset(self.project, self["id"], self["url"], self["branch"], self["commit"])
         self["source"] = source_path
 
         self.loadConfigs(dependent_configs)
@@ -92,7 +91,7 @@ class Repository(dict):
             confs = loadJsonFile(self["source"]+"/configs/configs.json", {})
             if len(confs) != 0:
                 self.update(confs)
-            print(confs)
+            print("\"" + self["id"] + "\" configurations: " + str(confs) + "\n")
 
             confs = loadJsonFile(self["source"]+"/configs/build_configs.json", {})
             if len(confs) != 0:
@@ -214,8 +213,6 @@ class Repository(dict):
 
         self.__setupCommandList()
         self.__setupCMakeLists()
-        if self.hasFlag("no commit") and os.path.isdir(self["full_local_path"]+"/.git"):
-            os.removedirs(self["full_local_path"]+"/.git")
 
     def hasFlag(self, flag):
         if flag in self["flags"]:
@@ -324,7 +321,7 @@ def createTemporaryRepository(repo, dependent_configs):
     commit = repo["commit"]
 
     temp_project = FakeProject(url, branch, commit)
-    temp_repo = Repository(temp_project, url, branch, commit)
+    temp_repo = Repository(temp_project, "dont care", url, branch, commit, )
     temp_repo.paths["project_code"]
     #temp_repo.copy(repo)
     temp_repo["bare_path"] = repo["bare_path"]

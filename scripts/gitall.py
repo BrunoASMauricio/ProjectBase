@@ -1,66 +1,41 @@
-from time import sleep
 import sys
 
 from common import *
 from git import *
 
-def runOnAllGitRepos(path_to_dir, function_on_repo, list_arguments={}):
-    operation_status = []
-
-    if not os.path.isdir(path_to_dir):
-        raise Exception(path_to_dir+" is not a valid directory")
-
-    cwd = os.getcwd()
-    os.chdir(path_to_dir)
-
-    if launchSilentProcess("find -maxdepth 1 -name .git")["stdout"] != "":
-        result = function_on_repo(**list_arguments)
-        if result != None:
-            operation_status.append(result)
-        sleep(0.05)
-
-    os.chdir(cwd)
-
-    for inode in os.listdir(path_to_dir):
-        if os.path.isdir(path_to_dir+"/"+inode) and inode != ".git":
-            result_list = runOnAllGitRepos(path_to_dir+"/"+inode, function_on_repo, list_arguments)
-            if len(result_list) > 0:
-                operation_status = operation_status + result_list
-
-    return operation_status
-
-def __handleGitStatus(path):
-    dirty = runOnAllGitRepos(path, getStatus)
+def __handleGitStatus(paths):
+    dirty = runOnFolders(paths, getStatus)
+    dirty = RemoveNone(dirty)
 
     message = "\nProject is: "  
     if dirty == None or len(dirty) == 0:
         message += ColorFormat(Colors.Green, "clean")
     else:
         message += ColorFormat(Colors.Red, "dirty ("+str(len(dirty))+": "+', '.join(dirty)+")")
-    
+
     print(message)
 
-def __handleGitResetHard(path):
-    runOnAllGitRepos(path, Git.resetHard)
+def __handleGitResetHard(paths):
+    runOnFolders(paths, Git.resetHard)
 
-def __handleGitCleanUntracked(path):
-    runOnAllGitRepos(path, Git.cleanUntracked)
+def __handleGitCleanUntracked(paths):
+    runOnFolders(paths, Git.cleanUntracked)
 
-def __handleGitCheckout(path):
+def __handleGitCheckout(paths):
     if len(sys.argv) > 3:
         branch = sys.argv[3]
     else:
         branch = input("branch: ")
 
-    runOnAllGitRepos(path, checkoutBranch, {"branch":branch})
+    runOnFolders(paths, checkoutBranch, {"branch":branch})
 
 def __handleDirtyGitUpdate(path):
-    runOnAllGitRepos(path, fullDirtyUpdate)
+    runOnFolders(paths, fullDirtyUpdate)
 
 def __handleCleanGitUpdate(path):
-    runOnAllGitRepos(path, fullCleanUpdate)
+    runOnFolders(paths, fullCleanUpdate)
 
-def __handleGlobalCommit(path):
+def __handleGlobalCommit(paths):
     if len(sys.argv) > 3:
         commit_message = sys.argv[3]
     else:
@@ -69,10 +44,10 @@ def __handleGlobalCommit(path):
     if commit_message == "":
         print("Commit message cannot be empty")
     else:
-        runOnAllGitRepos(path, globalCommit, {"commit_message":commit_message})
+        runOnFolders(paths, globalCommit, {"commit_message":commit_message})
 
-def __handleGlobalPush(path):
-    runOnAllGitRepos(path, globalPush)
+def __handleGlobalPush(paths):
+    runOnFolders(paths, globalPush)
 
 GitallOperations = {
     "1": [__handleGitStatus           , "Get status"],
@@ -90,12 +65,7 @@ def printOptions():
         print("\t"+key+") "+GitallOperations[key][1])
     print("\t"+ColorFormat(Colors.Green, "Ctrl+C to exit"))
 
-def runGitall(path):
-    if path[-1] == "/":
-        path = path[:-1]
-
-    path = os.path.abspath(path)
-
+def runGitall(paths):
     option = None
 
     # What option to run
@@ -110,7 +80,7 @@ def runGitall(path):
             option = input("Option:")
 
         if option in GitallOperations.keys():
-            GitallOperations[option][0](path)
+            GitallOperations[option][0](paths)
 
         else:
             again = True
