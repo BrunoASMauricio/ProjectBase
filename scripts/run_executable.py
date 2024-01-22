@@ -45,7 +45,7 @@ def runProjectExecutable(remote_repo_url, project_branch, project_commit, path):
             prefix = "gdbserver 127.0.0.1:6175 "
             user_input = user_input[1:]
         elif user_input[0].upper() == "V":
-            prefix = "valgrind -s --leak-check=full --track-origins=yes"
+            prefix = "valgrind --fair-sched=yes -s --leak-check=full --track-origins=yes"
             user_input = user_input[1:]
 
         number_regex = '^[0-9]+$'
