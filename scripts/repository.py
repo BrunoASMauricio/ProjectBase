@@ -91,7 +91,6 @@ class Repository(dict):
             confs = loadJsonFile(self["source"]+"/configs/configs.json", {})
             if len(confs) != 0:
                 self.update(confs)
-            print("\"" + self["id"] + "\" configurations: " + str(confs) + "\n")
 
             confs = loadJsonFile(self["source"]+"/configs/build_configs.json", {})
             if len(confs) != 0:
