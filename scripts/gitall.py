@@ -122,11 +122,6 @@ def runGitall(path):
             again = True
 
 if __name__ == "__main__":
-    # What path to run it in
-    if len(sys.argv) > 1:
-        path = sys.argv[1]
-    else:
-        path = input("path to project directory: ")
-
-    runGitall(path)
+    print("Do not run this script as a standalone")
+    sys.exit(0)
 
