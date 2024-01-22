@@ -60,15 +60,15 @@ class Git():
             if os.path.isdir(full_path):
                 # Only search if has .git folder or ends with .git
                 # So we can filter and only look in repositories and bare_gits
-                if os.path.isfile(full_path+"/.git") or sub_folder.endswith(".git"):#os.path.isdir(full_path+".git"):
+                if os.path.isfile(full_path+"/.git") or sub_folder.endswith(".git"):
                     # Assume url is the same (until we can suppress username and
                     # pass request
                     path_url = Git.getURL(full_path)
                     if url == path_url:
+                        path_commit = Git.getLocalCommit(full_path)
                         if commit == None:
                             return full_path
-                        
-                        elif commit == Git.getLocalCommit(full_path):
+                        elif commit == path_commit:
                             return full_path
                 # For other types of folders, recursively call findGitRepo
                 else:
@@ -179,8 +179,9 @@ class Git():
         # Commit worktrees cant be updated (currently) so we snip the .git
         elif commit_ish_type == "commit":
             logging.info("Adding new commit based worktree ("+commit_ish+")")
-            cdLaunchReturn("git worktree add "+repo["source"]+" --detach "+commit_ish, repo["bare_path"])
-            cdLaunchReturn("git remote rm origin", repo["source"])
+            cdLaunchReturn("git worktree add "+repo["source"]+" -f --detach "+commit_ish, repo["bare_path"])
+            # Will not be able to commit but cant remove remote, otherwise we
+            # will not be able to figure out what URL the bare_git is related to
 
         else:
             raise Exception("Something went wrong figuring out worktree commit_ish value")
