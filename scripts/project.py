@@ -22,6 +22,11 @@ class Project(dict):
             "project_repo_commit":  commit,
         })
         self.loaded_repos = {}
+        # Check and generate project structure if necessary
+        for path_name in self.paths:
+            launchProcess('mkdir -p "'+self.paths[path_name]+'"')
+
+        launchProcess('''echo  "''' + self["project_repo_url"] + ''' " >  ''' + self.paths["project_main"]+"/root_url.txt")
 
     # Load project data
     def load(self):
@@ -29,11 +34,6 @@ class Project(dict):
         del self.loaded_repos
         self.loaded_repos = {}
 
-        # Check and generate project structure if necessary
-        for path_name in self.paths:
-            launchProcess('mkdir -p "'+self.paths[path_name]+'"')
-
-        launchProcess('''echo  "''' + self["project_repo_url"] + ''' " >  ''' + self.paths["project_main"]+"/root_url.txt")
         # Recursive repository generation starting with main
         self.__load_repo(self["project_repo_url"], self["project_repo_branch"], self["project_repo_commit"])
 
