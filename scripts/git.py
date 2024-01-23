@@ -352,7 +352,7 @@ def getRepoNameFromURL(url):
 
     if url[-1] == '/':
         url = url[:-1]
-    return url.split('/')[-1]
+    return url.split('/')[-1].strip()
 
 def getRepoNameFromPath(path):
     cwd = os.getcwd()

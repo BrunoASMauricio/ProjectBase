@@ -1,7 +1,10 @@
 import sys
 
 from common import *
-from git import *
+from process import openBashOnDirectoryAndWait
+from git import Git
+from git import GetGitPaths, getStatus, checkoutBranch, fullDirtyUpdate
+from git import fullCleanUpdate, globalCommit, globalPush, getRepoNameFromPath
 
 def runOnLoadedRepos(project, function_to_run):
     paths = GetRepositoryPaths(project.loaded_repos)
@@ -71,7 +74,32 @@ def __handleGlobalCommit(project):
 def __handleGlobalPush(project):
     runOnLoadedRepos(project.loaded_repos, globalPush)
 
+def __manageGitRepo(project):
+    known_paths = GetRepositoryPaths(project.loaded_repos)
+    all_paths = GetGitPaths(project.paths["project_main"])
+    unknown_paths = [repo for repo in all_paths if repo not in known_paths]
+    all_paths = known_paths + unknown_paths
+
+    print("What repo to manage:")
+    cwd = os.getcwd()
+    for path_id in range(len(all_paths)):
+        msg =  "[" + str(path_id) + "] "
+        msg += getRepoNameFromPath(all_paths[path_id]) + " ("
+
+        os.chdir(all_paths[path_id])
+        if Git.isRepositoryClean():
+            msg += ColorFormat(Colors.Green, "clean")
+        else:
+            msg += ColorFormat(Colors.Red, "dirty")
+
+        print(msg + ")")
+
+    os.chdir(cwd)
+    user_input = input(": ")
+    openBashOnDirectoryAndWait(all_paths[int(user_input)])
+
 GitallOperations = {
+    "0": [__manageGitRepo             , "Manage single repo"],
     "1": [__handleGitStatus           , "Get status"],
     "2": [__handleGitResetHard        , "Fully reset/Clean"],
     "3": [__handleGitCleanUntracked   , "Clean untracked"],

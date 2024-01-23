@@ -148,6 +148,14 @@ def getProcessResponse(response):
 
     return '\n'.join(responses)
 
+def openBashOnDirectoryAndWait(working_directory):
+    # Open a new Bash shell in the specified working directory
+    process = subprocess.Popen(['bash'], cwd=working_directory)
+
+    print("Close terminal when done (hit Ctrl+D or type exit)")
+
+    # Wait for the Bash shell to be closed by the user
+    process.wait()
 
 #                           PROCESS OUTPUT
 
