@@ -139,7 +139,7 @@ while condition == True:
             if len(project.loaded_repos) == 0:
                 project.load()
 
-            runGitall(project.loaded_repos)
+            runGitall(project)
 
         #                   Clean project binaries
         elif next_input == "9":

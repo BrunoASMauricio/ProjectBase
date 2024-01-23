@@ -63,6 +63,9 @@ Remove 'None' elements from a list
 def RemoveNone(list):
     return [x for x in list if x != None]
 
+def IsEmptyOrNone(Container):
+    return (Container == None or len(Container) == 0)
+
 def programIsInstalled(program):
     return parseProcessResponse(launchSilentProcess("command -v "+program)) != ""
 

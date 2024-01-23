@@ -3,43 +3,61 @@ import sys
 from common import *
 from git import *
 
-def runOnLoadedRepos(loaded_repos, function_to_run):
-    paths = GetRepositoryPaths(loaded_repos)
+def runOnLoadedRepos(project, function_to_run):
+    paths = GetRepositoryPaths(project.loaded_repos)
     return runOnFolders(paths, function_to_run)
 
-def __handleGitStatus(loaded_repos):
-    dirty = runOnLoadedRepos(loaded_repos, getStatus)
-    dirty = RemoveNone(dirty)
+def __handleGitStatus(project):
+    known_paths = GetRepositoryPaths(project.loaded_repos)
+    all_paths = GetGitPaths(project.paths["project_main"])
+    unknown_paths = [repo for repo in all_paths if repo not in known_paths]
 
-    message = "\nProject is: "  
-    if dirty == None or len(dirty) == 0:
-        message += ColorFormat(Colors.Green, "clean")
+    print("\nManaged repositories:")
+    dirty_known_repos = runOnFolders(known_paths, getStatus)
+    if IsEmptyOrNone(dirty_known_repos):
+        print("\tNone")
+
+    dirty_known_repos = RemoveNone(dirty_known_repos)
+
+    print("\nUnmanaged repositories:")
+    dirty_unknown_repos = runOnFolders(unknown_paths, getStatus)
+    if IsEmptyOrNone(dirty_unknown_repos):
+        print("\tNone")
+
+    dirty_unknown_repos = RemoveNone(dirty_unknown_repos)
+
+    print("\nProject is ", end="")
+    if IsEmptyOrNone(dirty_known_repos):
+        print(ColorFormat(Colors.Green, "clean"))
     else:
-        message += ColorFormat(Colors.Red, "dirty ("+str(len(dirty))+": "+', '.join(dirty)+")")
+        print(ColorFormat(Colors.Red, "dirty ("+str(len(dirty_known_repos))+": "+', '.join(dirty_known_repos)+")"))
 
-    print(message)
+    if not IsEmptyOrNone(dirty_unknown_repos):
+        print("There are dirty unknown git repositories:")
+        print(ColorFormat(Colors.Red, "dirty ("+str(len(dirty_unknown_repos))+": "+', '.join(dirty_unknown_repos)+")"))
 
-def __handleGitResetHard(loaded_repos):
-    runOnLoadedRepos(loaded_repos, Git.resetHard)
 
-def __handleGitCleanUntracked(loaded_repos):
-    runOnLoadedRepos(loaded_repos, Git.cleanUntracked)
+def __handleGitResetHard(project):
+    runOnLoadedRepos(project.loaded_repos, Git.resetHard)
 
-def __handleGitCheckout(loaded_repos):
+def __handleGitCleanUntracked(project):
+    runOnLoadedRepos(project.loaded_repos, Git.cleanUntracked)
+
+def __handleGitCheckout(project):
     if len(sys.argv) > 3:
         branch = sys.argv[3]
     else:
         branch = input("branch: ")
 
-    runOnLoadedRepos(loaded_repos, checkoutBranch, {"branch":branch})
+    runOnLoadedRepos(project.loaded_repos, checkoutBranch, {"branch":branch})
 
-def __handleDirtyGitUpdate(path):
-    runOnLoadedRepos(loaded_repos, fullDirtyUpdate)
+def __handleDirtyGitUpdate(project):
+    runOnLoadedRepos(project.loaded_repos, fullDirtyUpdate)
 
-def __handleCleanGitUpdate(path):
-    runOnLoadedRepos(loaded_repos, fullCleanUpdate)
+def __handleCleanGitUpdate(project):
+    runOnLoadedRepos(project.loaded_repos, fullCleanUpdate)
 
-def __handleGlobalCommit(loaded_repos):
+def __handleGlobalCommit(project):
     if len(sys.argv) > 3:
         commit_message = sys.argv[3]
     else:
@@ -48,10 +66,10 @@ def __handleGlobalCommit(loaded_repos):
     if commit_message == "":
         print("Commit message cannot be empty")
     else:
-        runOnLoadedRepos(loaded_repos, globalCommit, {"commit_message":commit_message})
+        runOnLoadedRepos(project.loaded_repos, globalCommit, {"commit_message":commit_message})
 
-def __handleGlobalPush(loaded_repos):
-    runOnLoadedRepos(loaded_repos, globalPush)
+def __handleGlobalPush(project):
+    runOnLoadedRepos(project.loaded_repos, globalPush)
 
 GitallOperations = {
     "1": [__handleGitStatus           , "Get status"],
@@ -69,7 +87,7 @@ def printOptions():
         print("\t"+key+") "+GitallOperations[key][1])
     print("\t"+ColorFormat(Colors.Green, "Ctrl+C to exit"))
 
-def runGitall(loaded_repos):
+def runGitall(project):
     option = None
 
     # What option to run
@@ -84,7 +102,7 @@ def runGitall(loaded_repos):
             option = input("Option:")
 
         if option in GitallOperations.keys():
-            GitallOperations[option][0](loaded_repos)
+            GitallOperations[option][0](project)
 
         else:
             again = True

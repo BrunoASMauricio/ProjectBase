@@ -203,16 +203,16 @@ def getStatus():
     lines = list()
     operation_status = None
 
-    status_string = "|"+ColorFormat(Colors.Blue, repository_name)
+    status_string = "\t|"+ColorFormat(Colors.Blue, repository_name)
     if Git.isRepositoryClean():
         status_string += " ("+ColorFormat(Colors.Green, "clean")+")"
-        status_string  += ColorFormat(Colors.Yellow, " URL: ") + url
+        status_string += ColorFormat(Colors.Yellow, " URL: ") + url
         lines.append(status_string)
-        print('\n|'.join(lines))
+        print(''.join(lines))
     else:
         status_string += " ("+ColorFormat(Colors.Red,"dirty")+")"
         lines.append(status_string)
-        lines.append("\n|"+Git.getStatus().replace("\n","\n|"))
+        lines.append("\n\t|"+Git.getStatus().replace("\n","\n\t|"))
         operation_status = repository_name
 
         if local_commit == remote_commit:
@@ -223,10 +223,9 @@ def getStatus():
         lines.append(ColorFormat(Colors.Yellow, "URL: ")+url)
         lines.append(ColorFormat(Colors.Yellow, "Local Path: ")+os.getcwd())
 
-        print("-"*79)
-        print('\n|'.join(lines))
-        print("-"*79)
-    print("\n")
+        print("\t"+"-"*50)
+        print('\n\t|'.join(lines))
+        print("\t"+"-"*50)
 
     return operation_status
 
@@ -274,6 +273,7 @@ def globalPush():
     push_status = launchVerboseProcess("git push -u origin $(git branch --show-current)")
 
     if len(push_status["stdout"]) == 0:
+        # TODO Add possibility to open a terminal on that git
         logging.error("Could not push!\n "+ColorFormat(Colors.Red, push_status["stderr"]))
         logging.error("Local path: "+ColorFormat(Colors.Yellow, os.getcwd()))
         force_push = UserYesNoChoice("Try force push?")
@@ -373,3 +373,23 @@ def getRepoURL():
         return sys.argv[1]
     else:
         return userChooseProject()
+
+def GetGitPaths(base_path):
+    git_repos = []
+    if not os.path.isdir(base_path):
+        logging.error(base_path+" is not a valid directory")
+        return
+
+    cwd = os.getcwd()
+    os.chdir(base_path)
+
+    if launchSilentProcess("find -maxdepth 1 -name .git")["stdout"] != "":
+        git_repos.append(base_path)
+
+    os.chdir(cwd)
+
+    for inode in os.listdir(base_path):
+        if os.path.isdir(base_path+"/"+inode) and inode != ".git":
+            git_repos = git_repos + GetGitPaths(base_path+"/"+inode)
+
+    return git_repos
