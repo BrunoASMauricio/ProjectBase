@@ -3,8 +3,12 @@ import sys
 from common import *
 from git import *
 
-def __handleGitStatus(paths):
-    dirty = runOnFolders(paths, getStatus)
+def runOnLoadedRepos(loaded_repos, function_to_run):
+    paths = GetRepositoryPaths(loaded_repos)
+    return runOnFolders(paths, function_to_run)
+
+def __handleGitStatus(loaded_repos):
+    dirty = runOnLoadedRepos(loaded_repos, getStatus)
     dirty = RemoveNone(dirty)
 
     message = "\nProject is: "  
@@ -15,27 +19,27 @@ def __handleGitStatus(paths):
 
     print(message)
 
-def __handleGitResetHard(paths):
-    runOnFolders(paths, Git.resetHard)
+def __handleGitResetHard(loaded_repos):
+    runOnLoadedRepos(loaded_repos, Git.resetHard)
 
-def __handleGitCleanUntracked(paths):
-    runOnFolders(paths, Git.cleanUntracked)
+def __handleGitCleanUntracked(loaded_repos):
+    runOnLoadedRepos(loaded_repos, Git.cleanUntracked)
 
-def __handleGitCheckout(paths):
+def __handleGitCheckout(loaded_repos):
     if len(sys.argv) > 3:
         branch = sys.argv[3]
     else:
         branch = input("branch: ")
 
-    runOnFolders(paths, checkoutBranch, {"branch":branch})
+    runOnLoadedRepos(loaded_repos, checkoutBranch, {"branch":branch})
 
 def __handleDirtyGitUpdate(path):
-    runOnFolders(paths, fullDirtyUpdate)
+    runOnLoadedRepos(loaded_repos, fullDirtyUpdate)
 
 def __handleCleanGitUpdate(path):
-    runOnFolders(paths, fullCleanUpdate)
+    runOnLoadedRepos(loaded_repos, fullCleanUpdate)
 
-def __handleGlobalCommit(paths):
+def __handleGlobalCommit(loaded_repos):
     if len(sys.argv) > 3:
         commit_message = sys.argv[3]
     else:
@@ -44,10 +48,10 @@ def __handleGlobalCommit(paths):
     if commit_message == "":
         print("Commit message cannot be empty")
     else:
-        runOnFolders(paths, globalCommit, {"commit_message":commit_message})
+        runOnLoadedRepos(loaded_repos, globalCommit, {"commit_message":commit_message})
 
-def __handleGlobalPush(paths):
-    runOnFolders(paths, globalPush)
+def __handleGlobalPush(loaded_repos):
+    runOnLoadedRepos(loaded_repos, globalPush)
 
 GitallOperations = {
     "1": [__handleGitStatus           , "Get status"],
@@ -56,8 +60,8 @@ GitallOperations = {
     "4": [__handleGitCheckout         , "Checkout a branch where it exists"],
     "5": [__handleDirtyGitUpdate      , "Pull only the clean repos"],
     "6": [__handleCleanGitUpdate      , "Clean and Pull everything"],
-    "7": [__handleGlobalCommit        , "Add and Commit"],
-    "8": [__handleGlobalPush          , "Push"]
+    "7": [__handleGlobalCommit        , "Add, Commit and Local push"],
+    "8": [__handleGlobalPush          , "Push to remote repositories"]
 }
 
 def printOptions():
@@ -65,7 +69,7 @@ def printOptions():
         print("\t"+key+") "+GitallOperations[key][1])
     print("\t"+ColorFormat(Colors.Green, "Ctrl+C to exit"))
 
-def runGitall(paths):
+def runGitall(loaded_repos):
     option = None
 
     # What option to run
@@ -80,7 +84,7 @@ def runGitall(paths):
             option = input("Option:")
 
         if option in GitallOperations.keys():
-            GitallOperations[option][0](paths)
+            GitallOperations[option][0](loaded_repos)
 
         else:
             again = True

@@ -49,6 +49,14 @@ def get_paths(project_name):
 
     return paths
 
+def GetRepositoryPaths(loaded_repos):
+    all_repositories = []
+    for repo_id in loaded_repos:
+        repo = loaded_repos[repo_id]
+        if not repo.hasFlag("no commit"):
+            all_repositories.append(repo['full_local_path'])
+    return all_repositories
+
 """
 Remove 'None' elements from a list
 """

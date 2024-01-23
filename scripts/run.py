@@ -139,13 +139,7 @@ while condition == True:
             if len(project.loaded_repos) == 0:
                 project.load()
 
-            all_repositories = []
-            for repo_id in project.loaded_repos:
-                repo = project.loaded_repos[repo_id]
-                if not repo.hasFlag("no commit"):
-                    all_repositories.append(repo['full_local_path'])
-
-            runGitall(all_repositories)
+            runGitall(project.loaded_repos)
 
         #                   Clean project binaries
         elif next_input == "9":
