@@ -355,9 +355,14 @@ def getRepoNameFromURL(url):
     return url.split('/')[-1]
 
 def getRepoNameFromPath(path):
+    cwd = os.getcwd()
+
+    os.chdir(path)
+
     url_output = launchProcess("git config --get remote.origin.url")
+    os.chdir(cwd)
     if url_output == None or len(url_output["stdout"]) == 0:
-        raise Exception("Requested path ("+path+") does not exist")
+        raise Exception("Could not retrieve Name from path \""+path+"\"")
 
     return getRepoNameFromURL(url_output["stdout"])
 
