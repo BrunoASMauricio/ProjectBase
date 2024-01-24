@@ -142,6 +142,5 @@ def runGitall(project):
             again = True
 
 if __name__ == "__main__":
-    print("Do not run this script as a standalone")
-    sys.exit(0)
+    abort("Do not run this script as a standalone")
 

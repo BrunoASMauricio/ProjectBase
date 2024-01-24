@@ -49,6 +49,11 @@ def get_paths(project_name):
 
     return paths
 
+def abort(message):
+    print(message)
+    sys.stdout.flush()
+    sys.exit(-1)
+
 def GetRepositoryPaths(loaded_repos):
     all_repositories = []
     for repo_id in loaded_repos:

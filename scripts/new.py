@@ -9,9 +9,7 @@ from common import *
 from git import *
 
 if __name__ != "__main__":
-    print("This script is not meant to be imported, please run directly")
-    sys.stdout.flush()
-    sys.exit(-1)
+    abort("This script is not meant to be imported, please run directly")
 
 logging.basicConfig(stream = sys.stdout, level = logging.DEBUG)
 

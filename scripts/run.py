@@ -53,9 +53,7 @@ def parse_arguments():
 
 
 if __name__ != "__main__":
-    print("This script is not meant to be imported, please run directly")
-    sys.stdout.flush()
-    sys.exit(-1)
+    abort("This script is not meant to be imported, please run directly")
 
 # Configure logging
 logging.basicConfig(stream = sys.stdout, level = logging.INFO)
@@ -67,12 +65,10 @@ project_args, action_args = parse_arguments()
 
 # Commit or branch
 if project_args.commit != None and project_args.branch != None:
-    print("Please use either commit or branch, not both")
-    sys.exit(0)
+    abort("Please use either commit or branch, not both")
 
 if project_args.url == None and (project_args.commit != None or project_args.branch != None):
-    print("If you provide a commit/branch, you also need to provide a URL")
-    sys.exit(0)
+    abort("If you provide a commit/branch, you also need to provide a URL")
 
 if project_args.url == None:
     project_url = userChooseProject()
@@ -156,6 +152,7 @@ while condition == True:
         print("\nKeyboard Interrupt. Press Ctrl+D to exit")
 
     except EOFError:
+        print("Exiting ProjectBase")
         sys.exit(0)
 
     except Exception as ex:
