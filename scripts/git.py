@@ -12,11 +12,11 @@ operation_status = None
 class Git():
     @staticmethod
     def getURL(target_directory=""):
-        return multipleCDLaunch("git config --get remote.origin.url", target_directory, 10)
+        return multipleCDLaunch("git config --get remote.origin.url", target_directory, 1)
 
     @staticmethod
     def getDefaultBranch(target_directory=""):
-        default_branch = multipleCDLaunch("git branch", target_directory, 5)
+        default_branch = multipleCDLaunch("git branch", target_directory, 1)
         if default_branch == "":
             raise Exception("There is no default branch for " + Git.getURL(target_directory) + " cannot proceed")
         return default_branch.split("\n")[0].split(" ")[1]
@@ -235,9 +235,9 @@ def checkoutBranch(branch):
 
     launchProcess("git pull")
     result = launchProcess("git checkout "+branch)
-    if result["stdout"] != "":
-        repo_name = getRepoNameFromURL(launchProcess("git config --get remote.origin.url")["stdout"][:-1])
-        print(repo_name+": "+result["stdout"])
+    if result["output"] != "":
+        repo_name = getRepoNameFromURL(launchProcess("git config --get remote.origin.url")["output"][:-1])
+        print(repo_name+": "+result["output"])
 
 def fullCleanUpdate():
     """
@@ -272,15 +272,15 @@ def globalPush():
     logging.info("Pushing "+getRepoNameFromPath(os.getcwd()))
     push_status = launchVerboseProcess("git push -u origin $(git branch --show-current)")
 
-    if len(push_status["stdout"]) == 0:
+    if len(push_status["code"]) != 0:
         # TODO Add possibility to open a terminal on that git
-        logging.error("Could not push!\n "+ColorFormat(Colors.Red, push_status["stderr"]))
+        logging.error("Could not push!\n "+ColorFormat(Colors.Red, push_status["output"]))
         logging.error("Local path: "+ColorFormat(Colors.Yellow, os.getcwd()))
         force_push = UserYesNoChoice("Try force push?")
         if force_push == True:
             push_status = launchVerboseProcess("git push -u origin $(git branch --show-current) -f")
-            if len(push_status["stdout"]) == 0:
-                logging.error(ColorFormat(Colors.Red, "Could not force push: "+push_status["stderr"]))
+            if len(push_status["code"]) != 0:
+                logging.error(ColorFormat(Colors.Red, "Could not force push ("+str(push_status["code"])+"): "+push_status["output"]))
 
 def registerDirtyRepo():
     operation_status = []
@@ -361,10 +361,10 @@ def getRepoNameFromPath(path):
 
     url_output = launchProcess("git config --get remote.origin.url")
     os.chdir(cwd)
-    if url_output == None or len(url_output["stdout"]) == 0:
+    if url_output == None or len(url_output["output"]) == 0:
         raise Exception("Could not retrieve Name from path \""+path+"\"")
 
-    return getRepoNameFromURL(url_output["stdout"])
+    return getRepoNameFromURL(url_output["output"])
 
 def getRepoBareTreePath(url):
     if url[-1] == '/':
@@ -388,7 +388,7 @@ def GetGitPaths(base_path):
     cwd = os.getcwd()
     os.chdir(base_path)
 
-    if launchSilentProcess("find -maxdepth 1 -name .git")["stdout"] != "":
+    if launchSilentProcess("find -maxdepth 1 -name .git")["output"] != "":
         git_repos.append(base_path)
 
     os.chdir(cwd)

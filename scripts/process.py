@@ -1,8 +1,8 @@
 import os
 import sys
 import fcntl
-import select
-import termios
+import re
+import pty
 import logging
 import subprocess
 import unicodedata
@@ -63,6 +63,10 @@ def remove_control_characters(s):
     new_s = "".join(ch for ch in s if (unicodedata.category(ch)[0] != "C" or ch in allowd_CC))
     return new_s.rstrip()
 
+def remove_ansi_escape_characters(s):
+    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+    return ansi_escape.sub("", s)
+
 def launchProcess(command, to_print=False):
     """
     Launch new process
@@ -70,9 +74,9 @@ def launchProcess(command, to_print=False):
     to_print: whether to print
 
     Returns:
-        _type_: {"stdout":"<stdout>", "stderr": "<stderr>", "code": return code}
+        _type_: {"output":"<stdout>", "code": return code}
     """
-    returned = {"stdout": "", "stderr": "", "code": ""}
+    returned = {"output": "", "code": ""}
 
     if command == "":
         return returned
@@ -80,65 +84,40 @@ def launchProcess(command, to_print=False):
     if to_print == True:
         print(command)
 
-    logging.debug(command)
+    output_bytes = []
+    def read(fd):
+        data = os.read(fd, 1024)
+        output_bytes.append(data)
+        if to_print == True:
+            return data
+        return None
 
-    old_settings = termios.tcgetattr(sys.stdin)
-    try:
-        setPipeNonBlocking(sys.stdin)
+    # Remove all types of whitespace repetitions `echo  \t  a` -> `echo a`
+    command = " ".join(command.split())
+    command = command.replace('"', '\\"')
 
-        process = subprocess.Popen(command, shell=True,
-                                stdout=subprocess.PIPE, 
-                                stderr=subprocess.PIPE,
-                                executable='/bin/bash',
-                                encoding="UTF-8",
-                                bufsize=1
-                                    )
-        setPipeNonBlocking(process.stdout)
-        setPipeNonBlocking(process.stderr)
+    returned["code"] = pty.spawn(['bash', '-c', command], read)
 
-        logging.debug("Starting process with pid "+str(process.pid)+" for command "+str(command))
+    if len(output_bytes) != 0:
+        output_bytes = b''.join(output_bytes)
+        output_utf8 = output_bytes.decode('utf-8')
+        no_escape_utf8 = remove_ansi_escape_characters(output_utf8)
+        clean_utf8 = remove_control_characters(no_escape_utf8)
 
-        next_stdout = None
-        next_stderr = None
-
-        while process.poll() == None or next_stdout != "" or next_stderr != "":
-            next_stdout = getNextOutput(process.stdout, to_print)
-            if next_stdout != "":
-                returned["stdout"] += next_stdout
-
-            next_stderr = getNextOutput(process.stderr, to_print)
-            if next_stderr != "":
-                returned["stderr"] += next_stderr
-
-        returned["code"] = str(process.poll())
-        command = command.replace(";", ";\n")
-        logging.debug(ColorFormat(Colors.Magenta, "\n$ "+command)+" \n "+getProcessResponse(returned))
-
-        logging.debug(str(command)+" returned code: "+returned["code"])
-
-    finally:
-        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
-        setPipeBlocking(sys.stdin)
-
-    if to_print == True:
-        print()
+        returned["output"] = clean_utf8
+    else:
+        returned["output"] = ""
 
     return returned
 
 def parseProcessResponse(response):
-    if response["stdout"] == "" or response["stdout"] == "\n":
-        return remove_control_characters(response["stderr"].rstrip())
-    return remove_control_characters(response["stdout"].rstrip())
+    return remove_control_characters(response["output"].rstrip())
 
 def getProcessResponse(response):
     responses = []
-    if response["stdout"] != "":
-        stdout_str = response["stdout"].lstrip().rstrip()
-        responses.append(ColorFormat(Colors.Green, "stdout: [")+stdout_str+ColorFormat(Colors.Green,"]"))
-
-    if response["stderr"] != "":
-        stderr_str = response["stderr"].lstrip().rstrip()
-        responses.append(ColorFormat(Colors.Blue, "stderr: [")+stderr_str+ColorFormat(Colors.Blue, "]"))
+    if response["output"] != "":
+        stdout_str = response["output"].lstrip().rstrip()
+        responses.append("output: [" + stdout_str + "]")
 
     if len(responses) == 0:
         responses.append(ColorFormat(Colors.Yellow, "NO OUTPUT"))
@@ -172,22 +151,16 @@ def launchVerboseProcess(command):
     ret =  launchProcess(command, True)
     return ret
 
-def launchErrorProcess(command):
-    ret =  launchProcess(command)
-
-    if ret["stderr"] != "":
-        print(command)
-        print("stderr: "+ret["stderr"])
-
-    return ret
-
 """
 Changes to the given directory, launches the command in a forked process and
-returns the { "stdout": "..." , "stderr": "..."  } dictionary
+returns the { "stdout": "..." , "code": "..."  } dictionary
 """
 def cdLaunchReturn(command, path=""):
     if path != "":
-        return_value = launchProcess("cd "+path+"; "+command)
+        cwd = os.getcwd()
+        os.chdir(path)
+        return_value = launchProcess(command)
+        os.chdir(cwd)
     else:
         return_value = launchProcess(command)
 
@@ -201,12 +174,17 @@ While the "output" returned is empty, tries again
 def multipleCDLaunch(command, path, attempts=3):
     i = 0
     output = None
-
+    thrown_ex = None
     while (output == None or output == "") and i < attempts:
         try:
             output = parseProcessResponse(cdLaunchReturn(command, path))
-        except:
+        except Exception as ex:
             output = None
+            thrown_ex = ex
         i += 1
+
+    if output == None:
+        if thrown_ex != None:
+            logging.error(str(thrown_ex))
 
     return output

@@ -42,8 +42,6 @@ main_repo_name = getRepoNameFromURL(remote_repo_url)
 repo_dir = "/tmp/"+main_repo_name+"_"+str(time())
 
 ret = launchProcess("git clone \""+remote_repo_url+"\" \""+repo_dir+"\"")
-if ret["stderr"] != "":
-    print(ret["stderr"])
 
 # Setup base structure
 repository_structure = [
