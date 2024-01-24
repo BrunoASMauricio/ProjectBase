@@ -4,6 +4,7 @@ import fcntl
 import re
 import pty
 import logging
+import traceback
 import subprocess
 import unicodedata
 from colorama import Fore, Style
@@ -76,37 +77,40 @@ def launchProcess(command, to_print=False):
     Returns:
         _type_: {"output":"<stdout>", "code": return code}
     """
+
     returned = {"output": "", "code": ""}
 
     if command == "":
-        return returned
+        return {"output": "", "code": ""}
 
     if to_print == True:
         print(command)
-
-    output_bytes = []
-    def read(fd):
-        data = os.read(fd, 1024)
-        output_bytes.append(data)
-        if to_print == True:
+        output_bytes = []
+        def read(fd):
+            data = os.read(fd, 1024)
+            output_bytes.append(data)
             return data
-        return None
 
-    # Remove all types of whitespace repetitions `echo  \t  a` -> `echo a`
-    command = " ".join(command.split())
-    command = command.replace('"', '\\"')
+        # Remove all types of whitespace repetitions `echo  \t  a` -> `echo a`
+        command = " ".join(command.split())
 
-    returned["code"] = pty.spawn(['bash', '-c', command], read)
+        returned["code"] = pty.spawn(['bash', '-c', command], read)
 
-    if len(output_bytes) != 0:
-        output_bytes = b''.join(output_bytes)
-        output_utf8 = output_bytes.decode('utf-8')
-        no_escape_utf8 = remove_ansi_escape_characters(output_utf8)
-        clean_utf8 = remove_control_characters(no_escape_utf8)
+        if len(output_bytes) != 0:
+            output_bytes = b''.join(output_bytes)
+            output_utf8 = output_bytes.decode('utf-8')
+            no_escape_utf8 = remove_ansi_escape_characters(output_utf8)
+            clean_utf8 = remove_control_characters(no_escape_utf8)
 
-        returned["output"] = clean_utf8
+            returned["output"] = clean_utf8
+        else:
+            returned["output"] = ""
     else:
-        returned["output"] = ""
+        result = subprocess.run(['bash', '-c', command],
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT)
+        returned["output"] = result.stdout.decode('utf-8')
+        returned["code"] = result.returncode
 
     return returned
 
@@ -185,6 +189,8 @@ def multipleCDLaunch(command, path, attempts=3):
 
     if output == None:
         if thrown_ex != None:
-            logging.error(str(thrown_ex))
+            logging.error(traceback.format_exc())
+            logging.error("multipleCDLaunch(" + command + ") exception with: " + str(thrown_ex))
+            raise thrown_ex
 
     return output
