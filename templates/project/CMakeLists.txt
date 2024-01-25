@@ -6,7 +6,7 @@
 ### RESPECT THE CURRENT ORDER OF COMMANDS
 
 ### Cmake minimum version
-CMAKE_MINIMUM_REQUIRED(VERSION 3.18)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.28)
 
 ### Setup configuration file in binary tree
 #configure_file(TutorialConfig.h.in TutorialConfig.h)
@@ -33,7 +33,7 @@ PROJECT("${ProjectName}")
 ##define ${ProjectName}_VERSION_MINOR @${ProjectName}_VERSION_MINOR@
 
 
-### c++17 standards
+### c++20 standards
 SET(CMAKE_CXX_STANDARD 20)
 
 ### Set global module variables
@@ -51,10 +51,17 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OBJS_PATH})
 
 ### Set base compiler flags
 SET(GCC_COMPILE_FLAGS "")
+SET(GLOBAL_COMPILE_FLAGS_BUILD "")
+
+IF (NOT DEFINED BUILD_MODE)
+  SET(BUILD_MODE "DEBUG")
+ENDIF()
 
 ### Include this modules' CMakeLists
 $$INCLUDEREPOSITORYCMAKELISTS$$
 
 ## Activate compiler flags
 #add_definitions(${GCC_COMPILE_FLAGS})
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COMPILE_FLAGS} -std=c++20 -O0 -lpthread -fPIC -pthread -ggdb3 -Wall -fdata-sections -ffunction-sections")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COMPILE_FLAGS}")
+
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GCC_COMPILE_FLAGS}")

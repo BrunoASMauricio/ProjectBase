@@ -17,8 +17,13 @@ def get_paths(project_name):
     """
     # Setup paths
     paths = {
-        "project_base": os.getcwd()
+        "project_base": os.getcwd(),
     }
+
+    paths["configs"] = paths["project_base"]+"/configs"
+    paths["project settings"] = paths["configs"]+"/settings"
+    paths["command history"] = paths["configs"]+"/history"
+
     # Where the .git files are located
     paths[".gits"] =        paths["project_base"]+"/bare_gits"
     paths["temporary"] =    paths["project_base"]+"/temporary"
@@ -36,7 +41,7 @@ def get_paths(project_name):
     paths["project_code"] = paths["project_main"]+'/code'
     
     # Path for repositories that don't specify local_path
-    paths["general_repository"] = 'general'
+    paths["general_repository"] = ''
     
     # Path for output binaries
     paths["objects"]     = paths["binaries"]+"/objects"
@@ -168,6 +173,10 @@ def loadJsonFile(path, error_value=None, variable_substitutions={}):
         if error_value == None:
             raise Exception("Could not load json from file "+path+" "+traceback.format_exc())
     return error_value
+
+def dumpJsonFile(json_data, path):
+    with open(path, 'w') as file:
+        json.dump(json_data, file)
 
 from enum import Enum
 

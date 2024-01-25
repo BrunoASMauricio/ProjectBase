@@ -5,6 +5,7 @@ import argparse
 import sys
 
 from common import *
+from settings import *
 
 from run_executable import runProjectExecutable
 from run_tests import runProjectTests
@@ -13,15 +14,23 @@ from gitall import runGitall
 from project import Project
 
 def menu(project_url, project_path):
+    ActiveSettings = getActiveSettings()
+    build_banner = ""
+    if ActiveSettings["Mode"] == "Release":
+        build_banner = ColorFormat(Colors.Blue, "Release build")
+    else:
+        build_banner = ColorFormat(Colors.Yellow, "Debug build")
+        
     print(Fore.YELLOW+"""
  ______              __              __   ______                    
 |   __ \.----.-----.|__|.-----.----.|  |_|   __ \.---.-.-----.-----.
 |    __/|   _|  _  ||  ||  -__|  __||   _|   __ <|  _  |__ --|  -__|
 |___|   |__| |_____||  ||_____|____||____|______/|___._|_____|_____|
                    |___|                                            
-"""+Style.RESET_ALL+"""
-("""+project_url+""")
-("""+project_path+""")
+"""  + Style.RESET_ALL + """
+"""  + build_banner + """
+(""" + project_url  + """)
+(""" + project_path + """)
 First argument must be the URL of the target project
 1) Generate project (build/pull from templates and configs)
 2) Build project (launches the build environment for this purpose)
@@ -30,8 +39,8 @@ First argument must be the URL of the target project
 5) Run single test
 8) Run gitall.sh script
 9) Clean binaries (remove all object and executable files, as well as the CMakeLists cache)
+0) Project settings
 """+Fore.GREEN+"Ctrl + D to exit"+Style.RESET_ALL)
-
 
 def parse_arguments():
     # Initialize parser
@@ -60,6 +69,7 @@ logging.basicConfig(stream = sys.stdout, level = logging.INFO)
 # logging.basicConfig(stream = sys.stdout, level = logging.DEBUG)
 
 #               Setup project (main repository) data
+
 # Parse arguments
 project_args, action_args = parse_arguments()
 
@@ -80,8 +90,10 @@ project_commit = project_args.commit
 
 project = Project(project_url, project_branch, project_commit)
 
+loadSettings(project)
+
 # Setup auto complete
-histfile = project.paths["project_base"]+"/projectbase_configs/executables_history"
+histfile = project.paths["command history"]
 old_len = setup_completer(histfile)
 
 # Setup necessary loop variables
@@ -140,6 +152,11 @@ while condition == True:
         #                   Clean project binaries
         elif next_input == "9":
             project.clean()
+
+        #                   Project settings
+        elif next_input == "0":
+            mainSettingsMenu(project)
+            updateSettings(project)
 
         else:
             print("Unkown option "+str(next_input))

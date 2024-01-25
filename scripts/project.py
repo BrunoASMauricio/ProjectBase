@@ -1,4 +1,5 @@
 from repository import *
+from settings import getActiveSettings
 from common import *
 from git import *
 
@@ -66,7 +67,10 @@ class Project(dict):
         for repo_id in self.loaded_repos:
             self.loaded_repos[repo_id].before_build()
 
-        launchVerboseProcess('cmake -S '+self.paths["project_main"]+' -B '+self.paths["cmake"]+' && cmake --build '+self.paths["cmake"])
+        # launchVerboseProcess('cmake --debug-output -DCMAKE_COLOR_MAKEFILE=ON -S '+self.paths["project_main"]+' -B '+self.paths["cmake"]+' && cmake --build '+self.paths["cmake"])
+        ActiveSettings = getActiveSettings()
+
+        launchVerboseProcess('cmake -S '+self.paths["project_main"]+' -B '+self.paths["cmake"]+' -DBUILD_MODE='+ActiveSettings["Mode"]+' && cmake --build '+self.paths["cmake"])
 
 
         for repo_id in self.loaded_repos:
