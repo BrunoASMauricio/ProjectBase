@@ -1,35 +1,36 @@
-from completer import *
-from git import *
 import traceback
+import logging
 import argparse
 import sys
 
-from common import *
+from completer import *
 from settings import *
+from common import *
+from git import *
 
 from run_executable import runProjectExecutable
 from run_tests import runProjectTests
 from gitall import runGitall
 
-from project import Project
+from project import PROJECT
 
-def menu(project_url, project_path):
-    ActiveSettings = getActiveSettings()
-    build_banner = ""
+def PrintMenu(ProjectUrl, ProjectPath):
+    ActiveSettings = GetActiveSettings()
+    BuildBanner = ""
     if ActiveSettings["Mode"] == "Release":
-        build_banner = ColorFormat(Colors.Blue, "Release build")
+        BuildBanner = ColorFormat(Colors.Blue, "Release build")
     else:
-        build_banner = ColorFormat(Colors.Yellow, "Debug build")
+        BuildBanner = ColorFormat(Colors.Yellow, "Debug build")
 
     print(ColorFormat(Colors.Yellow, """
- ______              __              __   ______                    
-|   __ \.----.-----.|__|.-----.----.|  |_|   __ \.---.-.-----.-----.
+ ______              __              __   ______
+|   __ \.----.-----.|__|.-----.----.| C|_|   __ \.---.-.-----.-----.
 |    __/|   _|  _  ||  ||  -__|  __||   _|   __ <|  _  |__ --|  -__|
 |___|   |__| |_____||  ||_____|____||____|______/|___._|_____|_____|
-                   |___|                                            
-""" ) + build_banner + """
-("""  + project_url  + """)
-("""  + project_path + """)
+                   |___|
+""" ) + BuildBanner + """
+("""  + ProjectUrl  + """)
+("""  + ProjectPath + """)
 First argument must be the URL of the target project
 1) Generate project (build/pull from templates and configs)
 2) Build project (launches the build environment for this purpose)
@@ -41,27 +42,27 @@ First argument must be the URL of the target project
 0) Project settings
 """+ColorFormat(Colors.Green, "Ctrl + D to exit") )
 
-def parse_arguments():
+def ParseArguments():
     # Initialize parser
-    parser = argparse.ArgumentParser()
+    Parser = argparse.ArgumentParser()
 
     # Adding optional argument
-    parser.add_argument("-u", "--url", help = "Root repository's URL", default=None, required=False)
+    Parser.add_argument("-u", "--url", help = "Root repository's URL", default=None, required=False)
 
-    parser.add_argument("-c", "--commit",
+    Parser.add_argument("-c", "--commit",
                         help = "Root repository's commit",
                         default=None, required=False, nargs=1)
 
-    parser.add_argument("-b", "--branch",
+    Parser.add_argument("-b", "--branch",
                         help = "Root repository's branch",
                         default=None, required=False, type=str, nargs=1)
 
     # Read arguments from command line
-    return parser.parse_known_args()
+    return Parser.parse_known_args()
 
 
 if __name__ != "__main__":
-    abort("This script is not meant to be imported, please run directly")
+    Abort("This script is not meant to be imported, please run directly")
 
 # Configure logging
 logging.basicConfig(stream = sys.stdout, level = logging.INFO)
@@ -70,99 +71,99 @@ logging.basicConfig(stream = sys.stdout, level = logging.INFO)
 #               Setup project (main repository) data
 
 # Parse arguments
-project_args, action_args = parse_arguments()
+ProjectArgs, ActionArgs = ParseArguments()
 
 # Commit or branch
-if project_args.commit != None and project_args.branch != None:
-    abort("Please use either commit or branch, not both")
+if ProjectArgs.commit != None and ProjectArgs.branch != None:
+    Abort("Please use either commit or branch, not both")
 
-if project_args.url == None and (project_args.commit != None or project_args.branch != None):
-    abort("If you provide a commit/branch, you also need to provide a URL")
+if ProjectArgs.url == None and (ProjectArgs.commit != None or ProjectArgs.branch != None):
+    Abort("If you provide a commit/branch, you also need to provide a URL")
 
-if project_args.url == None:
-    project_url = userChooseProject()
+if ProjectArgs.url == None:
+    ProjectUrl = UserChooseProject()
 else:
-    project_url = project_args.url
+    ProjectUrl = ProjectArgs.url
 
-project_branch = project_args.branch
-project_commit = project_args.commit
+Projectbranch = ProjectArgs.branch
+ProjectCommit = ProjectArgs.commit
 
-project = Project(project_url, project_branch, project_commit)
+Project = PROJECT(ProjectUrl, Projectbranch, ProjectCommit)
 
-loadSettings(project)
+LoadSettings(Project)
 
 # Setup auto complete
-histfile = project.paths["command history"]
-old_len = setup_completer(histfile)
+HistoryFile = Project.Paths["command history"]
+OldHistoryLength = setup_completer(HistoryFile)
 
 # Setup necessary loop variables
-pwd = os.getcwd()
-next_input = -1
-condition = True
+StarterDirectory = os.getcwd()
+NextInput = -1
+Condition = True
 
-while condition == True:
+while Condition == True:
     # Reset directory
-    os.chdir(pwd)
+    os.chdir(StarterDirectory)
 
-    menu(project_url, project.paths["project_main"])
+    PrintMenu(ProjectUrl, Project.Paths["project_main"])
 
-    if next_input != -1:
-        print("Previous command: "+str(next_input))
+    if NextInput != -1:
+        print("Previous command: "+str(NextInput))
 
     try:
 
         # Provide automated option selection from command line, as well as normal input
-        if len(action_args) != 0:
-            next_input = action_args[0]
-            del action_args[0]
+        if len(ActionArgs) != 0:
+            NextInput = ActionArgs[0]
+            del ActionArgs[0]
         else:
-            next_input = input("[<] ")
+            NextInput = input("[<] ")
 
         #                       Setup project
-        if next_input == "1":
-            project.load()
-            project.setup()
+        if NextInput == "1":
+            Project.Load()
+            Project.Setup()
 
         #                       Build project
-        elif next_input == "2":
-            project.load()
-            project.build()
+        elif NextInput == "2":
+            Project.Load()
+            Project.Build()
 
         #                     Run executable
-        elif next_input == "3":
-            runProjectExecutable(project_url, project_branch, project_commit, project.paths["executables"])
+        elif NextInput == "3":
+            runProjectExecutable(ProjectUrl, Projectbranch, ProjectCommit, Project.Paths["executables"])
 
         #                      Run all tests
-        elif next_input == "4":
-            runProjectTests(project_url, project_branch, project_commit)
+        elif NextInput == "4":
+            runProjectTests(ProjectUrl, Projectbranch, ProjectCommit)
 
         #                    Run single test
-        elif next_input == "5":
-            runProjectExecutable(project_url, project_branch, project_commit, project.paths["tests"])
+        elif NextInput == "5":
+            runProjectExecutable(ProjectUrl, Projectbranch, ProjectCommit, Project.Paths["tests"])
 
         #                       Run gitall
-        elif next_input == "8":
+        elif NextInput == "8":
             # Only run load here if there was no previous load
-            if len(project.loaded_repos) == 0:
-                project.load()
+            if len(Project.LoadedRepos) == 0:
+                Project.Load()
 
-            runGitall(project)
+            runGitall(Project)
 
         #                   Clean project binaries
-        elif next_input == "9":
-            project.clean()
+        elif NextInput == "9":
+            Project.Clean()
 
         #                   Project settings
-        elif next_input == "0":
-            mainSettingsMenu(project)
-            updateSettings(project)
+        elif NextInput == "0":
+            MainSettingsMenu(Project)
+            UpdateSettings(Project)
 
         else:
-            print("Unkown option "+str(next_input))
+            print("Unkown option "+str(NextInput))
 
-        readline.append_history_file(readline.get_current_history_length() - old_len, histfile)
+        readline.append_history_file(readline.get_current_history_length() - OldHistoryLength, HistoryFile)
 
-        old_len = readline.get_current_history_length()
+        OldHistoryLength = readline.get_current_history_length()
 
     except KeyboardInterrupt:
         print("\nKeyboard Interrupt. Press Ctrl+D to exit")
@@ -171,8 +172,8 @@ while condition == True:
         print("Exiting ProjectBase")
         sys.exit(0)
 
-    except Exception as ex:
-        print("Exception caught: "+str(ex))
+    except Exception as Ex:
+        print("Exception caught: "+str(Ex))
         # printing stack trace
         traceback.print_exc()
 

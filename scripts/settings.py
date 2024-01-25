@@ -5,31 +5,31 @@ ProjectSettings = {}
 ActiveSettings ={}
 ActiveProjectName = ""
 
-def getActiveSettings():
+def GetActiveSettings():
     global ActiveProjectName
     return ProjectSettings[ActiveProjectName]
 
-def loadSettings(project):
+def LoadSettings(Project):
     global ProjectSettings
     global ActiveSettings
     global ActiveProjectName
 
-    ActiveProjectName = project["project_repo_name"]
+    ActiveProjectName = Project["ProjectRepoName"]
 
     DefaultProjectSettings = {
         ActiveProjectName: {
             "Mode": "Debug"
         }
     }
-    
-    ProjectSettings =  loadJsonFile(project.paths["project settings"], DefaultProjectSettings)
+
+    ProjectSettings =  LoadJsonFile(Project.Paths["project settings"], DefaultProjectSettings)
     ActiveSettings = ProjectSettings[ActiveProjectName]
 
-def updateSettings(project):
+def UpdateSettings(Project):
     global ProjectSettings
-    dumpJsonFile(ProjectSettings, project.paths["project settings"])
+    DumpJsonFile(ProjectSettings, Project.Paths["project settings"])
 
-def __toggleMode(project):
+def __ToggleMode(Project):
     global ActiveSettings
     if ActiveSettings["Mode"] == "Release":
         ActiveSettings["Mode"] = "Debug"
@@ -38,20 +38,20 @@ def __toggleMode(project):
 
 Settings = {}
 
-def printSettings():
+def PrintSettings():
     global Settings
     for key in Settings:
         print("\t"+key+") "+Settings[key][1])
     print("\t"+ColorFormat(Colors.Green, "Ctrl+C to exit"))
 
-def mainSettingsMenu(project):
+def MainSettingsMenu(Project):
 
     if ActiveSettings["Mode"] == "Release":
-        Settings["1"] = [__toggleMode , "Change from Release to Debug"]
+        Settings["1"] = [__ToggleMode , "Change from Release to Debug"]
     else:
-        Settings["1"] = [__toggleMode , "Change from Debug to Release"]
+        Settings["1"] = [__ToggleMode , "Change from Debug to Release"]
 
-    printSettings()
-    setting = input("[<] ")
+    PrintSettings()
+    Setting = input("[<] ")
 
-    Settings[setting][0](project)
+    Settings[Setting][0](Project)

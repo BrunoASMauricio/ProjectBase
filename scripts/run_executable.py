@@ -7,26 +7,26 @@ from common import *
 from project import *
 
 
-def runProjectExecutable(remote_repo_url, project_branch, project_commit, path):
+def runProjectExecutable(RemoteRepoUrl, ProjectBranch, ProjectCommit, Path):
     #global completer
-    project = Project(remote_repo_url, project_branch, project_commit)
-    
+    project = PROJECT(RemoteRepoUrl, ProjectBranch, ProjectCommit)
+
     executables_available = []
 
-    os.chdir(project.paths["project_main"])
+    os.chdir(project.Paths["project_main"])
 
     index = 0
-    print("Available executables to run, found in "+path+" (Ctrl-C to exit):")
-    for entry in os.scandir(path):
+    print("Available executables to run, found in "+Path+" (Ctrl-C to exit):")
+    for entry in os.scandir(Path):
 
         print("\t["+str(index)+"] "+ColorFormat(Colors.Blue, entry.name))
         executables_available.append(entry.name)
         index += 1
-    
+
     if index == 0:
         print("No executables found")
         return
-    
+
     print("Use G or V as a prefix (G0/V0) to run with GDB or Valgrind respectively")
     print("Every space separated word in front of the first one will be passed as a parameter")
 
@@ -50,41 +50,41 @@ def runProjectExecutable(remote_repo_url, project_branch, project_commit, path):
 
         number_regex = '^[0-9]+$'
 
-        base_input = user_input.split(' ')[0]
+        BaseInput = user_input.split(' ')[0]
 
         # Obtain target executable
-        if(re.search(number_regex, base_input)):
+        if(re.search(number_regex, BaseInput)):
             # By index
-            executable = path+"/"+executables_available[int(base_input)]
+            executable = Path+"/"+executables_available[int(BaseInput)]
         else:
             # By name
-            if os.path.isfile(path+"/"+base_input):
-                executable = path+"/"+base_input
+            if os.path.isfile(Path+"/"+BaseInput):
+                executable = Path+"/"+BaseInput
             # By relative project name
-            elif os.path.isfile(project.paths["project_main"]+"/"+base_input):
-                executable = project.paths["project_main"]+"/"+base_input
+            elif os.path.isfile(project.Paths["project_main"]+"/"+BaseInput):
+                executable = project.Paths["project_main"]+"/"+BaseInput
             # By absolute project name
-            elif os.path.isfile(base_input):
-                executable = base_input
+            elif os.path.isfile(BaseInput):
+                executable = BaseInput
             else:
-                print("Unkown executable: "+base_input)
+                print("Unkown executable: "+BaseInput)
                 return
-        
+
         # Setup base commands and its arguments
-        base_arguments = ' '.join([x for x in user_input.split(' ')[1:] if x != ""])
-        
+        BaseArguments = ' '.join([x for x in user_input.split(' ')[1:] if x != ""])
+
         logging.debug("Executable: "+executable)
-        logging.debug("Base arguments: "+base_arguments)
-        
+        logging.debug("Base arguments: "+BaseArguments)
+
         # Theres a prefix, base command and arguments are a single argument
-        command_fragments = prefix+ " " + executable+" "+base_arguments
-        
+        CommandFragments = prefix+ " " + executable+" "+BaseArguments
+
         try:
-            result = subprocess.run(command_fragments, shell=True)
-            if result.returncode != 0:
-                print(ColorFormat(Colors.Red, command_fragments+" returned code = "+str(result.returncode)))
+            Result = subprocess.run(CommandFragments, shell=True)
+            if Result.returncode != 0:
+                print(ColorFormat(Colors.Red, CommandFragments+" returned code = "+str(Result.returncode)))
             else:
-                print(ColorFormat(Colors.Green, command_fragments+" returned code = "+str(result.returncode)))
+                print(ColorFormat(Colors.Green, CommandFragments+" returned code = "+str(Result.returncode)))
         except KeyboardInterrupt:
             print("Keyboard Interrupt")
 
@@ -95,6 +95,6 @@ def runProjectExecutable(remote_repo_url, project_branch, project_commit, path):
 if __name__ == "__main__":
     logging.basicConfig(stream = sys.stdout, level = logging.WARNING)
     # Get project repository
-    remote_repo_url = getRepoURL()
-    
-    runProjectExecutable(remote_repo_url)
+    RemoteRepoUrl = GetRepoURL()
+
+    runProjectExecutable(RemoteRepoUrl)

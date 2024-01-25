@@ -1,4 +1,3 @@
-from colorama import Fore, Style
 from time import time
 import argparse
 import logging
@@ -6,10 +5,11 @@ import sys
 import os
 
 from common import *
+from process import *
 from git import *
 
 if __name__ != "__main__":
-    abort("This script is not meant to be imported, please run directly")
+    Abort("This script is not meant to be imported, please run directly")
 
 logging.basicConfig(stream = sys.stdout, level = logging.DEBUG)
 
@@ -33,13 +33,15 @@ def parse_arguments():
 
 # Get remote repository
 if len(sys.argv) > 1:
-    remote_repo_url = sys.argv[1]
+    RemoteRepoUrl = sys.argv[1]
 
 
-main_repo_name = getRepoNameFromURL(remote_repo_url)
+main_repo_name = GetRepoNameFromURL(RemoteRepoUrl)
 repo_dir = "/tmp/"+main_repo_name+"_"+str(time())
 
-ret = launchProcess("git clone \""+remote_repo_url+"\" \""+repo_dir+"\"")
+ret = LaunchProcess("git clone \""+RemoteRepoUrl+"\" \""+repo_dir+"\"")
+
+
 
 # Setup base structure
 repository_structure = [
@@ -50,37 +52,35 @@ repository_structure = [
     "executables",
     "executables/tests",
 ]
-launchProcess("mkdir -p "+(' '+repo_dir+'/').join(repository_structure))
+LaunchProcess("mkdir -p "+(' '+repo_dir+'/').join(repository_structure))
 
 # Setup empty dependencies
-launchProcess('echo "{}" > '+repo_dir+'/configs/configs.json')
+LaunchProcess('echo "{}" > '+repo_dir+'/configs/configs.json')
 
 # Setup template readme
-setupScript("repository/README.md", repo_dir+"/README.md", {"PROJECTNAME":main_repo_name})
+SetupScript("repository/README.md", repo_dir+"/README.md", {"PROJECTNAME":main_repo_name})
 
-setupScript("repository/gitIgnore", repo_dir+"/.gitignore")
-
-
+SetupScript("repository/gitIgnore", repo_dir+"/.gitignore")
 
 # Setup example CMakeLists.txt
-setupScript("examples/exampleCustomCMakeLists.txt", repo_dir+"/configs/CMakeLists.txt")
+SetupScript("examples/exampleCustomCMakeLists.txt", repo_dir+"/configs/CMakeLists.txt")
 
 # Setup example main test
-setupScript("examples/exampleTest.cpp", repo_dir+"/executables/tests/test.cpp", {"REPOSITORYNAME":main_repo_name})
+SetupScript("examples/exampleTest.cpp", repo_dir+"/executables/tests/test.cpp", {"REPOSITORYNAME":main_repo_name})
 
 # Setup example source
-setupScript("examples/exampleSource.cpp", repo_dir+"/code/source/exampleSource.cpp", {"REPOSITORYNAME":main_repo_name})
+SetupScript("examples/exampleSource.cpp", repo_dir+"/code/source/exampleSource.cpp", {"REPOSITORYNAME":main_repo_name})
 
 # Setup example header
-setupScript("examples/exampleHeader.hpp", repo_dir+"/code/headers/exampleHeader.hpp", {"REPOSITORYNAME":main_repo_name})
+SetupScript("examples/exampleHeader.hpp", repo_dir+"/code/headers/exampleHeader.hpp", {"REPOSITORYNAME":main_repo_name})
 
 os.chdir(repo_dir)
 
-launchVerboseProcess("git add *")
-launchVerboseProcess("git add -u")
-launchVerboseProcess("git add .gitignore")
+LaunchVerboseProcess("git add *")
+LaunchVerboseProcess("git add -u")
+LaunchVerboseProcess("git add .gitignore")
 
-status = Git.getStatus(repo_dir)
+status = Git.GetStatus(repo_dir)
 
 print(ColorFormat(Colors.Green, """
 Repository set up in """+repo_dir+""", verify and commit the changes
@@ -96,5 +96,5 @@ print(status)
 print("Dont use \" in your commit message")
 commit_message = input("[commit message >]")
 
-launchVerboseProcess('git commit -m "'+commit_message+'"')
-launchVerboseProcess("git push")
+LaunchVerboseProcess('git commit -m "'+commit_message+'"')
+LaunchVerboseProcess("git push")

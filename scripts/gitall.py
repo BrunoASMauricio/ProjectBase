@@ -1,102 +1,102 @@
 import sys
 
 from common import *
-from process import openBashOnDirectoryAndWait
+from process import OpenBashOnDirectoryAndWait
 from git import Git
-from git import GetGitPaths, getStatus, checkoutBranch, fullDirtyUpdate
-from git import fullCleanUpdate, globalCommit, globalPush, getRepoNameFromPath
+from git import GetGitPaths, GetStatus, CheckoutBranch, FullDirtyUpdate
+from git import FullCleanUpdate, GlobalCommit, GlobalPush, GetRepoNameFromPath
 
 def runOnLoadedRepos(project, function_to_run):
-    paths = GetRepositoryPaths(project.loaded_repos)
-    return runOnFolders(paths, function_to_run)
+    Paths = GetRepositoryPaths(project.LoadedRepos)
+    return RunOnFolders(Paths, function_to_run)
 
 def __handleGitStatus(project):
-    known_paths = GetRepositoryPaths(project.loaded_repos)
-    all_paths = GetGitPaths(project.paths["project_main"])
-    unknown_paths = [repo for repo in all_paths if repo not in known_paths]
+    KnownPaths = GetRepositoryPaths(project.LoadedRepos)
+    AllPaths = GetGitPaths(project.Paths["project_main"])
+    UnknownPaths = [repo for repo in AllPaths if repo not in KnownPaths]
 
     print("\nManaged repositories:")
-    dirty_known_repos = runOnFolders(known_paths, getStatus)
-    if IsEmptyOrNone(dirty_known_repos):
+    DirtyKnownRepos = RunOnFolders(KnownPaths, GetStatus)
+    if IsEmptyOrNone(DirtyKnownRepos):
         print("\tNone")
 
-    dirty_known_repos = RemoveNone(dirty_known_repos)
+    DirtyKnownRepos = RemoveNone(DirtyKnownRepos)
 
     print("\nUnmanaged repositories:")
-    dirty_unknown_repos = runOnFolders(unknown_paths, getStatus)
-    if IsEmptyOrNone(dirty_unknown_repos):
+    DirtyUnknownRepos = RunOnFolders(UnknownPaths, GetStatus)
+    if IsEmptyOrNone(DirtyUnknownRepos):
         print("\tNone")
 
-    dirty_unknown_repos = RemoveNone(dirty_unknown_repos)
+    DirtyUnknownRepos = RemoveNone(DirtyUnknownRepos)
 
     print("\nProject is ", end="")
-    if IsEmptyOrNone(dirty_known_repos):
+    if IsEmptyOrNone(DirtyKnownRepos):
         print(ColorFormat(Colors.Green, "clean"))
     else:
-        print(ColorFormat(Colors.Red, "dirty ("+str(len(dirty_known_repos))+": "+', '.join(dirty_known_repos)+")"))
+        print(ColorFormat(Colors.Red, "dirty ("+str(len(DirtyKnownRepos))+": "+', '.join(DirtyKnownRepos)+")"))
 
-    if not IsEmptyOrNone(dirty_unknown_repos):
+    if not IsEmptyOrNone(DirtyUnknownRepos):
         print("There are dirty unknown git repositories:")
-        print(ColorFormat(Colors.Red, "dirty ("+str(len(dirty_unknown_repos))+": "+', '.join(dirty_unknown_repos)+")"))
+        print(ColorFormat(Colors.Red, "dirty ("+str(len(DirtyUnknownRepos))+": "+', '.join(DirtyUnknownRepos)+")"))
 
 
-def __handleGitResetHard(project):
-    runOnLoadedRepos(project.loaded_repos, Git.resetHard)
+def __handleGitResetHard(Project):
+    runOnLoadedRepos(Project.LoadedRepos, Git.ResetHard)
 
-def __handleGitCleanUntracked(project):
-    runOnLoadedRepos(project.loaded_repos, Git.cleanUntracked)
+def __handleGitCleanUntracked(Project):
+    runOnLoadedRepos(Project.LoadedRepos, Git.CleanUntracked)
 
-def __handleGitCheckout(project):
+def __handleGitCheckout(Project):
     if len(sys.argv) > 3:
-        branch = sys.argv[3]
+        Branch = sys.argv[3]
     else:
-        branch = input("branch: ")
+        Branch = input("branch: ")
 
-    runOnLoadedRepos(project.loaded_repos, checkoutBranch, {"branch":branch})
+    runOnLoadedRepos(Project.LoadedRepos, CheckoutBranch, {"branch":Branch})
 
-def __handleDirtyGitUpdate(project):
-    runOnLoadedRepos(project.loaded_repos, fullDirtyUpdate)
+def __handleDirtyGitUpdate(Project):
+    runOnLoadedRepos(Project.LoadedRepos, FullDirtyUpdate)
 
-def __handleCleanGitUpdate(project):
-    runOnLoadedRepos(project.loaded_repos, fullCleanUpdate)
+def __handleCleanGitUpdate(Project):
+    runOnLoadedRepos(Project.LoadedRepos, FullCleanUpdate)
 
-def __handleGlobalCommit(project):
+def __handleGlobalCommit(Project):
     if len(sys.argv) > 3:
-        commit_message = sys.argv[3]
+        CommitMessage = sys.argv[3]
     else:
-        commit_message = input("commit message: ")
+        CommitMessage = input("commit message: ")
 
-    if commit_message == "":
+    if CommitMessage == "":
         print("Commit message cannot be empty")
     else:
-        runOnLoadedRepos(project.loaded_repos, globalCommit, {"commit_message":commit_message})
+        runOnLoadedRepos(Project.LoadedRepos, GlobalCommit, {"commit_message":CommitMessage})
 
 def __handleGlobalPush(project):
-    runOnLoadedRepos(project.loaded_repos, globalPush)
+    runOnLoadedRepos(project.LoadedRepos, GlobalPush)
 
 def __manageGitRepo(project):
-    known_paths = GetRepositoryPaths(project.loaded_repos)
-    all_paths = GetGitPaths(project.paths["project_main"])
-    unknown_paths = [repo for repo in all_paths if repo not in known_paths]
-    all_paths = known_paths + unknown_paths
+    KnownPaths = GetRepositoryPaths(project.LoadedRepos)
+    AllPaths = GetGitPaths(project.Paths["project_main"])
+    UnknownPaths = [repo for repo in AllPaths if repo not in KnownPaths]
+    AllPaths = KnownPaths + UnknownPaths
 
     print("What repo to manage:")
-    cwd = os.getcwd()
-    for path_id in range(len(all_paths)):
-        msg =  "[" + str(path_id) + "] "
-        msg += getRepoNameFromPath(all_paths[path_id]) + " ("
+    CurrentDirectory = os.getcwd()
+    for PathId in range(len(AllPaths)):
+        Message =  "[" + str(PathId) + "] "
+        Message += GetRepoNameFromPath(AllPaths[PathId]) + " ("
 
-        os.chdir(all_paths[path_id])
-        if Git.isRepositoryClean():
-            msg += ColorFormat(Colors.Green, "clean")
+        os.chdir(AllPaths[PathId])
+        if Git.IsRepositoryClean():
+            Message += ColorFormat(Colors.Green, "clean")
         else:
-            msg += ColorFormat(Colors.Red, "dirty")
+            Message += ColorFormat(Colors.Red, "dirty")
 
-        print(msg + ")")
+        print(Message + ")")
 
-    os.chdir(cwd)
-    user_input = input("[<] ")
-    openBashOnDirectoryAndWait(all_paths[int(user_input)])
+    os.chdir(CurrentDirectory)
+    UserInput = input("[<] ")
+    OpenBashOnDirectoryAndWait(AllPaths[int(UserInput)])
 
 GitallOperations = {
     "0": [__manageGitRepo             , "Manage single repo"],
@@ -116,25 +116,25 @@ def printOptions():
     print("\t"+ColorFormat(Colors.Green, "Ctrl+C to exit"))
 
 def runGitall(project):
-    option = None
+    Option = None
 
     # What option to run
     if len(sys.argv) > 2:
-        option = sys.argv[2]
+        Option = sys.argv[2]
 
     again = True
     while again:
         again = False
-        if option == None:
+        if Option == None:
             printOptions()
-            option = input("Option:")
+            Option = input("Option:")
 
-        if option in GitallOperations.keys():
-            GitallOperations[option][0](project)
+        if Option in GitallOperations.keys():
+            GitallOperations[Option][0](project)
 
         else:
             again = True
-        option = None
+        Option = None
 
         # If this script was called standalone and without arguments (assumed manual, )
         if len(sys.argv) == 2 and __name__ == "__main__":
@@ -142,5 +142,5 @@ def runGitall(project):
             again = True
 
 if __name__ == "__main__":
-    abort("Do not run this script as a standalone")
+    Abort("Do not run this script as a standalone")
 

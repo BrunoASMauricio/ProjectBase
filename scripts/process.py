@@ -1,196 +1,128 @@
 import os
-import sys
-import fcntl
 import re
 import pty
 import logging
 import traceback
 import subprocess
 import unicodedata
-from colorama import Fore, Style
-from common import ColorFormat, Colors
-
-#                           PIPE OPERATIONS
-def setPipeNonBlocking(pipe):
-    fd = pipe.fileno()
-    fl = fcntl.fcntl(fd, fcntl.F_GETFL)
-    fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
-
-def setPipeBlocking(pipe):
-    fd = pipe.fileno()
-    fl = fcntl.fcntl(fd, fcntl.F_GETFL)
-    fcntl.fcntl(fd, fcntl.F_SETFL, fl & (~ os.O_NONBLOCK))
-
-def getNextOutput(pipe, to_print=False):
-    # Same logic as for stdout above
-    returnal = ""
-    char_buffer = ""
-    # Used to look for \n's without \r's
-    prev_char = ""
-    new_char = "new_char"
-    # Read until there are no more chars
-    while new_char != "":
-        new_char = pipe.read(1)
-        # New char not empty
-        if new_char != "":
-            # Even on linux, sometimes \n does not perfrom carriager eturn
-            # So always force \r\n
-            if prev_char != "\r" and new_char == "\n":
-                new_char = "\r"+new_char
-
-            # User print()?
-            if to_print == True:
-                sys.stdout.write(new_char)
-
-            # Add to buffer
-            char_buffer += new_char
-            if (new_char == "\n" or new_char == "\r" or new_char == "\r\n") and char_buffer.strip() != "":
-                # Logging must be performed only on new lines (since it adds a tag to each output)
-                logging.debug("stderr: "+char_buffer)
-                char_buffer = ""
-
-            returnal += new_char
-        prev_char = new_char
-
-    return returnal
 
 #                           PROCESS OPERATIONS
 
-def remove_control_characters(s):
+def RemoveControlCharacters(Str):
     """
     Removes control characters. Keeps \\n except if trailing
     """
-    allowd_CC = ['\n', '\t']
-    new_s = "".join(ch for ch in s if (unicodedata.category(ch)[0] != "C" or ch in allowd_CC))
-    return new_s.rstrip()
+    AllowedCCs = ['\n', '\t']
+    NewStr = "".join(Ch for Ch in Str if (unicodedata.category(Ch)[0] != "C" or Ch in AllowedCCs))
+    return NewStr.rstrip()
 
-def remove_ansi_escape_characters(s):
-    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
-    return ansi_escape.sub("", s)
+def RemoveAnsiEscapeCharacters(Str):
+    AnsiEscape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+    return AnsiEscape.sub("", Str)
 
-def launchProcess(command, to_print=False):
+def LaunchProcess(Command, ToPrint=False):
     """
     Launch new process
 
-    to_print: whether to print
+    ToPrint: whether to print the output (process thinks it is in a TY)
 
     Returns:
         _type_: {"output":"<stdout>", "code": return code}
     """
 
-    returned = {"output": "", "code": ""}
+    Returned = {"output": "", "code": ""}
 
-    if command == "":
+    if Command == "":
         return {"output": "", "code": ""}
 
-    if to_print == True:
-        print(command)
-        output_bytes = []
+    if ToPrint == True:
+        print(Command)
+        OutputBytes = []
         def read(fd):
-            data = os.read(fd, 1024)
-            output_bytes.append(data)
-            return data
+            Data = os.read(fd, 1024)
+            OutputBytes.append(Data)
+            return Data
 
         # Remove all types of whitespace repetitions `echo  \t  a` -> `echo a`
-        command = " ".join(command.split())
+        Command = " ".join(Command.split())
 
-        returned["code"] = pty.spawn(['bash', '-c', command], read)
+        Returned["code"] = pty.spawn(['bash', '-c', Command], read)
 
-        if len(output_bytes) != 0:
-            output_bytes = b''.join(output_bytes)
-            output_utf8 = output_bytes.decode('utf-8')
-            no_escape_utf8 = remove_ansi_escape_characters(output_utf8)
-            clean_utf8 = remove_control_characters(no_escape_utf8)
+        if len(OutputBytes) != 0:
+            OutputBytes = b''.join(OutputBytes)
+            OutputUTF8 = OutputBytes.decode('utf-8')
+            NoEscapeUTF8 = RemoveAnsiEscapeCharacters(OutputUTF8)
+            CleanUTF8 = RemoveControlCharacters(NoEscapeUTF8)
 
-            returned["output"] = clean_utf8
+            Returned["output"] = CleanUTF8
         else:
-            returned["output"] = ""
+            Returned["output"] = ""
     else:
-        result = subprocess.run(['bash', '-c', command],
+        Result = subprocess.run(['bash', '-c', Command],
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)
-        returned["output"] = result.stdout.decode('utf-8')
-        returned["code"] = result.returncode
+        Returned["output"] = Result.stdout.decode('utf-8')
+        Returned["code"] = Result.returncode
 
-    return returned
+    return Returned
 
-def parseProcessResponse(response):
-    return remove_control_characters(response["output"].rstrip())
+def ParseProcessResponse(Response):
+    return RemoveControlCharacters(Response["output"].rstrip())
 
-def getProcessResponse(response):
-    responses = []
-    if response["output"] != "":
-        stdout_str = response["output"].lstrip().rstrip()
-        responses.append("output: [" + stdout_str + "]")
-
-    if len(responses) == 0:
-        responses.append(ColorFormat(Colors.Yellow, "NO OUTPUT"))
-
-    if response["code"]:
-        responses.append(ColorFormat(Colors.Magenta, "Code: ")+str(response["code"]))
-
-    return '\n'.join(responses)
-
-def openBashOnDirectoryAndWait(working_directory):
+def OpenBashOnDirectoryAndWait(WorkingDirectory):
     # Open a new Bash shell in the specified working directory
-    process = subprocess.Popen(['bash'], cwd=working_directory)
+    Process = subprocess.Popen(['bash'], cwd=WorkingDirectory)
 
     print("Close terminal when done (hit Ctrl+D or type exit)")
 
     # Wait for the Bash shell to be closed by the user
-    process.wait()
+    Process.wait()
 
 #                           PROCESS OUTPUT
 
-def launchSilentProcesses(commands):
-    output = []
-    for command in commands.split("\n"):
-        output.append(launchProcess(command))
-    return output
+def LaunchSilentProcess(Command):
+    return LaunchProcess(Command)
 
-def launchSilentProcess(command):
-    return launchProcess(command)
-
-def launchVerboseProcess(command):
-    ret =  launchProcess(command, True)
-    return ret
+def LaunchVerboseProcess(Command):
+    Returned =  LaunchProcess(Command, True)
+    return Returned
 
 """
-Changes to the given directory, launches the command in a forked process and
+Changes to the given directory, launches the Command in a forked process and
 returns the { "stdout": "..." , "code": "..."  } dictionary
 """
-def cdLaunchReturn(command, path=""):
-    if path != "":
-        cwd = os.getcwd()
-        os.chdir(path)
-        return_value = launchProcess(command)
-        os.chdir(cwd)
+def CDLaunchReturn(Command, Path=""):
+    if Path != "":
+        CurrentDirectory = os.getcwd()
+        os.chdir(Path)
+        ReturnValue = LaunchProcess(Command)
+        os.chdir(CurrentDirectory)
     else:
-        return_value = launchProcess(command)
+        ReturnValue = LaunchProcess(Command)
 
-    return return_value
+    return ReturnValue
 
 """
-Changes to the given directory, launches the command in a forked process and
+Changes to the given directory, launches the Command in a forked process and
 returns the parsed stdout.
-While the "output" returned is empty, tries again
+While the "output" Returned is empty, tries again
 """
-def multipleCDLaunch(command, path, attempts=3):
+def MultipleCDLaunch(Command, Path, Attempts=3):
     i = 0
-    output = None
-    thrown_ex = None
-    while (output == None or output == "") and i < attempts:
+    Output = None
+    ThrownException = None
+    while (Output == None or Output == "") and i < Attempts:
         try:
-            output = parseProcessResponse(cdLaunchReturn(command, path))
+            Output = ParseProcessResponse(CDLaunchReturn(Command, Path))
         except Exception as ex:
-            output = None
-            thrown_ex = ex
+            Output = None
+            ThrownException = ex
         i += 1
 
-    if output == None:
-        if thrown_ex != None:
+    if Output == None:
+        if ThrownException != None:
             logging.error(traceback.format_exc())
-            logging.error("multipleCDLaunch(" + command + ") exception with: " + str(thrown_ex))
-            raise thrown_ex
+            logging.error("MultipleCDLaunch(" + Command + ") exception with: " + str(ThrownException))
+            raise ThrownException
 
-    return output
+    return Output

@@ -4,344 +4,343 @@ import logging
 from time import time
 import os
 
-def repo_identifier(url, branch, commit, configs):
-    return str(url) + " " + str(branch) + " " + str(commit)+" "+str(configs)
+def RepoIdentifier(Url, branch, commit, configs):
+    return str(Url) + " " + str(branch) + " " + str(commit)+" "+str(configs)
     # Use hash of configs??
 
 """
 Performs operations on a single repository
 Is represented by a simple dictionary
 """
-class Repository(dict):
-    def reset(self, project, new_repo_id, url, branch, commit):
+class REPOSITORY(dict):
+    def Reset(self, Project, NewRepoId, Url, branch, commit):
         key_list = list(self.keys())
 
         for key in key_list:
             del self[key]
 
-        self.project = project
-        self.paths = self.project.paths
+        self.Project = Project
+        self.Paths = self.Project.Paths
 
-        self["url"] = url
-        self["id"] = new_repo_id
-        self["name"] = getRepoNameFromURL(url)
-        self["bare_tree_path"] = getRepoBareTreePath(url)
+        self["url"] = Url
+        self["id"] = NewRepoId
+        self["name"] = GetRepoNameFromURL(Url)
+        self["bare_tree_path"] = GetRepoBareTreePath(Url)
         self["branch"] = branch
         self["commit"] = commit
 
         # Where this repos source can be found
         self["source"] = None
-        
+
         # Where a .git can be found for this repo
         self["bare_path"] = None
 
 
-    def __init__(self, project, new_repo_id, url, branch=None, commit=None):
-        self.reset(project, new_repo_id, url, branch, commit)
+    def __init__(self, Project, NewRepoId, Url, Branch=None, Commit=None):
+        self.Reset(Project, NewRepoId, Url, Branch, Commit)
 
     """
     Checks if a given name and value pair exist in the configuration of this repository
     If value is None, just checks if it exists
     """
-    def checkConfig(self, name, value = None):
-        if value == None:
-            return name in self.keys()
-        return ((name in self.keys()) and (self[name] == value))
+    def CheckConfig(self, Name, Value = None):
+        if Value == None:
+            return Name in self.keys()
+        return ((Name in self.keys()) and (self[Name] == Value))
 
     """
     Load and parse a repositories configurations
     """
-    def loadRepo(self, dependent_configs=None):
+    def LoadRepo(self, DependentConfigs=None):
         logging.info("Loading repository "+self["name"])
 
         # Set/Get bare data
-        Git.setupBareData(self.paths[".gits"], self)
+        Git.SetupBareData(self.Paths[".gits"], self)
 
         # Check if repo is present in project structure
-        source_path = Git.findGitRepo(self.paths["project_code"], self["url"], self["commit"])
+        SourcePath = Git.FindGitRepo(self.Paths["project_code"], self["url"], self["commit"])
 
-        if source_path == None:
+        if SourcePath == None:
             # No source exists, create temporary worktree to extract configs
-            temp_repo_clone, temp_project_clone = createTemporaryRepository(self, dependent_configs)
+            TempRepoClone, TempProject_clone = CreateTemporaryRepository(self, DependentConfigs)
 
             # Relocate repository according to configs in temporary source
-            self["source"] = temp_repo_clone["source"]
-            self.loadConfigs(dependent_configs)
+            self["source"] = TempRepoClone["source"]
+            self.LoadConfigs(DependentConfigs)
 
             os.makedirs(self["full_local_path"], exist_ok=True)
 
             Git.addWorktree(self, self["full_local_path"])
 
-            deleteTemporaryRepository(temp_repo_clone, temp_project_clone)
+            deleteTemporaryRepository(TempRepoClone, TempProject_clone)
 
-            source_path = self["full_local_path"]
+            SourcePath = self["full_local_path"]
 
         # Reload metadata (only keep source)
-        self.reset(self.project, self["id"], self["url"], self["branch"], self["commit"])
-        self["source"] = source_path
+        self.Reset(self.Project, self["id"], self["url"], self["branch"], self["commit"])
+        self["source"] = SourcePath
 
-        self.loadConfigs(dependent_configs)
+        self.LoadConfigs(DependentConfigs)
 
-        self.__parseConfigs(self)
+        self.__ParseConfigs(self)
 
     # Load .json and set default variables
-    def loadConfigs(self, dependent_configs=None):
+    def LoadConfigs(self, DependentConfigs=None):
         # Try and load known configuration files appropriately
         if os.path.isdir(self["source"]+"/configs"):
-            confs = loadJsonFile(self["source"]+"/configs/configs.json", {})
-            if len(confs) != 0:
-                self.update(confs)
+            Configs = LoadJsonFile(self["source"]+"/configs/configs.json", {})
+            if len(Configs) != 0:
+                self.update(Configs)
 
-            confs = loadJsonFile(self["source"]+"/configs/build_configs.json", {})
-            if len(confs) != 0:
-                self.update(confs)
+            Configs = LoadJsonFile(self["source"]+"/configs/build_configs.json", {})
+            if len(Configs) != 0:
+                self.update(Configs)
 
             # No official release and already have backward compatibility issues :')
-            legacy_dependencie_config = loadJsonFile(self["source"]+"/configs/dependencies.json", {})
-            if len(legacy_dependencie_config) != 0:
-                self.update({"dependencies":legacy_dependencie_config})
+            LegacyDependencieConfig = LoadJsonFile(self["source"]+"/configs/dependencies.json", {})
+            if len(LegacyDependencieConfig) != 0:
+                self.update({"dependencies":LegacyDependencieConfig})
 
         # Use dependent configs if available
-        if dependent_configs != None and len(dependent_configs) != 0:
+        if DependentConfigs != None and len(DependentConfigs) != 0:
             logging.warning(self["name"]+" repository could not load configurations but has dependent configs. Using these")
-            self.update(dependent_configs)
+            self.update(DependentConfigs)
 
         # Check for the defaults
-        if not self.checkConfig("headers"):
+        if not self.CheckConfig("headers"):
             self["headers"] = "code/headers"
 
-        if not self.checkConfig("test_headers"):
+        if not self.CheckConfig("test_headers"):
             self["test_headers"] = "executables,executables/tests,tests"
 
-        if not self.checkConfig("local_path") or self["local_path"] == "":
-            self["local_path"] = self.paths["general_repository"]
+        if not self.CheckConfig("local_path") or self["local_path"] == "":
+            self["local_path"] = self.Paths["general_repository"]
 
-        if not self.checkConfig("flags") or self["flags"] == "":
+        if not self.CheckConfig("flags") or self["flags"] == "":
             self["flags"] = ""
 
-        self["full_local_path"] = self.paths["project_code"]+"/"+self["local_path"]+"/"+self["name"]
+        self["full_local_path"] = self.Paths["project_code"]+"/"+self["local_path"]+"/"+self["name"]
         self["full_local_path"] = self["full_local_path"].replace(" ","\ ")
         self["full_local_path"] = RemoveDuplicates(self["full_local_path"], "/")
 
-        if not self.checkConfig("dependencies") or self["dependencies"] == "":
+        if not self.CheckConfig("dependencies") or self["dependencies"] == "":
             self["dependencies"] = {}
 
         # Set dependency data appropriately
-        for dependency in self["dependencies"]:
-            if type(self["dependencies"][dependency]) != type({}):
-                logging.warning("Dependency "+dependency+" of "+self["name"]+" has wrong type: "+str(type(self["dependencies"][dependency]))+". Assuming its legacy and setting to empty commit and branch.")
-                self["dependencies"][dependency] = dict()
+        for Dependency in self["dependencies"]:
+            if type(self["dependencies"][Dependency]) != type({}):
+                logging.warning("Dependency "+Dependency+" of "+self["name"]+" has wrong type: "+str(type(self["dependencies"][Dependency]))+". Assuming its legacy and setting to empty commit and branch.")
+                self["dependencies"][Dependency] = dict()
 
-            self["dependencies"][dependency]["url"] = dependency
+            self["dependencies"][Dependency]["url"] = Dependency
 
-            if "commit" not in self["dependencies"][dependency]:
-                self["dependencies"][dependency]["commit"] = None
+            if "commit" not in self["dependencies"][Dependency]:
+                self["dependencies"][Dependency]["commit"] = None
 
-            if "branch" not in self["dependencies"][dependency]:
-                self["dependencies"][dependency]["branch"] = None
+            if "branch" not in self["dependencies"][Dependency]:
+                self["dependencies"][Dependency]["branch"] = None
 
-            if "configs" not in self["dependencies"][dependency]:
-                self["dependencies"][dependency]["configs"] = None
+            if "configs" not in self["dependencies"][Dependency]:
+                self["dependencies"][Dependency]["configs"] = None
 
     """
     Replace all config variables appropriately
     """
-    def __parseConfigs(self, configs):
-        logging.debug("\nparse configs for "+str(configs)+"\n")
+    def __ParseConfigs(self, Configs):
+        logging.debug("\nparse configs for "+str(Configs)+"\n")
 
-        if type(configs) == type([]):
-            for i in range(len(configs)):
-                config = configs[i]
-                if type(config) == type(""):
-                    config = self.__parseVariables(config)
-                    configs[i] = config
+        if type(Configs) == type([]):
+            for i in range(len(Configs)):
+                Config = Configs[i]
+                if type(Config) == type(""):
+                    Config = self.__ParseVariables(Config)
+                    Configs[i] = Config
 
-                elif type(config) == type([]):
-                    self.__parseConfigs(config)
+                elif type(Config) == type([]):
+                    self.__ParseConfigs(Config)
 
-                elif type(config) == type({}):
-                    self.__parseConfigs(config)
+                elif type(Config) == type({}):
+                    self.__ParseConfigs(Config)
 
-                elif config == None:
+                elif Config == None:
                     pass
                 else:
-                    logging.warning("unkown type "+str(type(config))+" for config "+str(config))
+                    logging.warning("unkown type "+str(type(Config))+" for config "+str(Config))
 
-        elif type(configs) == type({}) or type(configs) == Repository:
-            for i in configs:
+        elif type(Configs) == type({}) or type(Configs) == REPOSITORY:
+            for i in Configs:
                 if i == "dependencies": # Dependency configs are taken care by them
                     continue
 
-                config = configs[i]
-                if type(config) == type(""):
-                    config = self.__parseVariables(config)
-                    configs[i] = config
+                Config = Configs[i]
+                if type(Config) == type(""):
+                    Config = self.__ParseVariables(Config)
+                    Configs[i] = Config
 
-                elif type(config) == type([]):
-                    self.__parseConfigs(config)
+                elif type(Config) == type([]):
+                    self.__ParseConfigs(Config)
 
-                elif type(config) == type({}):
-                    self.__parseConfigs(config)
+                elif type(Config) == type({}):
+                    self.__ParseConfigs(Config)
 
-                elif config == None:
+                elif Config == None:
                     pass
                 else:
-                    logging.warning("unkown type "+str(type(config))+" for config "+str(config))
+                    logging.warning("unkown type "+str(type(Config))+" for config "+str(Config))
 
     # Replace known variables (surrounded with '$$') by the known values
-    def __parseVariables(self, data):
-        logging.debug("parsing variable "+str(data))
-        project_variables = {
-            "PROJECTPATH":  self.paths["project_main"]
+    def __ParseVariables(self, Data):
+        logging.debug("parsing variable "+str(Data))
+        ProjectVariables = {
+            "PROJECTPATH":  self.Paths["project_main"]
         }
 
-        for variable_name, variable_value in project_variables.items():
-            data = data.replace("$$"+variable_name+"$$", variable_value)
+        for VariableName, VariableValue in ProjectVariables.items():
+            Data = Data.replace("$$"+VariableName+"$$", VariableValue)
 
         if self != None:
-            repository_variables = {
+            RepositoryVariables = {
                 "REPOPATH":     self["full_local_path"],
-                "DATAPATH":     self.paths["data"]
+                "DATAPATH":     self.Paths["data"]
             }
-            for variable_name, variable_value in repository_variables.items():
-                data = data.replace("$$"+variable_name+"$$", variable_value)
+            for VariableName, VariableValue in RepositoryVariables.items():
+                Data = Data.replace("$$"+VariableName+"$$", VariableValue)
 
-        return data
+        return Data
 
-    def setup(self,):
+    def Setup(self,):
         print("Setting up repository: "+self["url"])
 
-        self.__setupCommandList()
-        self.__setupCMakeLists()
+        self.__SetupCommandList()
+        self.__SetupCMakeLists()
 
-    def hasFlag(self, flag):
+    def HasFlag(self, flag):
         if flag in self["flags"]:
             return True
         return False
 
-    def __runCommandList(self, command_list):
+    def __RunCommandList(self, command_list):
         for command_set_name in command_list:
             command_set = command_list[command_set_name]
             print("Command check: "+str(command_set["condition to proceed"]))
 
-            if parseProcessResponse(launchVerboseProcess(command_set["condition to proceed"])) == "":
+            if ParseProcessResponse(LaunchVerboseProcess(command_set["condition to proceed"])) == "":
                 print("Running commands "+str(command_set["command list"]))
-                launchVerboseProcess("set -xe && "+' && '.join(command_set["command list"]))
+                LaunchVerboseProcess("set -xe && "+' && '.join(command_set["command list"]))
 
-    def __setupCommandList(self):
-        if self.checkConfig("setup"):
-            self.__runCommandList(self["setup"])
+    def __SetupCommandList(self):
+        if self.CheckConfig("setup"):
+            self.__RunCommandList(self["setup"])
 
-    def before_build(self):
-        if self.checkConfig("before_build"):
-            self.__runCommandList(self["before_build"])
+    def BeforeBuild(self):
+        if self.CheckConfig("before_build"):
+            self.__RunCommandList(self["before_build"])
 
-    def after_build(self):
-        if self.checkConfig("after_build"):
-            self.__runCommandList(self["after_build"])
+    def AfterBuild(self):
+        if self.CheckConfig("after_build"):
+            self.__RunCommandList(self["after_build"])
 
-    def __setupCMakeLists(self):
-        if self.hasFlag("no auto build"):
+    def __SetupCMakeLists(self):
+        if self.HasFlag("no auto build"):
            return
 
-        directory_includes = [self["full_local_path"]+'/'+self["headers"]]
+        DirectoryIncludes = [self["full_local_path"]+'/'+self["headers"]]
 
-        link_libraries = []
+        LinkLibraries = []
 
-        for repo_id in self.project.loaded_repos:
-            url = repo_id.split(" ")[0]
+        for RepoId in self.Project.LoadedRepos:
+            Url = RepoId.split(" ")[0]
             # Do not self-import
-            if url == self["url"]:
+            if Url == self["url"]:
                 continue
 
-            repository = self.project.loaded_repos[repo_id]
-            include_entry = '\t'+repository["full_local_path"].replace(" ","\ ")+"/"+repository["headers"]
+            Repository = self.Project.LoadedRepos[RepoId]
+            IncludeEntry = '\t'+Repository["full_local_path"].replace(" ","\ ")+"/"+Repository["headers"]
 
             # Do not import twice
-            if include_entry in directory_includes:
+            if IncludeEntry in DirectoryIncludes:
                 continue
 
-            if repository["headers"] != "":
-                directory_includes.append(include_entry)
+            if Repository["headers"] != "":
+                DirectoryIncludes.append(IncludeEntry)
 
 
-            if not repository.hasFlag("independent project") and not repository.hasFlag("no auto build"):
-                link_libraries.append(repository["name"]+'_lib')
+            if not Repository.HasFlag("independent project") and not Repository.HasFlag("no auto build"):
+                LinkLibraries.append(Repository["name"]+'_lib')
 
         if self["test_headers"] != "":
-            test_headers = self["test_headers"].split(",")
-            test_headers = [self["full_local_path"]+"/"+header for header in test_headers]
+            TestHeaders = self["test_headers"].split(",")
+            TestHeaders = [self["full_local_path"] + "/" + Header for Header in TestHeaders]
         else:
-            test_headers = ""
+            TestHeaders = ""
 
 
         # Only add repo-wide CMakeLists.txt if one isn't already present
         # The function readlines() reads the file.
-        can_delete = False
-        repo_cmakelists = self["full_local_path"]+"/CMakeLists.txt"
-        if os.path.isfile(repo_cmakelists):
-            with open(repo_cmakelists) as f:
-                content = f.readlines()
+        CanDelete = False
+        RepoCmakeLists = self["full_local_path"]+"/CMakeLists.txt"
+        if os.path.isfile(RepoCmakeLists):
+            with open(RepoCmakeLists) as f:
+                Content = f.readlines()
 
-            if len(content) > 0 and "# PROJECTBASE" in content[0]:
-                can_delete = True
+            if len(Content) > 0 and "# PROJECTBASE" in Content[0]:
+                CanDelete = True
 
-            if can_delete:
-                os.unlink(repo_cmakelists)
+            if CanDelete:
+                os.unlink(RepoCmakeLists)
 
-        if not os.path.isfile(repo_cmakelists):
-            setupScript("repository/CMakeLists.txt", repo_cmakelists, {
+        if not os.path.isfile(RepoCmakeLists):
+            SetupScript("repository/CMakeLists.txt", RepoCmakeLists, {
                     "ADDLIBRARYTYPE": "",
                     "TARGETINCLUDETYPE": "PUBLIC",
-                    "INCLUDEREPOSITORYDIRECTORIES": '\n'.join(directory_includes),
-                    "LINKDEPENDENCIES": '\n'.join(link_libraries),
-                    "TEST_HEADER_INCLUDES": '\n'.join(test_headers)
+                    "INCLUDEREPOSITORYDIRECTORIES": '\n'.join(DirectoryIncludes),
+                    "LINKDEPENDENCIES": '\n'.join(LinkLibraries),
+                    "TEST_HEADER_INCLUDES": '\n'.join(TestHeaders)
                 })
 
-class FakeProject(dict):
-    def __init__(self, url, branch, commit):
+class FAKE_PROJECT(dict):
+    def __init__(self, Url, Branch, Commit):
 
-        name = getRepoNameFromURL(url)
+        Name = GetRepoNameFromURL(Url)
 
-        self.paths = get_paths(name)
-        self.paths["project_code"] = self.paths["temporary"] + "/" + name + ".ProjectBase"
+        self.Paths = GetProjectBasePaths(Name)
+        self.Paths["project_code"] = self.Paths["temporary"] + "/" + Name + ".ProjectBase"
 
         self.update({
-            "project_repo_name":    name,
-            "project_repo_url":     url,
-            "project_repo_branch":  branch,
-            "project_repo_commit":  commit,
+            "ProjectRepoName":    Name,
+            "ProjectRepoUrl":     Url,
+            "ProjectRepoBranch":  Branch,
+            "ProjectRepoCommit":  Commit,
         })
-        self.loaded_repos = {}
+        self.LoadedRepos = {}
 
-def createTemporaryRepository(repo, dependent_configs):
+def CreateTemporaryRepository(Repo, DependentConfigs):
     # Setup temp project
-    url = repo["url"]
-    branch= repo["branch"]
-    commit = repo["commit"]
+    Url = Repo["url"]
+    Branch= Repo["branch"]
+    Commit = Repo["commit"]
 
-    temp_project = FakeProject(url, branch, commit)
-    temp_repo = Repository(temp_project, "dont care", url, branch, commit, )
-    temp_repo.paths["project_code"]
-    #temp_repo.copy(repo)
-    temp_repo["bare_path"] = repo["bare_path"]
+    TempProject = FAKE_PROJECT(Url, Branch, Commit)
+    TempRepo = REPOSITORY(TempProject, "dont care", Url, Branch, Commit, )
+    TempRepo.Paths["project_code"]
+    #TempRepo.copy(Repo)
+    TempRepo["bare_path"] = Repo["bare_path"]
 
-    Git.addWorktree(temp_repo, repo.paths["temporary"]+"/"+repo["name"]+"_"+str(time()))
+    Git.addWorktree(TempRepo, Repo.Paths["temporary"]+"/"+Repo["name"]+"_"+str(time()))
 
     # Load metadata
-    temp_repo.loadConfigs(dependent_configs)
-    return temp_repo, temp_project
+    TempRepo.LoadConfigs(DependentConfigs)
+    return TempRepo, TempProject
 
 import shutil
 
-def deleteTemporaryRepository(temp_repo, temp_project):
-    global a
+def deleteTemporaryRepository(TempRepo, TempProject):
     # Relocate repository according to metadata
-    Git.delWorktree(temp_repo)
+    Git.DelWorktree(TempRepo)
     try:
-        shutil.rmtree(temp_project.paths["project_code"])
+        shutil.rmtree(TempProject.Paths["project_code"])
     except:
         pass
 
-    del temp_project
-    del temp_repo
+    del TempProject
+    del TempRepo
