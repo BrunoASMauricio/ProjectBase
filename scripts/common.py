@@ -59,6 +59,22 @@ def abort(message):
     sys.stdout.flush()
     sys.exit(-1)
 
+def RemoveDuplicates(str, substr):
+    lst = str.split(substr)
+    lst = [el for el in lst if len(el) != 0]
+
+    new_str = substr.join(lst)
+
+    # Special cases for string starting/ending with substr (will lead to empty
+    # element on either side
+    if str[0] == substr:
+        new_str = substr + new_str
+
+    if str[-1] == substr:
+        new_str = new_str + substr
+
+    return new_str
+
 def GetRepositoryPaths(loaded_repos):
     all_repositories = []
     for repo_id in loaded_repos:

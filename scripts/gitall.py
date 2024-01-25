@@ -95,7 +95,7 @@ def __manageGitRepo(project):
         print(msg + ")")
 
     os.chdir(cwd)
-    user_input = input(": ")
+    user_input = input("[<] ")
     openBashOnDirectoryAndWait(all_paths[int(user_input)])
 
 GitallOperations = {

@@ -121,6 +121,7 @@ class Repository(dict):
 
         self["full_local_path"] = self.paths["project_code"]+"/"+self["local_path"]+"/"+self["name"]
         self["full_local_path"] = self["full_local_path"].replace(" ","\ ")
+        self["full_local_path"] = RemoveDuplicates(self["full_local_path"], "/")
 
         if not self.checkConfig("dependencies") or self["dependencies"] == "":
             self["dependencies"] = {}
