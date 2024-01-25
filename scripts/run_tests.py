@@ -1,9 +1,11 @@
-import logging
+import subprocess
 import traceback
+import logging
 import sys
 
-from common import *
+from git import GetRepoURL
 from project import *
+from common import *
 
 
 def runProjectTests(RemoteRepoUrl, ProjectBranch, ProjetCommit):
