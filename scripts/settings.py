@@ -16,13 +16,17 @@ def LoadSettings(Project):
 
     ActiveProjectName = Project["ProjectRepoName"]
 
+    DefaultSettings = {
+        "Mode": "Debug"
+    }
+
     DefaultProjectSettings = {
-        ActiveProjectName: {
-            "Mode": "Debug"
-        }
+        ActiveProjectName: DefaultSettings
     }
 
     ProjectSettings =  LoadJsonFile(Project.Paths["project settings"], DefaultProjectSettings)
+    if ActiveProjectName not in ProjectSettings.keys():
+        ProjectSettings[ActiveProjectName] = DefaultSettings
     ActiveSettings = ProjectSettings[ActiveProjectName]
 
 def UpdateSettings(Project):
