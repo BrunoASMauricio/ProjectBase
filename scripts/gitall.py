@@ -6,9 +6,9 @@ from git import Git
 from git import GetGitPaths, GetStatus, CheckoutBranch, FullDirtyUpdate
 from git import FullCleanUpdate, GlobalCommit, GlobalPush, GetRepoNameFromPath
 
-def runOnLoadedRepos(project, function_to_run):
-    Paths = GetRepositoryPaths(project.LoadedRepos)
-    return RunOnFolders(Paths, function_to_run)
+def runOnLoadedRepos(LoadedRepos, function_to_run, ListArguments={}):
+    Paths = GetRepositoryPaths(LoadedRepos)
+    return RunOnFolders(Paths, function_to_run, ListArguments)
 
 def __handleGitStatus(project):
     KnownPaths = GetRepositoryPaths(project.LoadedRepos)
@@ -52,7 +52,7 @@ def __handleGitCheckout(Project):
     else:
         Branch = input("branch: ")
 
-    runOnLoadedRepos(Project.LoadedRepos, CheckoutBranch, {"branch":Branch})
+    runOnLoadedRepos(Project.LoadedRepos, CheckoutBranch, {"Branch":Branch})
 
 def __handleDirtyGitUpdate(Project):
     runOnLoadedRepos(Project.LoadedRepos, FullDirtyUpdate)
@@ -69,7 +69,7 @@ def __handleGlobalCommit(Project):
     if CommitMessage == "":
         print("Commit message cannot be empty")
     else:
-        runOnLoadedRepos(Project.LoadedRepos, GlobalCommit, {"commit_message":CommitMessage})
+        runOnLoadedRepos(Project.LoadedRepos, GlobalCommit, {"CommitMessage":CommitMessage})
 
 def __handleGlobalPush(project):
     runOnLoadedRepos(project.LoadedRepos, GlobalPush)

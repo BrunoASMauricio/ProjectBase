@@ -249,14 +249,14 @@ def GlobalPush():
     logging.info("Pushing "+GetRepoNameFromPath(os.getcwd()))
     PushStatus = LaunchVerboseProcess("git push -u origin $(git branch --show-current)")
 
-    if len(PushStatus["code"]) != 0:
+    if PushStatus["code"] != 0:
         # TODO Add possibility to open a terminal on that git
-        logging.error("Could not push!\n "+ColorFormat(Colors.Red, PushStatus["output"]))
+        logging.error("Could not push (" + ColorFormat(Colors.Yellow, str(PushStatus["code"])) + ")!\n "+ColorFormat(Colors.Red, PushStatus["output"]))
         logging.error("Local path: "+ColorFormat(Colors.Yellow, os.getcwd()))
         ForcePush = UserYesNoChoice("Try force push?")
         if ForcePush == True:
             PushStatus = LaunchVerboseProcess("git push -u origin $(git branch --show-current) -f")
-            if len(PushStatus["code"]) != 0:
+            if PushStatus["code"] != 0:
                 logging.error(ColorFormat(Colors.Red, "Could not force push ("+str(PushStatus["code"])+"): "+PushStatus["output"]))
 
 def UserChooseProject():

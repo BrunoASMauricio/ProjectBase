@@ -46,7 +46,7 @@ def LaunchProcess(Command, ToPrint=False):
         # Remove all types of whitespace repetitions `echo  \t  a` -> `echo a`
         Command = " ".join(Command.split())
 
-        Returned["code"] = pty.spawn(['bash', '-c', Command], read)
+        Returned["code"] = int(pty.spawn(['bash', '-c', Command], read))
 
         if len(OutputBytes) != 0:
             OutputBytes = b''.join(OutputBytes)
@@ -62,7 +62,7 @@ def LaunchProcess(Command, ToPrint=False):
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)
         Returned["output"] = Result.stdout.decode('utf-8')
-        Returned["code"] = Result.returncode
+        Returned["code"] = int(Result.returncode)
 
     return Returned
 
