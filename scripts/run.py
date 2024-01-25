@@ -20,17 +20,16 @@ def menu(project_url, project_path):
         build_banner = ColorFormat(Colors.Blue, "Release build")
     else:
         build_banner = ColorFormat(Colors.Yellow, "Debug build")
-        
-    print(Fore.YELLOW+"""
+
+    print(ColorFormat(Colors.Yellow, """
  ______              __              __   ______                    
 |   __ \.----.-----.|__|.-----.----.|  |_|   __ \.---.-.-----.-----.
 |    __/|   _|  _  ||  ||  -__|  __||   _|   __ <|  _  |__ --|  -__|
 |___|   |__| |_____||  ||_____|____||____|______/|___._|_____|_____|
                    |___|                                            
-"""  + Style.RESET_ALL + """
-"""  + build_banner + """
-(""" + project_url  + """)
-(""" + project_path + """)
+""" ) + build_banner + """
+("""  + project_url  + """)
+("""  + project_path + """)
 First argument must be the URL of the target project
 1) Generate project (build/pull from templates and configs)
 2) Build project (launches the build environment for this purpose)
@@ -40,7 +39,7 @@ First argument must be the URL of the target project
 8) Run gitall.sh script
 9) Clean binaries (remove all object and executable files, as well as the CMakeLists cache)
 0) Project settings
-"""+Fore.GREEN+"Ctrl + D to exit"+Style.RESET_ALL)
+"""+ColorFormat(Colors.Green, "Ctrl + D to exit") )
 
 def parse_arguments():
     # Initialize parser
