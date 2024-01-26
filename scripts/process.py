@@ -70,10 +70,11 @@ def ParseProcessResponse(Response):
     return RemoveControlCharacters(Response["output"].rstrip())
 
 def OpenBashOnDirectoryAndWait(WorkingDirectory):
+    print("Opening new slave terminal")
+    print("Close when finished (hit Ctrl+D or type exit)")
     # Open a new Bash shell in the specified working directory
     Process = subprocess.Popen(['bash'], cwd=WorkingDirectory)
 
-    print("Close terminal when done (hit Ctrl+D or type exit)")
 
     # Wait for the Bash shell to be closed by the user
     Process.wait()
