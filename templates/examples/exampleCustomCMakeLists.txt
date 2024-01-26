@@ -1,13 +1,5 @@
-### Available project variables
-
-# ${src_path}
-# Path to this repositories code/source
-# ${header_path}
-# Path to this repositories code/headers
-# ${dependency_header_includes}
-# List of dependency repository paths (including this repositories')
-# ${RepositoryName}
-# This repositorys' name
+### Check the available CMake variables here:
+###  https://gitlab.com/brunoasmauricio/ProjectBase/-/wikis/Configuration#build-system-cmake-configurations
 
 ## Add the executable sources for the main repository library: ${RepositoryName}_lib
 SET(repository_source_files
