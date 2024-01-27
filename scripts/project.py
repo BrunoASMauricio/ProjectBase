@@ -14,7 +14,7 @@ class PROJECT(dict):
 
         Name = GetRepoNameFromURL(Url)
 
-        self.Paths = GetProjectBasePaths(Name)
+        self.Paths = GetProjectPaths(Name)
 
         self.update({
             "ProjectRepoName":    Name,
@@ -67,11 +67,19 @@ class PROJECT(dict):
         for RepoId in self.LoadedRepos:
             self.LoadedRepos[RepoId].BeforeBuild()
 
-        # LaunchVerboseProcess('cmake --debug-output -DCMAKE_COLOR_MAKEFILE=ON -S '+self.Paths["project_main"]+' -B '+self.Paths["cmake"]+' && cmake --build '+self.Paths["cmake"])
         ActiveSettings = GetActiveSettings()
 
-        LaunchVerboseProcess('cmake -S '+self.Paths["project_main"]+' -B '+self.Paths["cmake"]+' -DBUILD_MODE='+ActiveSettings["Mode"]+' && cmake --build '+self.Paths["cmake"])
+        CMakeCommand =  'cmake'
+        # Dont complain about unused -D parameters, they are not mandatory
+        CMakeCommand += ' --no-warn-unused-cli'
+        CMakeCommand += ' -S '+self.Paths["project_main"]
+        CMakeCommand += ' -B '+self.Paths["cmake"]
+        CMakeCommand += ' -DBUILD_MODE='+ActiveSettings["Mode"]
+        CMakeCommand += ' -DPROJECT_NAME='+self["ProjectRepoName"]
+        CMakeCommand += ' -DPROJECT_BASE_SCRIPT_PATH='+self.Paths["scripts"]
+        CMakeCommand += ' && cmake --build '+self.Paths["cmake"]
 
+        LaunchVerboseProcess(CMakeCommand)
 
         for RepoId in self.LoadedRepos:
             self.LoadedRepos[RepoId].AfterBuild()
@@ -111,7 +119,7 @@ class PROJECT(dict):
 
             PresentRepos[Repo["full_local_path"]] = IncludeEntry
 
-        SetupScript("project/CMakeLists.txt", self.Paths["project_main"]+"/CMakeLists.txt", {
+        SetupTemplateScript("project/CMakeLists.txt", self.Paths["project_main"]+"/CMakeLists.txt", {
             "INCLUDEREPOSITORYCMAKELISTS":'\n'.join(PresentRepos.values())
         })
 

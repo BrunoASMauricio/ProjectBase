@@ -12,25 +12,22 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.28)
 #configure_file(TutorialConfig.h.in TutorialConfig.h)
 
 ### Obtain this projects' name
-get_filename_component(ProjectName ${CMAKE_CURRENT_LIST_DIR} NAME)
-string(REPLACE " " "_" ProjectName ${ProjectName})
-
-MESSAGE("Launching CMake for project ${ProjectName}")
+MESSAGE("Launching CMake for project ${PROJECT_NAME}")
 
 ### Set the project name
-PROJECT("${ProjectName}")
+PROJECT("${PROJECT_NAME}")
 ### Eventually add project version
-#project("${ProjectName}" VERSION 1.0)
+#project("${PROJECT_NAME}" VERSION 1.0)
 
 ### Add binary dir to project
-#target_include_directories(${ProjectName} PUBLIC
+#target_include_directories(${PROJECT_NAME} PUBLIC
 #                           "${PROJECT_BINARY_DIR}"
 #                           )
 
 ### Then add this to it
-#// the configured options and settings for ${ProjectName}
-##define ${ProjectName}_VERSION_MAJOR @${ProjectName}_VERSION_MAJOR@
-##define ${ProjectName}_VERSION_MINOR @${ProjectName}_VERSION_MINOR@
+#// the configured options and settings for ${PROJECT_NAME}
+##define ${PROJECT_NAME}_VERSION_MAJOR @${PROJECT_NAME}_VERSION_MAJOR@
+##define ${PROJECT_NAME}_VERSION_MINOR @${PROJECT_NAME}_VERSION_MINOR@
 
 
 ### c++20 standards
@@ -53,21 +50,46 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OBJS_PATH})
 SET(GCC_COMPILE_FLAGS "")
 SET(GLOBAL_COMPILE_FLAGS_BUILD "")
 
-### Default to debug build
-IF (NOT DEFINED BUILD_MODE)
-  SET(BUILD_MODE "DEBUG")
-ENDIF()
-
+###                 SETUP macros
+### Prepare a normal executable to be compiled
 MACRO(COMPILE_EXECUTABLE EXECUTABLE_NAME EXECUTABLE_SOURCE)
     ADD_EXECUTABLE(${EXECUTABLE_NAME} ${EXECUTABLE_SOURCE})
     TARGET_LINK_LIBRARIES(${EXECUTABLE_NAME} ${RepositoryName}_lib)
     LIST(APPEND EXECUTABLES ${EXECUTABLE_NAME})
 ENDMACRO()
 
+### Prepare a test executable to be compiled
 MACRO(COMPILE_TEST TEST_NAME TEST_SOURCE)
     ADD_EXECUTABLE(${TEST_NAME} ${TEST_SOURCE})
     TARGET_LINK_LIBRARIES(${TEST_NAME} ${RepositoryName}_lib)
     LIST(APPEND TESTS ${TEST_NAME})
+ENDMACRO()
+
+### Copy file over to tests folder
+MACRO(SETUP_GENERIC_FILE PATH_TYPE FILE_TYPE FILE_PATH)
+execute_process (
+    COMMAND python ${PROJECT_BASE_SCRIPT_PATH}/handle_script_setup.py ${PROJECT_NAME} ${PATH_TYPE} ${FILE_TYPE} ${FILE_PATH}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+ENDMACRO()
+
+MACRO(SETUP_TEST_DATA FILE_PATH)
+    SETUP_GENERIC_FILE("tests" "data" ${FILE_PATH})
+ENDMACRO()
+
+### Copy file over to executables folder
+MACRO(SETUP_EXECUTABLE_DATA FILE_PATH)
+    SETUP_GENERIC_FILE("executables" "data" ${FILE_PATH})
+ENDMACRO()
+
+### Copy file over to tests folder and make it executable
+MACRO(SETUP_TEST_EXEC FILE_PATH)
+SETUP_GENERIC_FILE("tests" "exec" ${FILE_PATH})
+ENDMACRO()
+
+### Copy file over to executables folder and make it executable
+MACRO(SETUP_EXECUTABLE_DATA FILE_PATH)
+    SETUP_GENERIC_FILE("executables" "exec" ${FILE_PATH})
 ENDMACRO()
 
 ### Include this modules' CMakeLists

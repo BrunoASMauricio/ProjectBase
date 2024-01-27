@@ -290,7 +290,7 @@ class REPOSITORY(dict):
                 os.unlink(RepoCmakeLists)
 
         if not os.path.isfile(RepoCmakeLists):
-            SetupScript("repository/CMakeLists.txt", RepoCmakeLists, {
+            SetupTemplateScript("repository/CMakeLists.txt", RepoCmakeLists, {
                     "ADDLIBRARYTYPE": "",
                     "TARGETINCLUDETYPE": "PUBLIC",
                     "INCLUDEREPOSITORYDIRECTORIES": '\n'.join(DirectoryIncludes),
@@ -303,7 +303,7 @@ class FAKE_PROJECT(dict):
 
         Name = GetRepoNameFromURL(Url)
 
-        self.Paths = GetProjectBasePaths(Name)
+        self.Paths = GetProjectPaths(Name)
         self.Paths["project_code"] = self.Paths["temporary"] + "/" + Name + ".ProjectBase"
 
         self.update({

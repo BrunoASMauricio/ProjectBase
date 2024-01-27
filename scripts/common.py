@@ -5,15 +5,20 @@ import traceback
 from time import sleep
 from colorama import Fore, Style
 
-def GetProjectBasePaths(ProjectName):
-    """
-    Builds and returns a dictionary with a projects' directory structure
-    indexed by a string describing each paths' purpose
-    """
+def GetProjetBasePath():
+    ProjectBaseScriptsPath = os.path.dirname(os.path.realpath(__file__))
+    return ProjectBaseScriptsPath.replace("/scripts", "")
+
+def GetProjectBasePaths():
+    ProjectBasePath = GetProjetBasePath()
+
     # Setup paths
     Paths = {
-        "project_base": os.getcwd(),
+        "project_base": ProjectBasePath,
     }
+
+    Paths["scripts"] = Paths["project_base"]+"/scripts"
+    Paths["templates"] = Paths["project_base"]+"/templates"
 
     Paths["configs"] = Paths["project_base"]+"/configs"
     Paths["project settings"] = Paths["configs"]+"/settings"
@@ -22,6 +27,15 @@ def GetProjectBasePaths(ProjectName):
     # Where the .git files are located
     Paths[".gits"] =        Paths["project_base"]+"/bare_gits"
     Paths["temporary"] =    Paths["project_base"]+"/temporary"
+
+    return Paths
+
+def GetProjectPaths(ProjectName):
+    """
+    Builds and returns a dictionary with a projects' directory structure
+    indexed by a string describing each paths' purpose
+    """
+    Paths = GetProjectBasePaths()
 
     # Projects main directory
     Paths["project_main"] = Paths["project_base"]+"/projects/" + ProjectName + ".ProjectBase"
@@ -50,7 +64,7 @@ def GetProjectBasePaths(ProjectName):
     return Paths
 
 def Abort(Message):
-    print(Message)
+    print(ColorFormat(Colors.Red, Message))
     sys.stdout.flush()
     sys.exit(-1)
 
@@ -110,16 +124,33 @@ def RunOnFolders(Paths, FunctionToRun, ListArguments={}):
 
     return OperationStatus
 
-# Sets up a script according to its template and the target variable substitutions
-def SetupScript(ScriptName, TargetFile, VariableSubstitutions={}):
+def SetupScript(SourceFile, TargetFile, VariableSubstitutions={}):
     WholeScript = ""
+
+    # Get rest of script
+    with open(SourceFile, 'r') as f:
+        WholeScript += f.read()
+
+    # Perform variable substitutions
+    for VariableName in VariableSubstitutions:
+        WholeScript = WholeScript.replace("$$"+VariableName+"$$", VariableSubstitutions[VariableName])
+
+    # Write script back
+    with open(TargetFile, 'w') as f:
+        f.write(WholeScript)
+
+# Sets up a script according to its template and the target variable substitutions
+def SetupTemplateScript(ScriptName, TargetFile, VariableSubstitutions={}):
+    WholeScript = ""
+    ProjectBasePaths = GetProjectBasePaths()
+
     if ScriptName.endswith(".sh"):
         # Get bash header
-        with open("templates/scriptHeader.sh", 'r') as f:
+        with open(ProjectBasePaths["templates"]+"/scriptHeader.sh", 'r') as f:
             WholeScript = f.read()+"\n\n"
 
     # Get rest of script
-    with open("templates/"+ScriptName, 'r') as f:
+    with open(ProjectBasePaths["templates"]+"/"+ScriptName, 'r') as f:
         WholeScript += f.read()
     # Perform variable substitutions
     for VariableName in VariableSubstitutions:

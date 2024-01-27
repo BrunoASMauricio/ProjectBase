@@ -58,21 +58,21 @@ LaunchProcess("mkdir -p "+(' '+repo_dir+'/').join(repository_structure))
 LaunchProcess('echo "{}" > '+repo_dir+'/configs/configs.json')
 
 # Setup template readme
-SetupScript("repository/README.md", repo_dir+"/README.md", {"PROJECTNAME":main_repo_name})
+SetupTemplateScript("repository/README.md", repo_dir+"/README.md", {"PROJECTNAME":main_repo_name})
 
-SetupScript("repository/gitIgnore", repo_dir+"/.gitignore")
+SetupTemplateScript("repository/gitIgnore", repo_dir+"/.gitignore")
 
 # Setup example CMakeLists.txt
-SetupScript("examples/exampleCustomCMakeLists.txt", repo_dir+"/configs/CMakeLists.txt")
+SetupTemplateScript("examples/exampleCustomCMakeLists.txt", repo_dir+"/configs/CMakeLists.txt")
 
 # Setup example main test
-SetupScript("examples/exampleTest.cpp", repo_dir+"/executables/tests/test.cpp", {"REPOSITORYNAME":main_repo_name})
+SetupTemplateScript("examples/exampleTest.cpp", repo_dir+"/executables/tests/test.cpp", {"REPOSITORYNAME":main_repo_name})
 
 # Setup example source
-SetupScript("examples/exampleSource.cpp", repo_dir+"/code/source/exampleSource.cpp", {"REPOSITORYNAME":main_repo_name})
+SetupTemplateScript("examples/exampleSource.cpp", repo_dir+"/code/source/exampleSource.cpp", {"REPOSITORYNAME":main_repo_name})
 
 # Setup example header
-SetupScript("examples/exampleHeader.hpp", repo_dir+"/code/headers/exampleHeader.hpp", {"REPOSITORYNAME":main_repo_name})
+SetupTemplateScript("examples/exampleHeader.hpp", repo_dir+"/code/headers/exampleHeader.hpp", {"REPOSITORYNAME":main_repo_name})
 
 os.chdir(repo_dir)
 
