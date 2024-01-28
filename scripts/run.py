@@ -93,7 +93,7 @@ Project = PROJECT(ProjectUrl, Projectbranch, ProjectCommit)
 LoadSettings(Project)
 
 # Setup auto complete
-HistoryFile = Project.Paths["command history"]
+HistoryFile = Project.Paths["history"]+"/commands"
 OldHistoryLength = setup_completer(HistoryFile)
 
 # Setup necessary loop variables

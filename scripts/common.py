@@ -22,7 +22,7 @@ def GetProjectBasePaths():
 
     Paths["configs"] = Paths["project_base"]+"/configs"
     Paths["project settings"] = Paths["configs"]+"/settings"
-    Paths["command history"] = Paths["configs"]+"/history"
+    Paths["history"] = Paths["configs"]+"/history"
 
     # Where the .git files are located
     Paths[".gits"] =        Paths["project_base"]+"/bare_gits"
