@@ -17,6 +17,7 @@ class Git():
         os.chdir(TargetDirectory)
 
         RemoteResult = LaunchProcess("git remote show")
+        RemoteResult["output"] = RemoteResult["output"].strip()
         if RemoteResult["code"] != 0:
             Message  = "No remote setup, cant fetch default branch for "
             Message += Git.GetURL() + " at " + TargetDirectory
@@ -36,7 +37,7 @@ class Git():
             raise Exception(Message)
 
         os.chdir(PresentDirectory)
-        return DefaultBranch["output"].split("/")[-1]
+        return DefaultBranch["output"].split("/")[-1].strip()
 
     @staticmethod
     def GetLocalCommit(TargetDirectory=""):
