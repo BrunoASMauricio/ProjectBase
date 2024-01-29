@@ -83,16 +83,26 @@ def __manageGitRepo(project):
     print("What repo to manage:")
     CurrentDirectory = os.getcwd()
     for PathId in range(len(AllPaths)):
+        Path = AllPaths[PathId]
         Message =  "[" + str(PathId) + "] "
-        Message += GetRepoNameFromPath(AllPaths[PathId]) + " ("
+        Message += GetRepoNameFromPath(Path) + " ("
 
-        os.chdir(AllPaths[PathId])
+        os.chdir(Path)
         if Git.IsRepositoryClean():
             Message += ColorFormat(Colors.Green, "clean")
         else:
             Message += ColorFormat(Colors.Red, "dirty")
+        Message += ") "
 
-        print(Message + ")")
+        # Managed or Unmanaged
+        if Path in KnownPaths:
+            Message += ColorFormat(Colors.Yellow, " (managed)")
+        else:
+            Message += ColorFormat(Colors.Magenta, " (unmanaged)")
+        
+        # Print path (relative to cwd)
+        Message += "." + Path.replace(project.Paths["project_main"], "")
+        print(Message)
 
     os.chdir(CurrentDirectory)
     UserInput = input("[<] ")
