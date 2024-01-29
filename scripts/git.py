@@ -13,10 +13,30 @@ class Git():
 
     @staticmethod
     def GetDefaultBranch(TargetDirectory=""):
-        DefaultBranch = MultipleCDLaunch("git branch", TargetDirectory, 1)
-        if DefaultBranch == "":
-            raise Exception("There is no default branch for " + Git.GetURL(TargetDirectory) + " cannot proceed")
-        return DefaultBranch.split("\n")[0].split(" ")[1]
+        PresentDirectory = os.getcwd()
+        os.chdir(TargetDirectory)
+
+        RemoteResult = LaunchProcess("git remote show")
+        if RemoteResult["code"] != 0:
+            Message  = "No remote setup, cant fetch default branch for "
+            Message += Git.GetURL() + " at " + TargetDirectory
+            Message += "Code: " + str(RemoteResult["code"]) + "\n"
+            Message += "Output: " + str(RemoteResult["output"]) + "\n"
+            os.chdir(PresentDirectory)
+            raise Exception(Message)
+
+        DefaultBranch = LaunchProcess("git remote show " + RemoteResult["output"] + " 2>/dev/null | sed -n '/HEAD branch/s/.*: //p'")
+
+        if DefaultBranch["code"] != 0:
+            Message  = "No default branch for "
+            Message += Git.GetURL() + " at " + TargetDirectory + "\n"
+            Message += "Code: " + str(DefaultBranch["code"]) + "\n"
+            Message += "Output: " + str(DefaultBranch["output"]) + "\n"
+            os.chdir(PresentDirectory)
+            raise Exception(Message)
+
+        os.chdir(PresentDirectory)
+        return DefaultBranch["output"].split("/")[-1]
 
     @staticmethod
     def GetLocalCommit(TargetDirectory=""):
