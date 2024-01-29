@@ -1,8 +1,9 @@
+import os
+import logging
+
 from git import *
 from common import *
-import logging
 from time import time
-import os
 
 def RepoIdentifier(Url, branch, commit, configs):
     return str(Url) + " " + str(branch) + " " + str(commit)+" "+str(configs)
