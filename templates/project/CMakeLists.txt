@@ -88,7 +88,7 @@ SETUP_GENERIC_FILE("tests" "exec" ${FILE_PATH})
 ENDMACRO()
 
 ### Copy file over to executables folder and make it executable
-MACRO(SETUP_EXECUTABLE_DATA FILE_PATH)
+MACRO(SETUP_EXECUTABLE_EXEC FILE_PATH)
     SETUP_GENERIC_FILE("executables" "exec" ${FILE_PATH})
 ENDMACRO()
 
