@@ -24,7 +24,7 @@ def PrintMenu(ProjectUrl, ProjectPath):
 
     print(ColorFormat(Colors.Yellow, """
  ______              __              __   ______
-|   __ \.----.-----.|__|.-----.----.| C|_|   __ \.---.-.-----.-----.
+|   __ \.----.-----.|__|.-----.----.|  |_|   __ \.---.-.-----.-----.
 |    __/|   _|  _  ||  ||  -__|  __||   _|   __ <|  _  |__ --|  -__|
 |___|   |__| |_____||  ||_____|____||____|______/|___._|_____|_____|
                    |___|
@@ -46,6 +46,8 @@ def ParseArguments():
     # Initialize parser
     Parser = argparse.ArgumentParser()
 
+    Parser.description = "Extra command line arguments are treated as commands for ProjectBase"
+
     # Adding optional argument
     Parser.add_argument("-u", "--url", help = "Root repository's URL", default=None, required=False)
 
@@ -56,6 +58,8 @@ def ParseArguments():
     Parser.add_argument("-b", "--branch",
                         help = "Root repository's branch",
                         default=None, required=False, type=str, nargs=1)
+
+    Parser.add_argument("-e", "--exit", action='store_true', help = "Exit after running command line arguments", default=False, required=False)
 
     # Read arguments from command line
     return Parser.parse_known_args()
@@ -115,8 +119,10 @@ while Condition == True:
         # Provide automated option selection from command line, as well as normal input
         if len(ActionArgs) != 0:
             NextInput = ActionArgs[0]
-            del ActionArgs[0]
         else:
+            # Called with --exit and no command, just exit
+            if ProjectArgs.exit == True:
+                sys.exit(0)
             NextInput = input("[<] ")
 
         #                       Setup project
@@ -160,6 +166,11 @@ while Condition == True:
 
         else:
             print("Unkown option "+str(NextInput))
+
+        if len(ActionArgs) != 0:
+            del ActionArgs[0]
+            if len(ActionArgs) == 0 and ProjectArgs.exit:
+                sys.exit(0)
 
         readline.append_history_file(readline.get_current_history_length() - OldHistoryLength, HistoryFile)
 
