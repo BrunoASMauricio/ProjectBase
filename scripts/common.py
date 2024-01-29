@@ -1,9 +1,26 @@
 import os
 import sys
 import json
+import difflib
 import traceback
 from time import sleep
 from colorama import Fore, Style
+
+def GetTextDiff(Text1, Text2):
+    diff = difflib.ndiff(Text1.split("\n"), Text2.split("\n"))
+    return ''.join(diff)
+
+def AppendToEnvVariable(EnvVariable, NewValue):
+    if NewValue == None:
+        NewValue = ""
+
+    if EnvVariable not in os.environ.keys():
+        os.environ[EnvVariable] = NewValue
+    else:
+        # Only append if not already present
+        BasicList = os.environ[EnvVariable].split(os.pathsep)
+        if NewValue not in BasicList:
+            os.environ[EnvVariable] = NewValue + os.pathsep + os.environ[EnvVariable]
 
 def GetProjetBasePath():
     ProjectBaseScriptsPath = os.path.dirname(os.path.realpath(__file__))
@@ -67,6 +84,10 @@ def Abort(Message):
     print(ColorFormat(Colors.Red, Message))
     sys.stdout.flush()
     sys.exit(-1)
+
+def Assert(Message, Condition):
+    if not Condition:
+        Abort(Message)
 
 def RemoveDuplicates(Str, SubStr):
     List = Str.split(SubStr)
