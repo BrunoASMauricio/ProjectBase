@@ -6,6 +6,8 @@ import traceback
 import subprocess
 import unicodedata
 
+from common import Abort, AppendToEnvVariable, GetTextDiff, ColorFormat, Colors
+
 #                           PROCESS OPERATIONS
 
 def RemoveControlCharacters(Str):
@@ -36,7 +38,7 @@ def LaunchProcess(Command, ToPrint=False):
         return {"output": "", "code": ""}
 
     if ToPrint == True:
-        print(Command)
+        print(ColorFormat(Colors.Blue, Command))
         OutputBytes = []
         def read(fd):
             Data = os.read(fd, 1024)
@@ -47,6 +49,9 @@ def LaunchProcess(Command, ToPrint=False):
         Command = " ".join(Command.split())
 
         Returned["code"] = int(pty.spawn(['bash', '-c', Command], read))
+
+        if ToPrint == True:
+            print(ColorFormat(Colors.Blue, "Returned " + str(Returned["code"])))
 
         if len(OutputBytes) != 0:
             OutputBytes = b''.join(OutputBytes)
@@ -82,11 +87,29 @@ def OpenBashOnDirectoryAndWait(WorkingDirectory):
 #                           PROCESS OUTPUT
 
 def LaunchSilentProcess(Command):
-    return LaunchProcess(Command)
+    return LaunchProcess(Command, False)
 
 def LaunchVerboseProcess(Command):
-    Returned =  LaunchProcess(Command, True)
-    return Returned
+    return LaunchProcess(Command, True)
+
+
+def AssertProcessRun(Process, ExpectedCode, ExpectedOutput):
+    Result = LaunchSilentProcess(Process)
+    if Result["code"] != ExpectedCode:
+        Message  = "Wrong code for process"
+        Message += "\n\tExpected " + str(ExpectedCode)
+        Message += "\n\tGot " + str(Result["code"])
+        Abort(Message)
+
+    if Result["output"] != ExpectedOutput:
+        TextDiff = GetTextDiff(ExpectedOutput, Result["output"])
+        Message  = "Wrong output for process"
+        Message += ''.join(TextDiff)
+        Message += "\t\nExpected (" + str(len(Result["output"])) + " characters)"
+        Message += "="*30 + "\n>"+Result["output"]+"<"
+        Message += "\t\nGot (" + str(len(ExpectedOutput)) + " characters)"
+        Message += "="*30 + "\n>"+ExpectedOutput+"<"
+        Abort(Message)
 
 """
 Changes to the given directory, launches the Command in a forked process and
@@ -127,3 +150,10 @@ def MultipleCDLaunch(Command, Path, Attempts=3):
             raise ThrownException
 
     return Output
+
+def PrepareExecEnvironment(Project):
+    AppendToEnvVariable("PYTHONPATH",       Project.Paths["scripts"])
+    AppendToEnvVariable("PB_ROOT_NAME",     Project["ProjectRepoName"])
+    AppendToEnvVariable("PB_ROOT_URL",      Project["ProjectRepoUrl"])
+    AppendToEnvVariable("PB_ROOT_BRANCH",   Project["ProjectRepoBranch"])
+    AppendToEnvVariable("PB_ROOT_COMMIT",   Project["ProjectRepoCommit"])
