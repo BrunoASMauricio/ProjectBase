@@ -18,7 +18,17 @@ def runProjectTests(RemoteRepoUrl, ProjectBranch, ProjetCommit):
 
     print("Running " + str(len(Tests)) + " tests in " + Project.Paths["tests"])
 
+    # Allow python scripts to use ProjectBase scripts
+    PrepareExecEnvironment(Project)
+
     for test in Tests:
+        # Must be fully executable
+        if test.stat().st_mode & 0o111 != 0o111:
+            continue
+
+        if not test.is_file():
+            continue
+
         TestName = test.name
         try:
             print(ColorFormat(Colors.Blue, "\n\tRUNNING "+TestName))

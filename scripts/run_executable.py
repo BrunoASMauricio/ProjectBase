@@ -1,5 +1,6 @@
-import logging
+import subprocess
 import traceback
+import logging
 import sys
 import re
 
@@ -9,15 +10,21 @@ from project import *
 
 def runProjectExecutable(RemoteRepoUrl, ProjectBranch, ProjectCommit, Path):
     #global completer
-    project = PROJECT(RemoteRepoUrl, ProjectBranch, ProjectCommit)
+    Project = PROJECT(RemoteRepoUrl, ProjectBranch, ProjectCommit)
 
     executables_available = []
 
-    os.chdir(project.Paths["project_main"])
+    os.chdir(Project.Paths["project_main"])
 
     index = 0
     print("Available executables to run, found in "+Path+" (Ctrl-C to exit):")
     for entry in os.scandir(Path):
+        # Must be fully executable
+        if entry.stat().st_mode & 0o111 != 0o111:
+            continue
+
+        if not entry.is_file():
+            continue
 
         print("\t["+str(index)+"] "+ColorFormat(Colors.Blue, entry.name))
         executables_available.append(entry.name)
@@ -52,6 +59,9 @@ def runProjectExecutable(RemoteRepoUrl, ProjectBranch, ProjectCommit, Path):
 
         BaseInput = user_input.split(' ')[0]
 
+        # Allow python scripts to use ProjectBase scripts
+        AppendToEnvVariable("PYTHONPATH", Project.Paths["scripts"])
+
         # Obtain target executable
         if(re.search(number_regex, BaseInput)):
             # By index
@@ -60,10 +70,10 @@ def runProjectExecutable(RemoteRepoUrl, ProjectBranch, ProjectCommit, Path):
             # By name
             if os.path.isfile(Path+"/"+BaseInput):
                 executable = Path+"/"+BaseInput
-            # By relative project name
-            elif os.path.isfile(project.Paths["project_main"]+"/"+BaseInput):
-                executable = project.Paths["project_main"]+"/"+BaseInput
-            # By absolute project name
+            # By relative Project name
+            elif os.path.isfile(Project.Paths["project_main"]+"/"+BaseInput):
+                executable = Project.Paths["project_main"]+"/"+BaseInput
+            # By absolute Project name
             elif os.path.isfile(BaseInput):
                 executable = BaseInput
             else:
@@ -94,7 +104,7 @@ def runProjectExecutable(RemoteRepoUrl, ProjectBranch, ProjectCommit, Path):
 
 if __name__ == "__main__":
     logging.basicConfig(stream = sys.stdout, level = logging.WARNING)
-    # Get project repository
+    # Get Project repository
     RemoteRepoUrl = GetRepoURL()
 
     runProjectExecutable(RemoteRepoUrl)
