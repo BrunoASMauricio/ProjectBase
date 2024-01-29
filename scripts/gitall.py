@@ -116,25 +116,17 @@ def printOptions():
     print("\t"+ColorFormat(Colors.Green, "Ctrl+C to exit"))
 
 def runGitall(project):
-    Option = None
-
-    # What option to run
-    if len(sys.argv) > 2:
-        Option = sys.argv[2]
-
     again = True
     while again:
         again = False
-        if Option == None:
-            printOptions()
-            Option = input("Option:")
+        printOptions()
+        NextInput = GetNextOption()
 
-        if Option in GitallOperations.keys():
-            GitallOperations[Option][0](project)
-
+        if NextInput in GitallOperations.keys():
+            GitallOperations[NextInput][0](project)
         else:
+            print("Unrecognized input: " + NextInput)
             again = True
-        Option = None
 
         # If this script was called standalone and without arguments (assumed manual, )
         if len(sys.argv) == 2 and __name__ == "__main__":

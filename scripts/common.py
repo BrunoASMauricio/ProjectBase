@@ -2,9 +2,58 @@ import os
 import sys
 import json
 import difflib
+import argparse
 import traceback
 from time import sleep
 from colorama import Fore, Style
+
+
+def ParseArguments():
+    # Initialize parser
+    Parser = argparse.ArgumentParser()
+
+    Parser.description = "Extra command line arguments are treated as commands for ProjectBase"
+
+    # Adding optional argument
+    Parser.add_argument("-u", "--url", help = "Root repository's URL", default=None, required=False)
+
+    Parser.add_argument("-c", "--commit",
+                        help = "Root repository's commit",
+                        default=None, required=False, nargs=1)
+
+    Parser.add_argument("-b", "--branch",
+                        help = "Root repository's branch",
+                        default=None, required=False, type=str, nargs=1)
+
+    Parser.add_argument("-e", "--exit", action='store_true', help = "Exit after running command line arguments", default=False, required=False)
+
+    # Read arguments from command line
+    return Parser.parse_known_args()
+
+ProjectArgs = None
+ActionArgs  = None
+def GetArguments():
+    global ProjectArgs
+    global ActionArgs
+    if ProjectArgs == None:
+        ProjectArgs, ActionArgs = ParseArguments()
+
+    return ProjectArgs, ActionArgs
+
+def GetNextOption():
+    global ProjectArgs
+    global ActionArgs
+    if len(ActionArgs) != 0:
+        NextInput = ActionArgs[0]
+        del ActionArgs[0]
+        print("[<A<] {" + NextInput + "}")
+    else:
+        # Called with --exit and no command, just exit
+        if ProjectArgs.exit == True:
+            sys.exit(0)
+        NextInput = input("[<] ")
+
+    return NextInput
 
 def GetTextDiff(Text1, Text2):
     diff = difflib.ndiff(Text1.split("\n"), Text2.split("\n"))

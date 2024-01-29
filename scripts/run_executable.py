@@ -38,7 +38,8 @@ def runProjectExecutable(RemoteRepoUrl, ProjectBranch, ProjectCommit, Path):
     print("Every space separated word in front of the first one will be passed as a parameter")
 
     try:
-        user_input = input("[<] ")
+        user_input = GetNextOption()
+        PrepareExecEnvironment(Project)
 
         # No input (Enter pressed)
         if len(user_input) == 0:

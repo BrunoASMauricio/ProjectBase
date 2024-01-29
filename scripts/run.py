@@ -1,6 +1,5 @@
 import traceback
 import logging
-import argparse
 import sys
 
 from completer import *
@@ -42,29 +41,6 @@ First argument must be the URL of the target project
 0) Project settings
 """+ColorFormat(Colors.Green, "Ctrl + D to exit") )
 
-def ParseArguments():
-    # Initialize parser
-    Parser = argparse.ArgumentParser()
-
-    Parser.description = "Extra command line arguments are treated as commands for ProjectBase"
-
-    # Adding optional argument
-    Parser.add_argument("-u", "--url", help = "Root repository's URL", default=None, required=False)
-
-    Parser.add_argument("-c", "--commit",
-                        help = "Root repository's commit",
-                        default=None, required=False, nargs=1)
-
-    Parser.add_argument("-b", "--branch",
-                        help = "Root repository's branch",
-                        default=None, required=False, type=str, nargs=1)
-
-    Parser.add_argument("-e", "--exit", action='store_true', help = "Exit after running command line arguments", default=False, required=False)
-
-    # Read arguments from command line
-    return Parser.parse_known_args()
-
-
 if __name__ != "__main__":
     Abort("This script is not meant to be imported, please run directly")
 
@@ -75,7 +51,7 @@ logging.basicConfig(stream = sys.stdout, level = logging.INFO)
 #               Setup project (main repository) data
 
 # Parse arguments
-ProjectArgs, ActionArgs = ParseArguments()
+ProjectArgs, ActionArgs = GetArguments()
 
 # Commit or branch
 if ProjectArgs.commit != None and ProjectArgs.branch != None:
@@ -116,14 +92,7 @@ while Condition == True:
 
     try:
 
-        # Provide automated option selection from command line, as well as normal input
-        if len(ActionArgs) != 0:
-            NextInput = ActionArgs[0]
-        else:
-            # Called with --exit and no command, just exit
-            if ProjectArgs.exit == True:
-                sys.exit(0)
-            NextInput = input("[<] ")
+        NextInput = GetNextOption()
 
         #                       Setup project
         if NextInput == "1":
@@ -166,11 +135,6 @@ while Condition == True:
 
         else:
             print("Unkown option "+str(NextInput))
-
-        if len(ActionArgs) != 0:
-            del ActionArgs[0]
-            if len(ActionArgs) == 0 and ProjectArgs.exit:
-                sys.exit(0)
 
         readline.append_history_file(readline.get_current_history_length() - OldHistoryLength, HistoryFile)
 
