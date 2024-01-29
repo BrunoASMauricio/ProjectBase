@@ -6,4 +6,4 @@ SET(repository_source_files
     ${src_path}/exampleSource.cpp
 )
 
-SETUP_TEST(${RepositoryName}_test ${REPO_PATH}/executables/tests/test.cpp)
+COMPILE_TEST(${RepositoryName}_test ${REPO_PATH}/executables/tests/test.cpp)
