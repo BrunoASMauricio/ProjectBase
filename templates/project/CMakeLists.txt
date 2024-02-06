@@ -98,6 +98,6 @@ $$INCLUDEREPOSITORYCMAKELISTS$$
 
 ## Activate compiler flags
 #add_definitions(${GCC_COMPILE_FLAGS})
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COMPILE_FLAGS}")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COMPILE_FLAGS} -g3 -O0 -Wno-missing-field-initializers -Wall -Wextra -Werror -Wconversion")
 
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GCC_COMPILE_FLAGS}")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GCC_COMPILE_FLAGS} -g3 -O0  -Wno-c90-c99-compat -Wno-missing-field-initializers -Wall -Wextra -Werror -Wconversion")
