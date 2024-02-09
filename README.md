@@ -60,6 +60,11 @@ ProjectBase is licensed under GNU General Public License Version 3
 
 ## TODO
 
+- [ ] Add some statistics (i.e. baregit vs direct clone sizes and time delta between first and second project setups)
+- [ ] Add screenshot or text block of ProjectBase banner in README
+- [ ] Update documentation
+- [ ] Allow the review of code when add/commiting ?
+- [ ] Try and setup git so normal pushes via single repo manipulation work as expected
 - [ ] Allow config customization when creating a new project with new.py
   - [ ] Initial directory
   - [ ] Initial dependencies
@@ -70,5 +75,9 @@ ProjectBase is licensed under GNU General Public License Version 3
 - [ ] Add support for some documentation system (i.e. doxygen)
 - [ ] Investigate necessity/feasibility of sending strings into code
 - [ ] gitall tasks
-  - [ ] Add single repo manipulation by providing a semi-independent console,
+  - [ ] Periodically fetch new data from repos
+  - [ ] Periodically remove non-existing worktrees
+  - [X] Add single repo manipulation by providing a semi-independent console,
 already in the relevant directory
+  - [ ] Improve detection of desync between baregit and upstream so push doesn't
+need to work on clean repos
