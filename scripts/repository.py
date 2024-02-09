@@ -245,7 +245,10 @@ class REPOSITORY(dict):
         if self.HasFlag("no auto build"):
            return
 
-        DirectoryIncludes = [self["full_local_path"]+'/'+self["headers"]]
+        if type(self["headers"]) == type([]):
+            DirectoryIncludes = [self["full_local_path"]+'/'+repo for repo in self["headers"]]
+        else:
+            DirectoryIncludes = [self["full_local_path"]+'/'+self["headers"]]
 
         LinkLibraries = []
 
@@ -256,14 +259,22 @@ class REPOSITORY(dict):
                 continue
 
             Repository = self.Project.LoadedRepos[RepoId]
-            IncludeEntry = '\t'+Repository["full_local_path"].replace(" ","\ ")+"/"+Repository["headers"]
+            if type(Repository["headers"]) == type([]):
+                IncludeEntry = ['\t'+Repository["full_local_path"].replace(" ","\ ")+"/"+repo for repo in Repository["headers"]]
+                # Do not import twice
+                if IncludeEntry in DirectoryIncludes:
+                    continue
 
-            # Do not import twice
-            if IncludeEntry in DirectoryIncludes:
-                continue
+                if Repository["headers"] != "":
+                    DirectoryIncludes += IncludeEntry
+            else:
+                IncludeEntry = '\t'+Repository["full_local_path"].replace(" ","\ ")+"/"+ Repository["headers"]
+                # Do not import twice
+                if IncludeEntry in DirectoryIncludes:
+                    continue
 
-            if Repository["headers"] != "":
-                DirectoryIncludes.append(IncludeEntry)
+                if Repository["headers"] != "":
+                    DirectoryIncludes.append(IncludeEntry)
 
 
             if not Repository.HasFlag("independent project") and not Repository.HasFlag("no auto build"):
