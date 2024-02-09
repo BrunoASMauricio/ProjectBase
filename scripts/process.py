@@ -115,14 +115,14 @@ def AssertProcessRun(Process, ExpectedCode, ExpectedOutput):
 Changes to the given directory, launches the Command in a forked process and
 returns the { "stdout": "..." , "code": "..."  } dictionary
 """
-def CDLaunchReturn(Command, Path=""):
+def CDLaunchReturn(Command, Path="", ToPrint=False):
     if Path != "":
         CurrentDirectory = os.getcwd()
         os.chdir(Path)
-        ReturnValue = LaunchProcess(Command)
+        ReturnValue = LaunchProcess(Command, ToPrint)
         os.chdir(CurrentDirectory)
     else:
-        ReturnValue = LaunchProcess(Command)
+        ReturnValue = LaunchProcess(Command, ToPrint)
 
     return ReturnValue
 
@@ -131,13 +131,13 @@ Changes to the given directory, launches the Command in a forked process and
 returns the parsed stdout.
 While the "output" Returned is empty, tries again
 """
-def MultipleCDLaunch(Command, Path, Attempts=3):
+def MultipleCDLaunch(Command, Path, ToPrint, Attempts=3):
     i = 0
     Output = None
     ThrownException = None
     while (Output == None or Output == "") and i < Attempts:
         try:
-            Output = ParseProcessResponse(CDLaunchReturn(Command, Path))
+            Output = ParseProcessResponse(CDLaunchReturn(Command, Path, ToPrint))
         except Exception as ex:
             Output = None
             ThrownException = ex

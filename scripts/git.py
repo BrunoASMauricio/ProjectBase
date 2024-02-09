@@ -8,8 +8,12 @@ OperationStatus = None
 
 class Git():
     @staticmethod
+    def Fetch(TargetDirectory=""):
+        CDLaunchReturn("git fetch origin '*:*'", TargetDirectory, True)
+
+    @staticmethod
     def GetURL(TargetDirectory=""):
-        return MultipleCDLaunch("git config --get remote.origin.url", TargetDirectory, 1)
+        return MultipleCDLaunch("git config --get remote.origin.url", TargetDirectory, False, 1)
 
     @staticmethod
     def GetDefaultBranch(TargetDirectory=""):
@@ -41,14 +45,15 @@ class Git():
 
     @staticmethod
     def GetLocalCommit(TargetDirectory=""):
-        return ParseProcessResponse(CDLaunchReturn("git rev-parse HEAD", TargetDirectory))
+        return ParseProcessResponse(CDLaunchReturn("git rev-parse HEAD",TargetDirectory))
 
     @staticmethod
     def GetRemoteCommit(TargetDirectory=""):
         return ParseProcessResponse(CDLaunchReturn("git rev-parse `git branch -r --sort=committerdate | tail -1`", TargetDirectory))
+
     @staticmethod
     def GetStatus(TargetDirectory=""):
-        return MultipleCDLaunch("git status", TargetDirectory, 10)
+        return MultipleCDLaunch("git status", TargetDirectory, False, 10)
 
     @staticmethod
     def ResetHard(TargetDirectory=""):
@@ -161,6 +166,7 @@ class Git():
             CDLaunchReturn("git worktree add "+Repo["source"]+" --track -f --checkout -b "+LocalName+" "+CommitIsh, Repo["bare_path"])
 
             CDLaunchReturn('git config --add remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"', Repo["source"])
+            CDLaunchReturn("git fetch origin '*:*'", Repo["source"])
 
             # Ensure git push is for upstream
             CDLaunchReturn("git config push.default upstream", Repo["source"])

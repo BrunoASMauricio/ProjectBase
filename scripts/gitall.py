@@ -10,6 +10,9 @@ def runOnLoadedRepos(LoadedRepos, function_to_run, ListArguments={}):
     Paths = GetRepositoryPaths(LoadedRepos)
     return RunOnFolders(Paths, function_to_run, ListArguments)
 
+def __handleFetch(Project):
+    runOnLoadedRepos(Project.LoadedRepos, Git.Fetch)
+
 def __handleGitStatus(project):
     KnownPaths = GetRepositoryPaths(project.LoadedRepos)
     AllPaths = GetGitPaths(project.Paths["project_main"])
@@ -111,13 +114,14 @@ def __manageGitRepo(project):
 GitallOperations = {
     "0": [__manageGitRepo             , "Manage single repo"],
     "1": [__handleGitStatus           , "Get status"],
-    "2": [__handleGitResetHard        , "Fully reset/Clean"],
+    "2": [__handleFetch               , "Update repository metadata"],
     "3": [__handleGitCleanUntracked   , "Clean untracked"],
     "4": [__handleGitCheckout         , "Checkout a branch where it exists"],
     "5": [__handleDirtyGitUpdate      , "Pull only the clean repos"],
     "6": [__handleCleanGitUpdate      , "Clean and Pull everything"],
     "7": [__handleGlobalCommit        , "Add, Commit and Local push"],
-    "8": [__handleGlobalPush          , "Push to remote repositories"]
+    "8": [__handleGlobalPush          , "Push to remote repositories"],
+    "9": [__handleGitResetHard        , "Fully reset/Clean"]
 }
 
 def printOptions():
@@ -125,7 +129,7 @@ def printOptions():
         print("\t"+key+") "+GitallOperations[key][1])
     print("\t"+ColorFormat(Colors.Green, "Ctrl+C to exit"))
 
-def runGitall(project):
+def runGitall(Project):
     again = True
     while again:
         again = False
@@ -133,7 +137,7 @@ def runGitall(project):
         NextInput = GetNextOption()
 
         if NextInput in GitallOperations.keys():
-            GitallOperations[NextInput][0](project)
+            GitallOperations[NextInput][0](Project)
         else:
             print("Unrecognized input: " + NextInput)
             again = True
