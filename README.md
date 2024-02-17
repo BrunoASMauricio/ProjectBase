@@ -1,5 +1,27 @@
 # ProjectBase
 
+```text
+ ______              __              __   ______
+|   __ \.----.-----.|__|.-----.----.|  |_|   __ \.---.-.-----.-----.
+|    __/|   _|  _  ||  ||  -__|  __||   _|   __ <|  _  |__ --|  -__|
+|___|   |__| |_____||  ||_____|____||____|______/|___._|_____|_____|
+                   |___|
+Debug build
+(<Projects' URL>)
+(<Projects' Path>)
+First argument must be the URL of the target project
+1) Generate project (build/pull from templates and configs)
+2) Build project (launches the build environment for this purpose)
+3) Run project executable
+4) Run all tests
+5) Run single test
+8) Run gitall.sh script
+9) Clean binaries (remove all object and executable files, as well as the CMakeLists cache)
+0) Project settings
+Ctrl + D to exit
+[<] 
+```
+
 ProjecBase helps managing a codebase composed of several code snippets or
 libraries.
 
@@ -61,6 +83,7 @@ ProjectBase is licensed under GNU General Public License Version 3
 ## TODO
 
 - [ ] Add some statistics (i.e. baregit vs direct clone sizes and time delta between first and second project setups)
+- [ ] Find a way to identify repositories without using URLs (different URLs can point to the same repo)
 - [ ] Add screenshot or text block of ProjectBase banner in README
 - [ ] Update documentation
 - [ ] Allow the review of code when add/commiting ?
