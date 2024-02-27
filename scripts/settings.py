@@ -17,7 +17,8 @@ def LoadSettings(Project):
     ActiveProjectName = Project["ProjectRepoName"]
 
     DefaultSettings = {
-        "Mode": "Debug"
+        "Mode": "Debug",
+        "Clone Type": "https"
     }
 
     DefaultProjectSettings = {
@@ -40,22 +41,51 @@ def __ToggleMode(Project):
     else:
         ActiveSettings["Mode"] = "Release"
 
-Settings = {}
+def __ToggleSSH(Project):
+    global ActiveSettings
 
-def PrintSettings():
-    global Settings
-    for key in Settings:
-        print("\t"+key+") "+Settings[key][1])
-    print("\t"+ColorFormat(Colors.Green, "Ctrl+C to exit"))
+    if ActiveSettings["Clone Type"] == "https":
+        ActiveSettings["Clone Type"] = "ssh"
+    else:
+        ActiveSettings["Clone Type"] = "https"
+
+    Project.SetCloneType(ActiveSettings["Clone Type"])
+
+SettingsOptions = {
+    "Mode": [__ToggleMode, {
+                            "Release": "Change from Release to Debug",
+                            "Debug":   "Change from Debug to Release"
+                            }
+            ],
+    "Clone Type":   [__ToggleSSH,   {
+                                    "https": "Change from http to git",
+                                    "ssh":   "Change from git to http"
+                                    }
+                    ]
+}
+
 
 def MainSettingsMenu(Project):
+    global ActiveSettings
 
-    if ActiveSettings["Mode"] == "Release":
-        Settings["1"] = [__ToggleMode , "Change from Release to Debug"]
-    else:
-        Settings["1"] = [__ToggleMode , "Change from Debug to Release"]
+    OptionIndex = 0
+    for OptionKey in SettingsOptions.keys():
+        MenuText = ""
+        # Possible values
+        OptionValues = SettingsOptions[OptionKey][1]
+        MenuText += "\t" + str(OptionIndex) + ") [" + OptionKey + "]\t"
 
-    PrintSettings()
-    Setting = input("[<] ")
+        # If set, choose the appropriate text
+        # Otherwise just choose the first one
+        if OptionKey in ActiveSettings.keys():
+            MenuText += OptionValues[ActiveSettings[OptionKey]]
+        else:
+            MenuText += list(OptionValues.values())[0]
 
-    Settings[Setting][0](Project)
+        print(MenuText)
+
+        OptionIndex = OptionIndex + 1
+
+    Setting = int(input("[<] "))
+
+    list(SettingsOptions.values())[Setting][0](Project)

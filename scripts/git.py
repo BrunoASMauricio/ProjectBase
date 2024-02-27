@@ -1,3 +1,4 @@
+from settings import GetActiveSettings
 from process import *
 from common import *
 import datetime
@@ -69,6 +70,11 @@ class Git():
 
     @staticmethod
     def FindGitRepo(BaseFolder, Url, Commit=None):
+        if Url.startswith("git@"):
+            OtherUrl = SSHToUrl(Url)
+        else:
+            OtherUrl = UrlToSSH(Url)
+
         for SubFolder in os.listdir(BaseFolder):
             FullPath = BaseFolder+"/"+SubFolder
             # Only look for directories
@@ -79,7 +85,7 @@ class Git():
                     # Assume url is the same (until we can suppress username and
                     # pass request
                     PathUrl = Git.GetURL(FullPath)
-                    if Url == PathUrl:
+                    if Url == PathUrl or OtherUrl == PathUrl:
                         PathCommit = Git.GetLocalCommit(FullPath)
                         if Commit == None:
                             return FullPath
@@ -95,12 +101,12 @@ class Git():
     @staticmethod
     # Setup a git repositorys' bare data
     def SetupBareData(BareGits, Repo):
-        ProjectArgs, ActionArgs = GetArguments()
+        ActiveSettings = GetActiveSettings()
         BareGit = Git.FindGitRepo(BareGits, Repo["url"])
         if BareGit == None:
             logging.info('Cloning repository data into '+BareGits)
 
-            if ProjectArgs.ssh == True:
+            if ActiveSettings["Clone Type"] == "ssh":
                 LaunchProcess('git clone "'+UrlToSSH(Repo["url"])+'" "'+BareGits+"/"+Repo["bare_tree_path"]+'" --bare')
             else:
                 LaunchProcess('git clone "'+Repo["url"]+'" "'+BareGits+"/"+Repo["bare_tree_path"]+'" --bare')
@@ -396,3 +402,34 @@ def GetGitPaths(BasePath):
             GitRepos = GitRepos + GetGitPaths(BasePath+"/"+Inode)
 
     return GitRepos
+
+"""
+From: https://<git repo>/<path el 1>/<path el 2>/<path el 3>/<path el 4>
+To: git@<git repo>:<path el 1>/<path el 2>/<path el 3>/<path el 4>.git
+"""
+def UrlToSSH(Url):
+    if "https" not in Url:
+        raise Exception("Cannot convert "+Url)
+
+    if Url.endswith(".git"):
+        Url = Url[:-4]
+
+    # split and remove repeated  '/'
+    Spl = [ x for x in Url.split("/") if len(x) != 0]
+    return "git@" + Spl[1] + ":" + '/'.join(Spl[2:])+".git"
+
+"""
+From: git@<git repo>:<path el 1>/<path el 2>/<path el 3>/<path el 4>.git
+To: https://<git repo>/<path el 1>/<path el 2>/<path el 3>/<path el 4>
+"""
+def SSHToUrl(GitSSH):
+    if "git" not in GitSSH:
+        return GitSSH
+
+    Head, Path = GitSSH.split(":")
+    Remote = Head.split("@")[1]
+
+    if Path.endswith(".git"):
+        Path = Path[:-4]
+
+    return "https://" + Remote + "/" + Path

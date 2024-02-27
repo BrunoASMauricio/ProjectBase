@@ -13,7 +13,7 @@ from gitall import runGitall
 
 from project import PROJECT
 
-def PrintMenu(ProjectUrl, ProjectPath, ProjectArgs):
+def PrintMenu(ProjectUrl, ProjectPath):
     ActiveSettings = GetActiveSettings()
     BuildBanner = ""
     if ActiveSettings["Mode"] == "Release":
@@ -21,7 +21,7 @@ def PrintMenu(ProjectUrl, ProjectPath, ProjectArgs):
     else:
         BuildBanner = ColorFormat(Colors.Yellow, "Debug build")
     
-    if ProjectArgs.ssh == True:
+    if ActiveSettings["Clone Type"] == "ssh":
         CloneType = ColorFormat(Colors.Magenta, "ssh access")
     else:
         CloneType = ColorFormat(Colors.Cyan, "http[s] access")
@@ -90,7 +90,7 @@ while Condition == True:
     # Reset directory
     os.chdir(StarterDirectory)
 
-    PrintMenu(ProjectUrl, Project.Paths["project_main"], ProjectArgs)
+    PrintMenu(ProjectUrl, Project.Paths["project_main"])
 
     if NextInput != -1:
         print("Previous command: "+str(NextInput))

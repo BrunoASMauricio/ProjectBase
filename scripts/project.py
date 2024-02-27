@@ -83,6 +83,29 @@ class PROJECT(dict):
 
         for RepoId in self.LoadedRepos:
             self.LoadedRepos[RepoId].AfterBuild()
+    
+    def SetCloneType(self, CloneType):
+        logging.info("Changing project repositories to "+CloneType)
+        AllRepos = GetGitPaths(self.Paths["project_main"])
+
+        for Repo in AllRepos:
+            PrevUrl = Git.GetURL(Repo)
+
+            if CloneType == "ssh":
+                # Already in git
+                if PrevUrl.startswith("git@"):
+                    continue
+                Url = UrlToSSH(PrevUrl)
+            else:
+                # Already in https
+                if PrevUrl.startswith("https"):
+                    continue
+                Url = SSHToUrl(PrevUrl)
+
+            CDLaunchReturn("git remote rm origin; git remote add origin " + Url, Repo, True)
+
+        # for RepoId in self.LoadedRepos:
+        #     self.LoadedRepos[RepoId].Setup()
 
     # Delete project binaries and cached build artifacts
     def Clean(self):
