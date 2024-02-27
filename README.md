@@ -98,6 +98,7 @@ ProjectBase is licensed under GNU General Public License Version 3
 - [ ] Add support for some documentation system (i.e. doxygen)
 - [ ] Investigate necessity/feasibility of sending strings into code
 - [ ] gitall tasks
+  - [ ] Failed clones should automatically be cleaned up
   - [ ] Do not perform `cd` for every git operation
   - [ ] Periodically fetch new data from repos
   - [ ] Periodically remove non-existing worktrees
