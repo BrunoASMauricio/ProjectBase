@@ -24,14 +24,14 @@ def LoadSettings(Project):
         ActiveProjectName: DefaultSettings
     }
 
-    ProjectSettings =  LoadJsonFile(Project.Paths["project settings"], DefaultProjectSettings)
+    ProjectSettings =  LoadJsonFile(Project.Paths["configs"]+"/settings", DefaultProjectSettings)
     if ActiveProjectName not in ProjectSettings.keys():
         ProjectSettings[ActiveProjectName] = DefaultSettings
     ActiveSettings = ProjectSettings[ActiveProjectName]
 
 def UpdateSettings(Project):
     global ProjectSettings
-    DumpJsonFile(ProjectSettings, Project.Paths["project settings"])
+    DumpJsonFile(ProjectSettings, Project.Paths["configs"]+"/settings")
 
 def __ToggleMode(Project):
     global ActiveSettings
