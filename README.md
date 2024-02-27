@@ -98,8 +98,10 @@ ProjectBase is licensed under GNU General Public License Version 3
 - [ ] Add support for some documentation system (i.e. doxygen)
 - [ ] Investigate necessity/feasibility of sending strings into code
 - [ ] gitall tasks
+  - [ ] Do not perform `cd` for every git operation
   - [ ] Periodically fetch new data from repos
   - [ ] Periodically remove non-existing worktrees
+  - [ ] Add option for custom command to run on all repos
   - [X] Add single repo manipulation by providing a semi-independent console,
 already in the relevant directory
   - [ ] Improve detection of desync between baregit and upstream so push doesn't
