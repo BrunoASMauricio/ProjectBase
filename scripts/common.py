@@ -27,6 +27,8 @@ def ParseArguments():
 
     Parser.add_argument("-e", "--exit", action='store_true', help = "Exit after running command line arguments", default=False, required=False)
 
+    Parser.add_argument("-s", "--ssh", action='store_true', help = "Use ssh instead of http[s]", default=False, required=False)
+
     # Read arguments from command line
     return Parser.parse_known_args()
 
@@ -43,10 +45,12 @@ def GetArguments():
 def GetNextOption():
     global ProjectArgs
     global ActionArgs
+
     if len(ActionArgs) != 0:
+        # Next automated action
         NextInput = ActionArgs[0]
         del ActionArgs[0]
-        print("[<A<] {" + NextInput + "}")
+        print("[< Auto <] {" + NextInput + "}")
     else:
         # Called with --exit and no command, just exit
         if ProjectArgs.exit == True:
@@ -266,13 +270,15 @@ class Colors(Enum):
     Blue = 2
     Yellow = 3
     Green = 4
-    Magenta = 5
+    Cyan = 5
+    Magenta = 6
 
 ColorDict = {
     Colors.Red: Fore.RED,
     Colors.Blue: Fore.BLUE,
     Colors.Yellow: Fore.YELLOW,
     Colors.Green: Fore.GREEN,
+    Colors.Cyan: Fore.CYAN,
     Colors.Magenta: Fore.MAGENTA
 }
 
@@ -292,3 +298,12 @@ def UserYesNoChoice(Message):
         Answer = False
 
     return Answer
+
+# https://<git repo>/<path el 1>/<path el 2>/<path el 3>/<path el 4>
+# git@<git repo>:<path el 1>/<path el 2>/<path el 3>/<path el 4>.git
+def UrlToSSH(Url):
+    if "http" not in Url:
+        return Url
+    Spl = [ x for x in Url.split("/") if len(x) != 0]
+    return "git@" + Spl[1] + ":" + '/'.join(Spl[2:])+".git"
+

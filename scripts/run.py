@@ -13,13 +13,18 @@ from gitall import runGitall
 
 from project import PROJECT
 
-def PrintMenu(ProjectUrl, ProjectPath):
+def PrintMenu(ProjectUrl, ProjectPath, ProjectArgs):
     ActiveSettings = GetActiveSettings()
     BuildBanner = ""
     if ActiveSettings["Mode"] == "Release":
         BuildBanner = ColorFormat(Colors.Blue, "Release build")
     else:
         BuildBanner = ColorFormat(Colors.Yellow, "Debug build")
+    
+    if ProjectArgs.ssh == True:
+        CloneType = ColorFormat(Colors.Magenta, "ssh access")
+    else:
+        CloneType = ColorFormat(Colors.Cyan, "http[s] access")
 
     print(ColorFormat(Colors.Yellow, """
  ______              __              __   ______
@@ -28,7 +33,7 @@ def PrintMenu(ProjectUrl, ProjectPath):
 |___|   |__| |_____||  ||_____|____||____|______/|___._|_____|_____|
                    |___|
 """ ) + BuildBanner + """
-("""  + ProjectUrl  + """)
+("""  + ProjectUrl  + """ - """+CloneType+""")
 ("""  + ProjectPath + """)
 First argument must be the URL of the target project
 1) Generate project (build/pull from templates and configs)
@@ -85,7 +90,7 @@ while Condition == True:
     # Reset directory
     os.chdir(StarterDirectory)
 
-    PrintMenu(ProjectUrl, Project.Paths["project_main"])
+    PrintMenu(ProjectUrl, Project.Paths["project_main"], ProjectArgs)
 
     if NextInput != -1:
         print("Previous command: "+str(NextInput))

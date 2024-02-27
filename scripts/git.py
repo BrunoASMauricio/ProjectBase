@@ -95,10 +95,16 @@ class Git():
     @staticmethod
     # Setup a git repositorys' bare data
     def SetupBareData(BareGits, Repo):
+        ProjectArgs, ActionArgs = GetArguments()
         BareGit = Git.FindGitRepo(BareGits, Repo["url"])
         if BareGit == None:
             logging.info('Cloning repository data into '+BareGits)
-            LaunchProcess('git clone "'+Repo["url"]+'" "'+BareGits+"/"+Repo["bare_tree_path"]+'" --bare')
+
+            if ProjectArgs.ssh == True:
+                LaunchProcess('git clone "'+UrlToSSH(Repo["url"])+'" "'+BareGits+"/"+Repo["bare_tree_path"]+'" --bare')
+            else:
+                LaunchProcess('git clone "'+Repo["url"]+'" "'+BareGits+"/"+Repo["bare_tree_path"]+'" --bare')
+
 
             Repo["bare_path"] = BareGits + "/" + Repo["bare_tree_path"]
 
