@@ -103,6 +103,7 @@ while Condition == True:
         if NextInput == "1":
             Project.Load()
             Project.Setup()
+            Project.MakeCompileJson()
 
         #                       Build project
         elif NextInput == "2":
