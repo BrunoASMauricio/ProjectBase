@@ -56,6 +56,11 @@ class PROJECT(dict):
 
             self.__LoadRepo(Dependency["url"], Dependency["branch"], Dependency["commit"], Dependency["configs"])
 
+    # Create compile_commpands.json file used tor IDES and linting tools
+    def MakeCompileJson(self):
+       compileCommandsStr = "cd " +self.Paths["project_main"]+ "  &&  cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 CMakeLists.txt"
+       LaunchVerboseProcess(compileCommandsStr)
+
     # Setup project scripts
     def Setup(self):
         for RepoId in self.LoadedRepos:
