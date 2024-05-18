@@ -9,6 +9,7 @@ from git import *
 
 from run_executable import runProjectExecutable
 from run_tests import runProjectTests
+from run_linter import runLinter
 from gitall import runGitall
 
 from project import PROJECT
@@ -41,6 +42,7 @@ First argument must be the URL of the target project
 3) Run project executable
 4) Run all tests
 5) Run single test
+6) Run linter
 8) Run gitall.sh script
 9) Clean binaries (remove all object and executable files, as well as the CMakeLists cache)
 0) Project settings
@@ -121,6 +123,13 @@ while Condition == True:
         #                    Run single test
         elif NextInput == "5":
             runProjectExecutable(ProjectUrl, Projectbranch, ProjectCommit, Project.Paths["tests"])
+
+        elif NextInput == "6":
+            # Only run load here if there was no previous load
+            if len(Project.LoadedRepos) == 0:
+                Project.Load()
+
+            runLinter(Project)
 
         #                       Run gitall
         elif NextInput == "8":
