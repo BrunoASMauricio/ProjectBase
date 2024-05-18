@@ -125,7 +125,11 @@ while Condition == True:
             runProjectExecutable(ProjectUrl, Projectbranch, ProjectCommit, Project.Paths["tests"])
 
         elif NextInput == "6":
-            runLinter(ProjectUrl, Projectbranch, ProjectCommit)
+            # Only run load here if there was no previous load
+            if len(Project.LoadedRepos) == 0:
+                Project.Load()
+
+            runLinter(Project)
 
         #                       Run gitall
         elif NextInput == "8":

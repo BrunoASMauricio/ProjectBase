@@ -6,6 +6,7 @@
 # See https://llvm.org/LICENSE.txt for license information.
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #
+# Changes were made to better integrate clang-format functionality in Myth flows
 # ===-----------------------------------------------------------------------===#
 # FIXME: Integrate with clang-tidy-diff.py
  
@@ -204,6 +205,7 @@ def apply_fixes(args, clang_apply_replacements_binary, tmpdir):
     if args.style:
         invocation.append("-style=" + args.style)
     invocation.append(tmpdir)
+    print(invocation)
     subprocess.call(invocation)
  
  
@@ -254,6 +256,16 @@ def main():
         "clang-tidy and clang-apply-replacements in "
         "$PATH or in your build directory."
     )
+
+    parser.add_argument(
+        "-mythmode",
+        default="linter",
+        help="The myth mode on how to run the script."
+        " linter: performs clang-tidy linter."
+        " format: performs clang-format generating tmp files where formatting differences are found."
+        " clean: clean tmp files where format changes are found",
+    )
+
     parser.add_argument(
         "-allow-enabling-alpha-checkers",
         action="store_true",
@@ -261,6 +273,10 @@ def main():
     )
     parser.add_argument(
         "-clang-tidy-binary", metavar="PATH", help="path to clang-tidy binary"
+    )
+
+    parser.add_argument(
+        "-clang-format-binary", metavar="PATH", help="path to clang-format binary"
     )
     parser.add_argument(
         "-clang-apply-replacements-binary",
@@ -468,7 +484,7 @@ def main():
     files = set(
         [make_absolute(entry["file"], entry["directory"]) for entry in database]
     )
- 
+
     # Filter source files from compilation database.
     if args.source_filter:
         try:
@@ -481,7 +497,7 @@ def main():
             traceback.print_exc()
             sys.exit(1)
         files = {f for f in files if source_filter_re.match(f)}
- 
+
     max_task = args.j
     if max_task == 0:
         max_task = multiprocessing.cpu_count()
@@ -490,68 +506,122 @@ def main():
     file_name_re = re.compile("|".join(args.files))
  
     return_code = 0
-    try:
-        # Spin up a bunch of tidy-launching threads.
-        task_queue = queue.Queue(max_task)
-        # List of files with a non-zero return code.
-        failed_files = []
-        lock = threading.Lock()
-        for _ in range(max_task):
-            t = threading.Thread(
-                target=run_tidy,
-                args=(
-                    args,
-                    clang_tidy_binary,
-                    export_fixes_dir,
-                    build_path,
-                    task_queue,
-                    lock,
-                    failed_files,
-                ),
-            )
-            t.daemon = True
-            t.start()
- 
-        # Fill the queue with files.
-        for name in files:
-            if file_name_re.search(name):
-                task_queue.put(name)
- 
-        # Wait for all threads to be done.
-        task_queue.join()
-        if len(failed_files):
-            return_code = 1
- 
-    except KeyboardInterrupt:
-        # This is a sad hack. Unfortunately subprocess goes
-        # bonkers with ctrl-c and we start forking merrily.
-        print("\nCtrl-C detected, goodbye.")
+
+    if(args.mythmode == "linter"): #Eun clang tidy
+        try:
+            # Spin up a bunch of tidy-launching threads.
+            task_queue = queue.Queue(max_task)
+            # List of files with a non-zero return code.
+            failed_files = []
+            lock = threading.Lock()
+            for _ in range(max_task):
+                t = threading.Thread(
+                    target=run_tidy,
+                    args=(
+                        args,
+                        clang_tidy_binary,
+                        export_fixes_dir,
+                        build_path,
+                        task_queue,
+                        lock,
+                        failed_files,
+                    ),
+                )
+                t.daemon = True
+                t.start()
+    
+            # Fill the queue with files.
+            for name in files:
+                if file_name_re.search(name):
+                    task_queue.put(name)
+    
+            # Wait for all threads to be done.
+            task_queue.join()
+            if len(failed_files):
+                return_code = 1
+    
+        except KeyboardInterrupt:
+            # bonkers with ctrl-c and we start forking merrily.
+            print("\nCtrl-C detected, goodbye.")
+            if delete_fixes_dir:
+                shutil.rmtree(export_fixes_dir)
+            os.kill(0, 9)
+             # This is a sad hack. Unfortunately subprocess goes
+        
+        if combine_fixes:
+            print("Writing fixes to " + args.export_fixes + " ...")
+            try:
+                merge_replacement_files(export_fixes_dir, args.export_fixes)
+            except:
+                print("Error exporting fixes.\n", file=sys.stderr)
+                traceback.print_exc()
+                return_code = 1
+    
+        if args.fix:
+            print("Applying fixes ...")
+            try:
+                apply_fixes(args, clang_apply_replacements_binary, export_fixes_dir)
+            except:
+                print("Error applying fixes.\n", file=sys.stderr)
+                traceback.print_exc()
+                return_code = 1
+    
         if delete_fixes_dir:
             shutil.rmtree(export_fixes_dir)
-        os.kill(0, 9)
- 
-    if combine_fixes:
-        print("Writing fixes to " + args.export_fixes + " ...")
-        try:
-            merge_replacement_files(export_fixes_dir, args.export_fixes)
-        except:
-            print("Error exporting fixes.\n", file=sys.stderr)
-            traceback.print_exc()
-            return_code = 1
- 
-    if args.fix:
-        print("Applying fixes ...")
-        try:
-            apply_fixes(args, clang_apply_replacements_binary, export_fixes_dir)
-        except:
-            print("Error applying fixes.\n", file=sys.stderr)
-            traceback.print_exc()
-            return_code = 1
- 
-    if delete_fixes_dir:
-        shutil.rmtree(export_fixes_dir)
-    sys.exit(return_code)
- 
+        sys.exit(return_code)
+    elif(args.mythmode == "format") : # Run clang formatter
+        clang_format_binary = find_binary(args.clang_format_binary, "clang-format", build_path)
+
+        invocation = [clang_format_binary]
+
+        files_to_format = [ ]
+        for file in files:
+            file_invocation = invocation[:]
+            file_invocation.append(file)
+            file_invocation.append("--style=Microsoft")
+
+            
+            dirname = os.path.dirname(file) 
+            filenamenoext = os.path.splitext(os.path.basename(file))[0]
+            tmp_file = dirname+"/"+filenamenoext +"_clang_format_tmp"
+
+            diff_invocation = ["diff"]
+            diff_invocation.append(file)
+            diff_invocation.append(tmp_file)
+
+            print("----------------------------------------")
+            print("difference between Clang format and Files")
+            print(file_invocation)
+            print(diff_invocation)
+            print("----------------------------------------")
+            with open(tmp_file, "w+") as outfile:
+                 subprocess.run(file_invocation, stdout=outfile)
+
+            try:
+                subprocess.check_call(diff_invocation)
+                clean_temp_invocation = ["rm"]
+                clean_temp_invocation.append(tmp_file)
+                subprocess.run(clean_temp_invocation)
+            except subprocess.CalledProcessError as grepexc:                                                                                                   
+                files_to_format.append(file)
+
+        print("Files where formatter can be applied see tmp created files in same location you can then delete all tmp with other option")
+        for file in files_to_format:
+            print(file)
+    elif(args.mythmode == "clean"): # Delete Tmp clang-format files
+        print("Deleting Tmp clang-format Files")
+        for file in files:
+            dirname = os.path.dirname(file) 
+            filenamenoext = os.path.splitext(os.path.basename(file))[0]
+            tmp_file = dirname+"/"+filenamenoext +"_clang_format_tmp"
+
+            file_invocation = ["rm"]
+            file_invocation.append("-f")
+            file_invocation.append(tmp_file)
+            subprocess.run(file_invocation)
+    
+
+       
  
 if __name__ == "__main__":
     main()

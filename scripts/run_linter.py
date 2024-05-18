@@ -1,37 +1,63 @@
 from project import *
 from common import *
 
-def runLinter(RemoteRepoUrl, ProjectBranch, ProjetCommit):
-    #global completer
-    Project = PROJECT(RemoteRepoUrl, ProjectBranch, ProjetCommit)
+def printOptions():
+    for key in linterallOperations:
+        print("\t"+key+") "+linterallOperations[key][1])
+    print("\t"+ColorFormat(Colors.Green, "Ctrl+C to exit"))
 
+def check_project_json(Project):
     compile_commands_json = Project.Paths["project_main"] + "/compile_commands.json"
     if not os.path.exists(compile_commands_json ):
       print("File compile_commands.json does not exist in " + compile_commands_json )
+      return 0
+    return 1
 
-    # Allow python scripts to use ProjectBase scripts
+def __runlinter(Project):
+  if(check_project_json(Project)):
+      # Allow python scripts to use ProjectBase scripts
     PrepareExecEnvironment(Project)
-
-    print("Select linting options")
-
-    print("[1] Runs clang-tidy in all project files")
-    print("[2] TODO Runs clang-tidy in dirty project files")
-
-    print("[4] TODO Runs clang-format in all project files without performing changes")
-    print("[5] TODO Runs clang-format in dirty project files without performing changes")
-
-    print("[7] TODO Runs clang-format in all project files performing changes")
-    print("[8] TODO Runs clang-format in dirty project files performing changes")
-    # Run linter On all Files
-    runClangTidy = "cd " +Project.Paths["project_main"]+ "  &&  python ../../scripts/run-clang-tidy.py -use-color -export-fixes clang_tidy_fixes.yaml"
-
-    # Appply fixes (Apply clang-formated in all files)
-   
+    runClangTidy = "cd " +Project.Paths["project_main"]+ "  &&  python ../../scripts/run-clang-tidy.py -use-color -format -style Microsoft -mythmode=linter"
     LaunchVerboseProcess( runClangTidy )
 
-if __name__ == "__main__":
-    logging.basicConfig(stream = sys.stdout, level = logging.WARNING)
-    # Get project repository
-    RemoteRepoUrl = GetRepoURL()
+def __runformat(Project):
+  if(check_project_json(Project)):
+      # Allow python scripts to use ProjectBase scripts
+    PrepareExecEnvironment(Project)
+    runClangTidy = "cd " +Project.Paths["project_main"]+ "  &&  python ../../scripts/run-clang-tidy.py -use-color -format -style Microsoft -mythmode=format"
+    LaunchVerboseProcess( runClangTidy )
 
-    runLinter(RemoteRepoUrl)
+def __cleanfiles(Project):
+  if(check_project_json(Project)):
+      # Allow python scripts to use ProjectBase scripts
+    PrepareExecEnvironment(Project)
+    runClangTidy = "cd " +Project.Paths["project_main"]+ "  &&  python ../../scripts/run-clang-tidy.py -use-color -format -style Microsoft -mythmode=clean"
+    LaunchVerboseProcess( runClangTidy )
+
+linterallOperations = {
+    "0": [__runlinter             , "Runs clang-tidy linter in all project files"],
+    "1": [__runformat           , "Runs clang-format in all project files creating tmp files when they exist format unconformities"],
+    "2": [__cleanfiles               , "Clean all tmp_files created by option 2"]
+}
+
+def runLinter(Project):
+    again = True
+    while again:
+        again = False
+        printOptions()
+        NextInput = GetNextOption()
+
+        if NextInput in linterallOperations.keys():
+            linterallOperations[NextInput][0](Project)
+        else:
+            print("Unrecognized input: " + NextInput)
+            again = True
+
+        # If this script was called standalone and without arguments (assumed manual, )
+        if len(sys.argv) == 2 and __name__ == "__main__":
+            # An option was selected, print options again
+            again = True
+
+
+if __name__ == "__main__":
+    Abort("Do not run this script as a standalone")
