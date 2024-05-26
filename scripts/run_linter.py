@@ -27,6 +27,13 @@ def __runformat(Project):
     runClangTidy = "cd " +Project.Paths["project_main"]+ "  &&  python ../../scripts/run-clang-tidy.py -use-color -format -style Microsoft -mythmode=format"
     LaunchVerboseProcess( runClangTidy )
 
+def __runformatimplace(Project):
+  if(check_project_json(Project)):
+      # Allow python scripts to use ProjectBase scripts
+    PrepareExecEnvironment(Project)
+    runClangTidy = "cd " +Project.Paths["project_main"]+ "  &&  python ../../scripts/run-clang-tidy.py -use-color -format -style Microsoft -mythmode=formatinplace"
+    LaunchVerboseProcess( runClangTidy )
+
 def __cleanfiles(Project):
   if(check_project_json(Project)):
       # Allow python scripts to use ProjectBase scripts
@@ -37,7 +44,9 @@ def __cleanfiles(Project):
 linterallOperations = {
     "0": [__runlinter             , "Runs clang-tidy linter in all project files"],
     "1": [__runformat           , "Runs clang-format in all project files creating tmp files when they exist format unconformities"],
-    "2": [__cleanfiles               , "Clean all tmp_files created by option 2"]
+    "2": [__cleanfiles               , "Clean all tmp_files created by option 2"],
+    "3": [__runformatimplace    , "Runs clang-format in all project files and replace all files with the formated ones"]
+   
 }
 
 def runLinter(Project):

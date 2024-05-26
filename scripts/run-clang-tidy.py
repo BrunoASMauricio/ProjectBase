@@ -569,7 +569,7 @@ def main():
         if delete_fixes_dir:
             shutil.rmtree(export_fixes_dir)
         sys.exit(return_code)
-    elif(args.mythmode == "format") : # Run clang formatter
+    elif(args.mythmode == "format" or args.mythmode == "formatinplace") : # Run clang formatter
         clang_format_binary = find_binary(args.clang_format_binary, "clang-format", build_path)
 
         invocation = [clang_format_binary]
@@ -602,12 +602,21 @@ def main():
                 clean_temp_invocation = ["rm"]
                 clean_temp_invocation.append(tmp_file)
                 subprocess.run(clean_temp_invocation)
-            except subprocess.CalledProcessError as grepexc:                                                                                                   
+            except subprocess.CalledProcessError as grepexc:                                                                                                 
                 files_to_format.append(file)
+                if(args.mythmode == "formatinplace"):
+                    move_invocation = ["mv"]
+                    move_invocation.append(tmp_file)
+                    move_invocation.append(file)
+                    subprocess.run(move_invocation)
 
-        print("Files where formatter can be applied see tmp created files in same location you can then delete all tmp with other option")
+        if(args.mythmode == "formatinplace"):
+            print("Files where formatted inplace.")
+        if(args.mythmode == "format"):
+            print("Files where formatter can be applied see tmp created files in same location you can then delete all tmp with other option.")
         for file in files_to_format:
             print(file)
+
     elif(args.mythmode == "clean"): # Delete Tmp clang-format files
         print("Deleting Tmp clang-format Files")
         for file in files:
