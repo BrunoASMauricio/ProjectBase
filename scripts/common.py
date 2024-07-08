@@ -2,60 +2,8 @@ import os
 import sys
 import json
 import difflib
-import argparse
 import traceback
 from time import sleep
-from colorama import Fore, Style
-
-
-def ParseArguments():
-    # Initialize parser
-    Parser = argparse.ArgumentParser()
-
-    Parser.description = "Extra command line arguments are treated as commands for ProjectBase"
-
-    # Adding optional argument
-    Parser.add_argument("-u", "--url", help = "Root repository's URL", default=None, required=False)
-
-    Parser.add_argument("-c", "--commit",
-                        help = "Root repository's commit",
-                        default=None, required=False, nargs=1)
-
-    Parser.add_argument("-b", "--branch",
-                        help = "Root repository's branch",
-                        default=None, required=False, type=str, nargs=1)
-
-    Parser.add_argument("-e", "--exit", action='store_true', help = "Exit after running command line arguments", default=False, required=False)
-
-    # Read arguments from command line
-    return Parser.parse_known_args()
-
-ProjectArgs = None
-ActionArgs  = None
-def GetArguments():
-    global ProjectArgs
-    global ActionArgs
-    if ProjectArgs == None:
-        ProjectArgs, ActionArgs = ParseArguments()
-
-    return ProjectArgs, ActionArgs
-
-def GetNextOption():
-    global ProjectArgs
-    global ActionArgs
-
-    if len(ActionArgs) != 0:
-        # Next automated action
-        NextInput = ActionArgs[0]
-        del ActionArgs[0]
-        print("[< Auto <] {" + NextInput + "}")
-    else:
-        # Called with --exit and no command, just exit
-        if ProjectArgs.exit == True:
-            sys.exit(0)
-        NextInput = input("[<] ")
-
-    return NextInput
 
 def GetTextDiff(Text1, Text2):
     diff = difflib.ndiff(Text1.split("\n"), Text2.split("\n"))
@@ -73,71 +21,6 @@ def AppendToEnvVariable(EnvVariable, NewValue):
         if NewValue not in BasicList:
             os.environ[EnvVariable] = NewValue + os.pathsep + os.environ[EnvVariable]
 
-def GetProjetBasePath():
-    ProjectBaseScriptsPath = os.path.dirname(os.path.realpath(__file__))
-    return ProjectBaseScriptsPath.replace("/scripts", "")
-
-def GetProjectBasePaths():
-    ProjectBasePath = GetProjetBasePath()
-
-    # Setup paths
-    Paths = {
-        "project_base": ProjectBasePath,
-    }
-
-    Paths["scripts"] = Paths["project_base"]+"/scripts"
-    Paths["templates"] = Paths["project_base"]+"/templates"
-
-    Paths["configs"] = Paths["project_base"]+"/configs"
-    Paths["history"] = Paths["configs"]+"/history"
-
-    # Where the .git files are located
-    Paths[".gits"] =        Paths["project_base"]+"/bare_gits"
-    Paths["temporary"] =    Paths["project_base"]+"/temporary"
-
-    return Paths
-
-def GetProjectPaths(ProjectName):
-    """
-    Builds and returns a dictionary with a projects' directory structure
-    indexed by a string describing each paths' purpose
-    """
-    Paths = GetProjectBasePaths()
-
-    # Projects main directory
-    Paths["project_main"] = Paths["project_base"]+"/projects/" + ProjectName + ".ProjectBase"
-
-    # Projects cmake cache
-    Paths["cmake"] =        Paths["project_main"]+"/cmake"
-
-    # Project output binaries
-    Paths["binaries"] =     Paths["project_main"]+"/binaries"
-
-    # Project repository worktrees
-    Paths["project_code"] = Paths["project_main"]+'/code'
-
-    # Path for repositories that don't specify local_path
-    Paths["general_repository"] = ''
-
-    # Path for output binaries
-    Paths["objects"]     = Paths["binaries"]+"/objects"
-    Paths["executables"] = Paths["objects"]+"/executables"
-    Paths["tests"]       = Paths["objects"]+"/tests"
-    Paths["libraries"]   = Paths["binaries"]+"/libs"
-
-    # Path for whatever data might be used/needed
-    Paths["data"]        = Paths["project_main"]+"/data"
-
-    return Paths
-
-def Abort(Message):
-    print(ColorFormat(Colors.Red, Message))
-    sys.stdout.flush()
-    sys.exit(-1)
-
-def Assert(Message, Condition):
-    if not Condition:
-        Abort(Message)
 
 def RemoveDuplicates(Str, SubStr):
     List = Str.split(SubStr)
@@ -162,15 +45,6 @@ def GetRepositoryPaths(LoadedRepos):
         if not Repo.HasFlag("no commit"):
             AllRepositories.append(Repo['full_local_path'])
     return AllRepositories
-
-"""
-Remove 'None' elements from a list
-"""
-def RemoveNone(List):
-    return [ListEl for ListEl in List if ListEl != None]
-
-def IsEmptyOrNone(Container):
-    return (Container == None or len(Container) == 0)
 
 """
 For each path, change directory to it, execute the provided function with the
@@ -230,68 +104,3 @@ def SetupTemplateScript(ScriptName, TargetFile, VariableSubstitutions={}):
     # Write script back
     with open(TargetFile, 'w') as f:
         f.write(WholeScript)
-
-def LoadJsonFile(Path, ErrorValue=None, VariableSubstitutions={}):
-    """
-    Returns the json from the given file, or ErrorValue in cas of an error
-    Parameters
-    ----------
-    file : string
-        The target file path
-    ErrorValue : Object
-        The object returned in case there is an error loading the json file
-        If Object is None, the exception is thrown
-    """
-    try:
-        with open(Path, 'r') as File:
-            JsonData = json.load(File)
-
-        for VariableName in VariableSubstitutions:
-            JsonData = JsonData.replace("$$"+VariableName+"$$", VariableSubstitutions[VariableName])
-
-        return JsonData
-
-    except Exception as Ex:
-        if ErrorValue == None:
-            raise Exception("Could not load json from file "+Path+" "+traceback.format_exc())
-    return ErrorValue
-
-def DumpJsonFile(JsonData, Path):
-    with open(Path, 'w') as file:
-        json.dump(JsonData, file)
-
-from enum import Enum
-
-class Colors(Enum):
-    Red = 1
-    Blue = 2
-    Yellow = 3
-    Green = 4
-    Cyan = 5
-    Magenta = 6
-
-ColorDict = {
-    Colors.Red: Fore.RED,
-    Colors.Blue: Fore.BLUE,
-    Colors.Yellow: Fore.YELLOW,
-    Colors.Green: Fore.GREEN,
-    Colors.Cyan: Fore.CYAN,
-    Colors.Magenta: Fore.MAGENTA
-}
-
-def ColorFormat(Color, Message):
-    return ColorDict[Color] + Message + Style.RESET_ALL
-
-def UserYesNoChoice(Message):
-    try:
-        print(Message)
-        Answer = input("("+ColorFormat(Colors.Green,"Yy")+"/"+ColorFormat(Colors.Red,"Nn")+"): ")
-        if Answer in ["y", "Y"]:
-            Answer = True
-        else:
-            Answer = False
-
-    except Exception as Ex:
-        Answer = False
-
-    return Answer

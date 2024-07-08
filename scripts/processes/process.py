@@ -6,9 +6,14 @@ import traceback
 import subprocess
 import unicodedata
 
-from common import Abort, AppendToEnvVariable, GetTextDiff, ColorFormat, Colors
+from data.common import Abort
+from common import AppendToEnvVariable, GetTextDiff
+from data.colors import ColorFormat, Colors
 
 #                           PROCESS OPERATIONS
+
+def RunExecutable(CommandString):
+    Result = subprocess.run(CommandString, shell=True)
 
 def RemoveControlCharacters(Str):
     """

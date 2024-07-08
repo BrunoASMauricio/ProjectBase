@@ -1,5 +1,5 @@
-from settings import GetActiveSettings
-from process import *
+from data.settings import get_active_settings
+from processes.process import *
 from common import *
 import datetime
 import os
@@ -101,7 +101,7 @@ class Git():
     @staticmethod
     # Setup a git repositorys' bare data
     def SetupBareData(BareGits, Repo):
-        ActiveSettings = GetActiveSettings()
+        ActiveSettings = get_active_settings()
         BareGit = Git.FindGitRepo(BareGits, Repo["url"])
         if BareGit == None:
             logging.info('Cloning repository data into '+BareGits)
@@ -350,13 +350,7 @@ def UserChooseProject():
 
     return RemoteRepoUrl
 
-def GetRepoNameFromURL(Url):
-    if Url == None or len(Url) == 0:
-        raise Exception("Requested URL ("+Url+") is empty")
 
-    if Url[-1] == '/':
-        Url = Url[:-1]
-    return Url.split('/')[-1].strip()
 
 def GetRepoNameFromPath(Path):
     CurrentDirectory = os.getcwd()

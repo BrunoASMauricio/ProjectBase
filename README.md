@@ -84,9 +84,10 @@ ProjectBase is licensed under GNU General Public License Version 3
 
 - [ ] Add some statistics (i.e. baregit vs direct clone sizes and time delta between first and second project setups)
 - [ ] Find a way to identify repositories without using URLs (different URLs can point to the same repo)
-- [ ] Add screenshot or text block of ProjectBase banner in README
+      Use the X commit of the default branch?
 - [ ] Update documentation
 - [ ] Allow the review of code when add/commiting ?
+      On push, allow per repo fix on conflict
 - [ ] Try and setup git so normal pushes via single repo manipulation work as expected
 - [ ] Allow config customization when creating a new project with new.py
   - [ ] Initial directory
@@ -99,6 +100,7 @@ ProjectBase is licensed under GNU General Public License Version 3
 - [ ] Investigate necessity/feasibility of sending strings into code
 - [ ] gitall tasks
   - [ ] Failed clones should automatically be cleaned up
+          Current bug, failed pulls somehow obtain the projectbase URL and subsequent `setup` clones projectbase instead of the respective repository
   - [ ] Do not perform `cd` for every git operation
   - [ ] Periodically fetch new data from repos
   - [ ] Periodically remove non-existing worktrees
@@ -107,3 +109,33 @@ ProjectBase is licensed under GNU General Public License Version 3
 already in the relevant directory
   - [ ] Improve detection of desync between baregit and upstream so push doesn't
 need to work on clean repos
+ - [ ] Silence certain output (i.e. gitall needs to load .git repos but seeing the load output isnt ok)
+
+ Add more types of headers (public vs private)
+ Allow tests to include both public and private, but executables only include public headers
+
+ Possible to add cflags per
+  object
+  repository
+  globally
+
+git
+  Possible to specify two types of commits, "save" commits and "fixed" commits
+    Actually, add a specific git strategy. Clone branches for feature development saving that collapse into commits on the actual feature branch (unnecessary?...)
+  Save commits have automatic commit messages and should eventually be squashed into a fixed commit
+
+Show project metadata (dependency tree and whatnot)
+
+Add time (with seconds) to banner. Helps in knowing when we ran the last commands
+
+Inserting commands during other commands does not work, but it should be possible to chain commands using a separator like ';'
+
+Organize the binaries by either date or name (maybe hash and say last time changed?)
+
+either prevent rogue characters from messing the terminal, or reset it after recovering control from external programs
+
+Clean before starting setup
+
+Allow config files to provide toggleable macro variables (possibly with values). May require pagination and/or search
+
+Mass run valgrind, and collect how many bytes are lost and how many different errors, per each test
