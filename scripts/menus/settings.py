@@ -1,44 +1,45 @@
 from menus.menu import Menu
-from data.settings import settings
+from data.settings import Settings, CLONE_TYPE
 from data.colors import ColorFormat, Colors
-from processes.project import Project, SetCloneType
+from processes.project import Project
 
 def current_mode_entry():
-    if settings["active"]["Mode"] == "Release":
+    if Settings["active"]["Mode"] == "Release":
         return "Change from Release to Debug"
     else:
         return "Change from Debug to Release"
 
 def toggle_mode():
-    current_type = settings["active"]["Mode"]
-    if settings["active"]["Mode"] == "Release":
-        settings["active"]["Mode"] = "Debug"
+    current_type = Settings["active"]["Mode"]
+    if Settings["active"]["Mode"] == "Release":
+        Settings["active"]["Mode"] = "Debug"
     else:
-        settings["active"]["Mode"] = "Release"
+        Settings["active"]["Mode"] = "Release"
 
-    if current_type != settings["active"]["Mode"]:
-        settings.save_persisted_settings()
+    if current_type != Settings["active"]["Mode"]:
+        Settings.save_persisted_settings()
 
 def current_clone_type_entry():
-    if settings["active"]["Clone Type"] == "https":
-        return "Change from https to ssh"
+    if Settings["active"]["Clone Type"] == CLONE_TYPE.HTTPS.value:
+        return "Change from " + CLONE_TYPE.HTTPS.value + " to " + CLONE_TYPE.SSH.value
     else:
-        return "Change from ssh to http"
+        return "Change from " + CLONE_TYPE.SSH.value + " to " + CLONE_TYPE.HTTPS.value
 
 def toggle_clone_type():
-    current_type = settings["active"]["Clone Type"]
-    if current_type == "https":
-        settings["active"]["Clone Type"] = "ssh"
+    current_type = Settings["active"]["Clone Type"]
+    if current_type == CLONE_TYPE.HTTPS.value:
+        Settings["active"]["Clone Type"] = CLONE_TYPE.SSH.value
     else:
-        settings["active"]["Clone Type"] = "https"
+        Settings["active"]["Clone Type"] = CLONE_TYPE.HTTPS.value
     
-    if current_type != settings["active"]["Clone Type"]:
-        settings.save_persisted_settings()
-        SetCloneType(current_type)
+    if current_type != Settings["active"]["Clone Type"]:
+        Settings.save_persisted_settings()
+        # Change existing repositories' URL
+        Project.SetCloneType(Settings["active"]["Clone Type"])
 
 def settings_prologue():
     prologue = ""
-    ActiveSettings = settings["active"]
+    ActiveSettings = Settings["active"]
     if ActiveSettings["Mode"] == "Release":
         prologue = ColorFormat(Colors.Blue, "Release")
     else:
@@ -46,10 +47,10 @@ def settings_prologue():
     
     prologue += "/"
 
-    if ActiveSettings["Clone Type"] == "ssh":
-        prologue += ColorFormat(Colors.Magenta, "ssh")
+    if ActiveSettings["Clone Type"] == CLONE_TYPE.SSH.value:
+        prologue += ColorFormat(Colors.Magenta, CLONE_TYPE.SSH.value)
     else:
-        prologue += ColorFormat(Colors.Cyan, "https")
+        prologue += ColorFormat(Colors.Cyan, CLONE_TYPE.HTTPS.value)
     
     return prologue + "\n"
 

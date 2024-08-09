@@ -1,8 +1,11 @@
-from process import LaunchProcess
+from processes.process import LaunchProcess
+from data.paths import GetParentPath
 
-def CreateDirectory(Path):
-    LaunchProcess('mkdir -p "'+Path+'"')
+def Remove(target):
+    LaunchProcess('rm -rf ' + target)
 
-def CreateParentDirectory(PathToChild):
-    PathToParent = '/'.join(PathToChild.split("/")[:-1])
-    CreateDirectory(PathToParent)
+def create_directory(path):
+    LaunchProcess('mkdir -p "' + path + '"')
+
+def CreateParentDirectory(path_to_child):
+    create_directory(GetParentPath(path_to_child))

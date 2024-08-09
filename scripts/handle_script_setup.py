@@ -38,8 +38,8 @@ if EverythingIsOk != True:
 
 # Correct project path
 ProjectPaths = GetProjectPaths(ProjectName)
-if not os.path.isdir(ProjectPaths["project_main"]):
-    WrongUsage('Project "'+ProjectPaths["project_main"]+'" does not exist')
+if not os.path.isdir(ProjectPaths["project main"]):
+    WrongUsage('Project "'+ProjectPaths["project main"]+'" does not exist')
 
 FileName = FilePath.split("/")[-1]
 TargetPath = ProjectPaths[PathType]+"/"+FileName

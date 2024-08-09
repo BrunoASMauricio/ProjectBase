@@ -37,7 +37,7 @@
 
 #     # Create compile_commpands.json file used tor IDES and linting tools
 #     def MakeCompileJson(self):
-#        compileCommandsStr = "cd " +self.Paths["project_main"]+ "  &&  cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 CMakeLists.txt"
+#        compileCommandsStr = "cd " +self.Paths["project main"]+ "  &&  cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 CMakeLists.txt"
 #        LaunchVerboseProcess(compileCommandsStr)
 
 
@@ -71,7 +71,7 @@
 
 #             PresentRepos[Repo["full_local_path"]] = IncludeEntry
 
-#         SetupTemplateScript("project/CMakeLists.txt", self.Paths["project_main"]+"/CMakeLists.txt", {
+#         SetupTemplateScript("project/CMakeLists.txt", self.Paths["project main"]+"/CMakeLists.txt", {
 #             "INCLUDEREPOSITORYCMAKELISTS":'\n'.join(PresentRepos.values())
 #         })
 

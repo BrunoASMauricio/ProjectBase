@@ -15,7 +15,7 @@ def __handleFetch(Project):
 
 def __handleGitStatus(project):
     KnownPaths = GetRepositoryPaths(project.LoadedRepos)
-    AllPaths = GetGitPaths(project.Paths["project_main"])
+    AllPaths = GetGitPaths(project.Paths["project main"])
     UnknownPaths = [repo for repo in AllPaths if repo not in KnownPaths]
 
     print("\nManaged repositories:")
@@ -79,7 +79,7 @@ def __handleGlobalPush(project):
 
 def __manageGitRepo(project):
     KnownPaths = GetRepositoryPaths(project.LoadedRepos)
-    AllPaths = GetGitPaths(project.Paths["project_main"])
+    AllPaths = GetGitPaths(project.Paths["project main"])
     UnknownPaths = [repo for repo in AllPaths if repo not in KnownPaths]
     AllPaths = KnownPaths + UnknownPaths
 
@@ -90,6 +90,7 @@ def __manageGitRepo(project):
         Message =  "[" + str(PathId) + "] "
         Message += GetRepoNameFromPath(Path) + " ("
 
+        sys.exit(0)
         os.chdir(Path)
         if Git.IsRepositoryClean():
             Message += ColorFormat(Colors.Green, "clean")
@@ -104,9 +105,10 @@ def __manageGitRepo(project):
             Message += ColorFormat(Colors.Magenta, " (unmanaged)")
         
         # Print path (relative to cwd)
-        Message += "." + Path.replace(project.Paths["project_main"], "")
+        Message += "." + Path.replace(project.Paths["project main"], "")
         print(Message)
 
+    sys.exit(0)
     os.chdir(CurrentDirectory)
     UserInput = input("[<] ")
     OpenBashOnDirectoryAndWait(AllPaths[int(UserInput)])

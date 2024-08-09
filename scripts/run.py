@@ -2,48 +2,39 @@ import sys
 import logging
 import traceback
 from git import *
-from processes.project import Project
-
-from data.settings import settings
+from data.settings import Settings
+from processes.project import Project, UserChooseProject
+from data.common import ValueNotEmpty
 
 if __name__ != "__main__":
     Abort("This script is not meant to be imported, please run directly")
 
 # Configure logging
 # logging.basicConfig(stream = sys.stdout, level = logging.DEBUG)
-logging.basicConfig(stream = sys.stdout, level = logging.INFO)
+logging.basicConfig(filename="/tmp/project_base.log",
+                    filemode='a',
+                            format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+                            datefmt='%H:%M:%S', level = logging.DEBUG)
 
-# Initialize parser
-settings.parse_arguments()
+# logging.basicConfig(stream = sys.stdout, level = logging.INFO)
 
-# Commit or branch
-if settings["commit"] != None and settings["branch"] != None:
-    Abort("Please use either commit or branch, not both")
+logging.info("=============== PROJECTBASE start ===============")
+Settings.init()
+if False == ValueNotEmpty(Settings, "url"):
+    Settings["url"] = UserChooseProject()
 
-if settings["url"] == None and (settings["commit"] != None or settings["branch"] != None):
-    Abort("If you provide a commit/branch, you also need to provide a URL")
-
-# Set base project settings
-if settings["url"] == None:
-    settings["url"] = UserChooseProject()
-
-
+Settings.start()
 Project.init()
 
-settings["ProjectName"]  = Project.name
-settings["paths"] = Project.paths
-
+# Include here so paths are already ready in settings (find better way)
 from menus.main import MainMenu
 
-settings.load_persistent_settings()
+Settings.load_persistent_settings()
 
 MainMenu.handle_input()
 
 print("\nBye :)")
 sys.exit(0)
-
-
-
 
 
 
@@ -65,7 +56,7 @@ while Condition == True:
     # Reset directory
     os.chdir(StarterDirectory)
 
-    PrintMenu(ProjectUrl, Project.Paths["project_main"])
+    PrintMenu(ProjectUrl, Project.Paths["project main"])
 
     if next_input != -1:
         print("Previous command: "+str(next_input))
