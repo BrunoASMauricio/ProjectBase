@@ -75,7 +75,6 @@ def OpenBashOnDirectoryAndWait(WorkingDirectory):
     # Open a new Bash shell in the specified working directory
     Process = subprocess.Popen(['bash'], cwd=WorkingDirectory)
 
-
     # Wait for the Bash shell to be closed by the user
     Process.wait()
 

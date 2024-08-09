@@ -43,7 +43,7 @@ Obtain the name of the repository located at path
 """
 def GetRepositoryName(path):
     url = GetRepositoryUrl(path)
-    return GetRepoNameFromURL(path)
+    return GetRepoNameFromURL(url)
 
 def RepositoryIsClean(path = None):
     return "nothing to commit, working tree clean" in GetRepoStatus(path)
@@ -104,6 +104,21 @@ def FindGitRepo(base_path, repo_url, repo_commitish = None, depth=-1):
             return Result
 
     return None
+
+def GetAllGitRepos(path_to_search):
+    git_repos = []
+    if not os.path.isdir(path_to_search):
+        logging.error(path_to_search+" is not a valid directory")
+        return
+
+    if FolderIsGit(path_to_search):
+        git_repos.append(path_to_search)
+
+    for Inode in os.listdir(path_to_search):
+        if os.path.isdir(path_to_search+"/"+Inode) and Inode != ".git":
+            git_repos = git_repos + GetAllGitRepos(path_to_search+"/"+Inode)
+
+    return git_repos
 
 def SetupBareData(repo_url):
     repo_url       = FixUrl(repo_url)
@@ -193,3 +208,13 @@ TODO: dont just remove and add, also copy changes over
 def MoveWorkTree(bare_path, repo_url, repo_commitish, from_path, to_path):
     AddWorkTree(bare_path, repo_url, repo_commitish, to_path)
     RemoveWorkTree(bare_path, from_path)
+
+def RepoIsClean(path):
+    return "nothing to commit, working tree clean" in GetRepoStatus(path)
+
+def GetRepoNameFromPath(Path):
+    url = GetRepositoryUrl()
+    if IsEmpty(url):
+        raise Exception("Could not retrieve Name from path \"" + Path + "\"")
+
+    return GetRepoNameFromURL(url)
