@@ -82,6 +82,8 @@ ProjectBase is licensed under GNU General Public License Version 3
 
 ## TODO
 
+- [ ] Figure out why loading takes so much time
+- [ ] Separate loading from setup (loading loads the repos internally, setup forces a load and runs setup commands)
 - [ ] Add some statistics (i.e. baregit vs direct clone sizes and time delta between first and second project setups)
 - [ ] Find a way to identify repositories without using URLs (different URLs can point to the same repo)
       Use the X commit of the default branch?
@@ -139,3 +141,8 @@ Clean before starting setup
 Allow config files to provide toggleable macro variables (possibly with values). May require pagination and/or search
 
 Mass run valgrind, and collect how many bytes are lost and how many different errors, per each test
+
+Configs that CAN NOT have variables
+  local path
+  url
+  

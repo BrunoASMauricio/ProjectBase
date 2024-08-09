@@ -4,28 +4,16 @@ import pty
 import logging
 import traceback
 import subprocess
-import unicodedata
 
-from data.common import Abort
-from common import AppendToEnvVariable, GetTextDiff
+from data.common import Abort, AppendToEnvVariable, RemoveControlCharacters, RemoveAnsiEscapeCharacters
 from data.colors import ColorFormat, Colors
+
+from data.settings import Settings
 
 #                           PROCESS OPERATIONS
 
 def RunExecutable(CommandString):
-    Result = subprocess.run(CommandString, shell=True)
-
-def RemoveControlCharacters(Str):
-    """
-    Removes control characters. Keeps \\n except if trailing
-    """
-    AllowedCCs = ['\n', '\t']
-    NewStr = "".join(Ch for Ch in Str if (unicodedata.category(Ch)[0] != "C" or Ch in AllowedCCs))
-    return NewStr.rstrip()
-
-def RemoveAnsiEscapeCharacters(Str):
-    AnsiEscape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
-    return AnsiEscape.sub("", Str)
+    return subprocess.run(CommandString, shell=True)
 
 def LaunchProcess(Command, ToPrint=False):
     """
@@ -77,6 +65,8 @@ def LaunchProcess(Command, ToPrint=False):
     return Returned
 
 def ParseProcessResponse(Response):
+    if Response["code"] != 0:
+        return ""
     return RemoveControlCharacters(Response["output"].rstrip())
 
 def OpenBashOnDirectoryAndWait(WorkingDirectory):
@@ -122,10 +112,10 @@ returns the { "stdout": "..." , "code": "..."  } dictionary
 """
 def CDLaunchReturn(Command, Path="", ToPrint=False):
     if Path != "":
-        CurrentDirectory = os.getcwd()
-        os.chdir(Path)
-        ReturnValue = LaunchProcess(Command, ToPrint)
-        os.chdir(CurrentDirectory)
+        # CurrentDirectory = os.getcwd()
+        # os.chdir(Path)
+        ReturnValue = LaunchProcess("cd " + Path + "; " +Command, ToPrint)
+        # os.chdir(CurrentDirectory)
     else:
         ReturnValue = LaunchProcess(Command, ToPrint)
 
@@ -150,15 +140,13 @@ def MultipleCDLaunch(Command, Path, ToPrint, Attempts=3):
 
     if Output == None:
         if ThrownException != None:
-            logging.error(traceback.format_exc())
             logging.error("MultipleCDLaunch(" + Command + ") exception with: " + str(ThrownException))
+            logging.error(traceback.format_exc())
             raise ThrownException
 
     return Output
 
-def PrepareExecEnvironment(Project):
-    AppendToEnvVariable("PYTHONPATH",       Project.Paths["scripts"])
-    AppendToEnvVariable("PB_ROOT_NAME",     Project["ProjectRepoName"])
-    AppendToEnvVariable("PB_ROOT_URL",      Project["ProjectRepoUrl"])
-    AppendToEnvVariable("PB_ROOT_BRANCH",   Project["ProjectRepoBranch"])
-    AppendToEnvVariable("PB_ROOT_COMMIT",   Project["ProjectRepoCommit"])
+def PrepareExecEnvironment():
+    AppendToEnvVariable("PYTHONPATH",       Settings["paths"]["scripts"])
+    AppendToEnvVariable("PB_ROOT_NAME",     Settings["name"])
+    AppendToEnvVariable("PB_ROOT_URL",      Settings["url"])

@@ -1,8 +1,10 @@
 import os
 import traceback
+import sys
+from data.common import Assert
 from enum import Enum
 from processes.auto_completer import CustomCompleter
-from data.settings import *
+from data.settings import Settings
 from data.common import RemoveNonAlfanumeric
 
 class EntryType(Enum):
@@ -12,21 +14,21 @@ class EntryType(Enum):
 def GetNextOption():
     global ProjectArgs
     
-    if len(settings["action"]) != 0:
+    if len(Settings["action"]) != 0:
         # Next automated action
-        next_input = settings["action"][0]
-        del settings["action"][0]
+        next_input = Settings["action"][0]
+        del Settings["action"][0]
         print("[< Auto <] {" + next_input + "}")
     else:
         # Called with --exit and no command, just exit
-        if settings["exit"] == True:
+        if Settings["exit"] == True:
             sys.exit(0)
         next_input = input("[<] ")
 
         # Check if we received multiple commands
         SplitInput = next_input.split(" ")
         if len(SplitInput) > 1:
-            settings["action"] += SplitInput[1:]
+            Settings["action"] += SplitInput[1:]
             next_input = SplitInput[0]
 
     return next_input
@@ -49,7 +51,7 @@ class Menu():
         if name != None:
             name = RemoveNonAlfanumeric(name)
             Assert(name not in all_menu_names, "Repeated name " + name)
-            self.history_file = settings["paths"]["history"] + "/" + name
+            self.history_file = Settings["paths"]["history"] + "/" + name
             self.completer = CustomCompleter(self.history_file, [])
             all_menu_names.append(name)
 
@@ -110,6 +112,7 @@ class Menu():
     def handle_input(self, depth = 0):
         current_dir = os.getcwd()
         previous_command = None
+        previous_invalid = False
         while True:
             try:
                 # Show menu
@@ -122,8 +125,11 @@ class Menu():
                 # Get next input and save to history
                 try:
                     next_input = int(GetNextOption())
+                    previous_invalid = False
                 except ValueError:
-                    print("Invalid input")
+                    if previous_invalid == False:
+                        print("Invalid input")
+                        previous_invalid = True
                     continue
                 previous_command = next_input
                 self.completer.update(next_input)
@@ -140,6 +146,7 @@ class Menu():
                 continue
             except EOFError:
                 break
-            # except Exception as Ex:
-            #     print("Uncaught exception: "+str(Ex))
-            #     traceback.print_exc()
+            except Exception as Ex:
+                print("Uncaught exception: "+str(Ex))
+                traceback.print_exc()
+                sys.exit(0)

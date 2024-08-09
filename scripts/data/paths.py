@@ -1,35 +1,36 @@
 import os
 
-def GetRepoNameFromURL(Url):
-    if Url == None or len(Url) == 0:
-        raise Exception("Requested URL ("+Url+") is empty")
+def GetCurrentFolderName(path_to_child):
+    return path_to_child.split("/")[-2]
 
-    if Url[-1] == '/':
-        Url = Url[:-1]
-    return Url.split('/')[-1].strip()
+def GetParentFolderName(path_to_child):
+    return path_to_child.split("/")[-2]
+
+def GetParentPath(path_to_child):
+    return '/'.join(path_to_child.split("/")[:-1])
 
 # Assume scripts is on the base folder
 def GetProjectBasePath():
     ProjectBaseScriptsPath = os.path.dirname(os.path.realpath(__file__))
-    return ProjectBaseScriptsPath.replace("/scripts", "")
+    return ProjectBaseScriptsPath.replace("/scripts/data", "")
 
 def GetBasePaths():
     ProjectBasePath = GetProjectBasePath()
 
     # Setup paths
     Paths = {
-        "project_base": ProjectBasePath,
+        "project base": ProjectBasePath,
     }
 
-    Paths["scripts"] = Paths["project_base"]+"/scripts"
-    Paths["templates"] = Paths["project_base"]+"/templates"
+    Paths["scripts"] = Paths["project base"]+"/scripts"
+    Paths["templates"] = Paths["scripts"]+"/templates"
 
-    Paths["configs"] = Paths["project_base"]+"/configs"
-    Paths["history"] = Paths["configs"]+"/history"
+    Paths["configs"] = Paths["project base"]+"/configs"
 
+    Paths["history"]   = Paths["configs"]+"/history"
+    Paths["temporary"] = Paths["configs"]+"/temporary"
     # Where the .git files are located
-    Paths[".gits"] =        Paths["project_base"]+"/bare_gits"
-    Paths["temporary"] =    Paths["project_base"]+"/temporary"
+    Paths["bare gits"] = Paths["configs"]+"/bare_gits"
 
     return Paths
 
@@ -41,19 +42,21 @@ def GetProjectPaths(ProjectName):
     Paths = GetBasePaths()
 
     # Projects main directory
-    Paths["project_main"] = Paths["project_base"]+"/projects/" + ProjectName + ".ProjectBase"
+    Paths["project main"] = Paths["project base"]+"/projects/" + ProjectName + ".ProjectBase"
 
     # Projects cmake cache
-    Paths["cmake"] =        Paths["project_main"]+"/cmake"
+    Paths["cmake"] =        Paths["project main"]+"/cmake"
 
     # Project output binaries
-    Paths["binaries"] =     Paths["project_main"]+"/binaries"
+    Paths["binaries"] =     Paths["project main"]+"/binaries"
 
     # Project repository worktrees
-    Paths["project_code"] = Paths["project_main"]+'/code'
+    Paths["project code"] = Paths["project main"]+'/code'
+    # 
+    Paths["default local path"] = ""
 
     # Path for repositories that don't specify local_path
-    Paths["general_repository"] = ''
+    Paths["general repository"] = ''
 
     # Path for output binaries
     Paths["objects"]     = Paths["binaries"]+"/objects"
@@ -62,6 +65,6 @@ def GetProjectPaths(ProjectName):
     Paths["libraries"]   = Paths["binaries"]+"/libs"
 
     # Path for whatever data might be used/needed
-    Paths["data"]        = Paths["project_main"]+"/data"
+    Paths["data"]        = Paths["project main"]+"/data"
 
     return Paths

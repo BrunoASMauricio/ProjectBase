@@ -19,4 +19,4 @@ ColorDict = {
 }
 
 def ColorFormat(Color, Message):
-    return ColorDict[Color] + Message + Style.RESET_ALL
+    return ColorDict[Color] + str(Message) + Style.RESET_ALL

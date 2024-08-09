@@ -1,12 +1,11 @@
-from data.settings import settings
+import os
+from data.settings import Settings
 from data.common import StringIsNumber
-from processes.process import RunExecutable
-
-def execute(executable):
-    # Allow python scripts to use ProjectBase scripts
-    # PrepareExecEnvironment(Project)
-    # AppendToEnvVariable("PYTHONPATH", Project.Paths["scripts"])
-    pass
+from data.colors import *
+from processes.process import RunExecutable, PrepareExecEnvironment
+from processes.project import Project
+from menus.menu import GetNextOption
+import traceback
 
 """
 scan path_to_scan for appropriate executables
@@ -14,7 +13,7 @@ Return a list with the executables
 """
 def __get_available_executables(path_to_scan):
     executables_available = []
-    os.chdir(settings["paths"]["project_main"])
+    os.chdir(Settings["paths"]["project main"])
     print("Executables available in "+path_to_scan+":")
 
     index = 0
@@ -56,13 +55,13 @@ def __parse_input(og_user_input):
 """
 Locate the actual executable used and return its' path
 """
-def __locate_executable(user_input, executables_available):
+def __locate_executable(user_input, executables_available, path_to_scan):
     input_list = user_input.split(' ')
     executable = input_list[0]
     if StringIsNumber(executable):
         exec_ind = int(executable)
         if exec_ind > len(executables_available):
-            print("Out of bounds index: " + og_user_input)
+            print("Out of bounds index: " + user_input)
             return None, None
         path_to_exec = path_to_scan + "/" + executables_available[exec_ind]
     else:
@@ -77,17 +76,19 @@ def __locate_executable(user_input, executables_available):
             return None, None
     return path_to_exec, input_list
 
-def run(path_to_scan):
-    executables_available = __get_available_executables()
-    if len(executables_available) == 0:
-        print("No executables found")
-        return
-    
-    print("!V for valgrind. !G for GDB. !S for GDB server @ 127.0.0.1:6175")
-    print("Upper case (V,G,S) uses default parameters, lower case doesn't.")
-    print("[![G|V|S]]<INDEX [0-9]+> [Space separated argument list]")
+def execute_menu(path_to_scan):
+    # Allow python scripts to use ProjectBase scripts
+    PrepareExecEnvironment(Project)
 
     while True:
+        executables_available = __get_available_executables(path_to_scan)
+        if len(executables_available) == 0:
+            print("No executables found")
+            return
+        
+        print("!V for valgrind. !G for GDB. !S for GDB server @ 127.0.0.1:6175")
+        print("Upper case (V,G,S) uses default parameters, lower case doesn't.")
+        print("[![G|V|S]]<INDEX [0-9]+> [Space separated argument list]")
         try:
             og_user_input = GetNextOption()
             # No input (Enter pressed)
@@ -99,13 +100,13 @@ def run(path_to_scan):
             prefix, user_input = __parse_input(og_user_input)
 
             # Locate executable
-            path_to_exec, input_list = __locate_executable(user_input, executables_available)
+            path_to_exec, input_list = __locate_executable(user_input, executables_available, path_to_scan)
             if path_to_exec == None:
                 continue
 
             # Assemble command and run
             arguments = ' '.join([x for x in input_list[1:] if x != ""])
-            full_command = executable + " " + arguments
+            full_command = path_to_exec + " " + arguments
             if prefix != "":
                 full_command = prefix + " " + full_command
             print("Running: \"" + full_command + "\"")
@@ -126,10 +127,54 @@ def run(path_to_scan):
             break
 
 def run_single_test():
-    run_single(settings["paths"]["tests"])
+    execute_menu(Settings["paths"]["tests"])
 
 def run_single_executable():
-    run_single(settings["paths"]["executables"])
+    execute_menu(Settings["paths"]["executables"])
 
 def run_all_tests():
-    pass
+    error_names = []
+    successes = 0
+    tests = __get_available_executables(Settings["paths"]["tests"])
+
+    print("Running " + str(len(tests)) + " tests in " + Settings["paths"]["tests"].replace(Settings["paths"]["project base"], ""))
+
+    # Allow python scripts to use ProjectBase scripts
+    PrepareExecEnvironment(Project)
+
+    for test_name in tests:
+        try:
+            print(ColorFormat(Colors.Blue, "\n\tRUNNING "+test_name))
+
+            try:
+                Result = RunExecutable(Settings["paths"]["tests"] + "/" + test_name)
+                if Result.returncode != 0:
+                    print(ColorFormat(Colors.Red, '"' + test_name + '" returned code = '+str(Result.returncode)))
+                else:
+                    print(ColorFormat(Colors.Green, '"' + test_name + '" returned code = '+str(Result.returncode)))
+            except KeyboardInterrupt:
+                print("Keyboard Interrupt")
+
+            # Result = subprocess.run(Project.Paths["tests"]+"/"+test_name, shell=True)
+
+            print(ColorFormat(Colors.Blue, "\t"+test_name+" finished"))
+
+            if Result.returncode != 0:
+                print(ColorFormat(Colors.Red, "Return code = "+str(Result.returncode)))
+                error_names.append(test_name)
+            else:
+                print(ColorFormat(Colors.Green, "Return code = "+str(Result.returncode)))
+                successes = successes + 1
+
+        except Exception as ex:
+            print("Error in running the executable\nException caught: "+str(ex))
+            traceback.print_exc()
+
+    print("\n")
+
+    if len(error_names) == 0:
+        print(ColorFormat(Colors.Green, "No errors on "+str(successes)+" tests!"))
+    else:
+        print(ColorFormat(Colors.Red, ("="*40)+"\n          Some errors reported\n"+("="*40)))
+        print(ColorFormat(Colors.Green, "successes: ["+str(successes)+"]"))
+        print(ColorFormat(Colors.Red, "Errors: ["+str(len(error_names))+"]\n"+"\n".join(error_names)))

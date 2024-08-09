@@ -2,10 +2,18 @@
 # from settings import get_active_settings
 # from common import *
 # from git import *
-from data.settings import settings
-from data.paths import GetRepoNameFromURL, GetProjectPaths
-from processes.process import LaunchProcess
-from git import *
+from data.settings        import Settings
+from data.paths           import GetProjectPaths
+from data.git             import GetRepoNameFromURL
+from processes.repository import LoadRepositories, Setup, Build
+from processes.process    import LaunchProcess
+from data.git                  import *
+from git                  import *
+# from git                  import *
+from processes.git_operations import GetRepositoryUrl
+from processes.filesystem import create_directory
+from processes.run_linter import CleanLinterFiles
+from data.settings import Settings, CLONE_TYPE
 
 """
 Performs operations on a project
@@ -16,80 +24,136 @@ class PROJECT(dict):
     # Load constant and known variables
     def init(self):
 
-        self.name = GetRepoNameFromURL(settings["url"])
+        self.name = GetRepoNameFromURL(Settings["url"])
+        self.repositories = {}
 
         self.paths = GetProjectPaths(self.name)
 
-        self.LoadedRepos = {}
-
-        # LaunchProcess('''echo  "''' + self["ProjectRepoUrl"] + ''' " >  ''' + self.Paths["project_main"]+"/root_url.txt")
+        # LaunchProcess('''echo  "''' + self["ProjectRepoUrl"] + ''' " >  ''' + self.Paths["project main"]+"/root_url.txt")
         # Check and generate project structure if necessary
         for PathName in self.paths:
             LaunchProcess('mkdir -p "'+self.paths[PathName]+'"')
 
+        Settings["ProjectName"] = self.name
+        Settings["paths"]       = self.paths
+        self.cache_path = Settings["paths"]["configs"] + "/project_cache/repositories/" + self.name
+        create_directory(Settings["paths"]["configs"] + "/project_cache/repositories/")
+
+    def load(self):
+        # Build root repo configs from CLI
+        self.root_repo_base_config = {"url": Settings["url"]}
+
+        if "commit" in Settings and Settings["commit"] != None:
+            self.root_repo_base_config["commitish"] = {}
+            self.root_repo_base_config["commitish"]["type"] = "commit"
+            self.root_repo_base_config["commitish"]["commit"] = Settings["commit"]
+        elif "branch" in Settings and Settings["branch"] != None:
+            self.root_repo_base_config["commitish"] = {}
+            self.root_repo_base_config["commitish"]["type"] = "branch"
+            self.root_repo_base_config["commitish"]["branch"] = Settings["branch"]
+        else:
+            self.root_repo_base_config["commitish"] = None
+
+        self.repositories = LoadRepositories(self.root_repo_base_config, self.cache_path)
+        Setup(self.repositories)
+    
+    def build(self):
+        if len(self.repositories) == 0:
+            self.load()
+        CMakeCommand =  'cmake'
+        # Dont complain about unused -D parameters, they are not mandatory
+        CMakeCommand += ' --no-warn-unused-cli'
+        CMakeCommand += ' -S ' + self.paths["project main"]
+        CMakeCommand += ' -B ' + self.paths["cmake"]
+        # CMakeCommand += ' -DBUILD_MODE='+ActiveSettings["Mode"]
+        CMakeCommand += ' -DPROJECT_NAME=' + self.name
+        CMakeCommand += ' -DPROJECT_BASE_SCRIPT_PATH=' + self.paths["scripts"]
+        CMakeCommand += ' && cmake --build ' + self.paths["cmake"] + ' -- -j $(nproc)'
+
+        Build(self.repositories, CMakeCommand)
+    
+    def SetCloneType(self, clone_type):
+        if len(self.repositories) == 0:
+            self.load()
+        # print(self.repositories)
+        for url_id in self.repositories:
+            repository = self.repositories[url_id]
+            prev_url = GetRepositoryUrl(repository["full worktree path"])
+            if clone_type == CLONE_TYPE.SSH.value:
+                url = url_HTTPS_to_SSH(prev_url)
+            else:
+                url = url_SSH_to_HTTPS(prev_url)
+
+            CDLaunchReturn("git remote rm origin; git remote add origin " + url, repository["full worktree path"], True)
+
 Project = PROJECT()
 
-def SetCloneType(CloneType):
-    AllRepos = GetGitPaths(project.paths["project_main"])
+def UserChooseProject():
+    """
+    Print currently available projects and ask user
+    to choose one of them
+    """
 
-    for Repo in AllRepos:
-        PrevUrl = Git.GetURL(Repo)
+    Index = 0
+    ProjectsAvailable = []
+    print("Installed projects:")
+    for Entry in os.scandir("projects"):
+        if Entry.name == "" or Entry.name == ".gitignore":
+            continue
 
-        if CloneType == "ssh":
-            # Already in git
-            if PrevUrl.startswith("git@"):
-                continue
-            Url = UrlToSSH(PrevUrl)
-        else:
-            # Already in https
-            if PrevUrl.startswith("https"):
-                continue
-            Url = SSHToUrl(PrevUrl)
+        """
+        Repositories can have the same name (different URLs)
+        As such, we cannot rely on the name of the project to
+        """
 
-        CDLaunchReturn("git remote rm origin; git remote add origin " + Url, Repo, True)
+        if not Entry.is_dir():
+            print("Unexpected file in projects "+Entry.path+"/"+Entry.name)
+            continue
 
-        # for RepoId in self.LoadedRepos:
-        #     self.LoadedRepos[RepoId].Setup()
+        Url = ""
+        FolderPath = Entry.path
+        # Yo Alvaro, qual era a razao para este file?
+        # FilePath = os.path.join(FolderPath, "root_url.txt")
+        # if os.path.isfile(FilePath):
+        #     with open(FilePath, "r") as file:
+        #         Url = file.read()[:-1].strip()
+        # else:
+        #     print(ColorFormat(Colors.Red, "Cannot open project "+Entry.name+", root_url.txt not found"))
+        #     continue
+        Url = GetRepositoryUrl(FolderPath)
+        if Url == "":
+            continue
 
-def LoadAllRepos():
-    pass
+        Name = GetRepoNameFromURL(Url)
+        print("\t["+str(Index)+"] "+ColorFormat(Colors.Blue, Name)+" : "+Url)
+        ProjectsAvailable.append(Url)
+        Index += 1
+    if Index == 0:
+        UserInput = input("Remote project repository URL: ")
+    else:
+        UserInput = input("Insert a number to choose from the existing projects, or a URL to download a new one: ")
 
-# Setup project scripts
-def Generate():
-    for RepoId in self.LoadedRepos:
-        self.LoadedRepos[RepoId].Setup()
+    while True:
+        try:
+            InsertedIndex = int(UserInput)
+            # User chose an Index
+            RemoteRepoUrl = ProjectsAvailable[InsertedIndex]
+            break
+        except Exception as Ex:
+            # Not an Index, assume URL
+            RemoteRepoUrl = UserInput
 
-    self.__SetupCMakeLists()
-
-def Build():
-    for RepoId in self.LoadedRepos:
-        self.LoadedRepos[RepoId].BeforeBuild()
-
-    ActiveSettings = get_active_settings()
-
-    CMakeCommand =  'cmake'
-    # Dont complain about unused -D parameters, they are not mandatory
-    CMakeCommand += ' --no-warn-unused-cli'
-    CMakeCommand += ' -S '+self.Paths["project_main"]
-    CMakeCommand += ' -B '+self.Paths["cmake"]
-    CMakeCommand += ' -DBUILD_MODE='+ActiveSettings["Mode"]
-    CMakeCommand += ' -DPROJECT_NAME='+self["ProjectRepoName"]
-    CMakeCommand += ' -DPROJECT_BASE_SCRIPT_PATH='+self.Paths["scripts"]
-    CMakeCommand += ' && cmake --build '+self.Paths["cmake"]
-
-    LaunchVerboseProcess(CMakeCommand)
-
-    for RepoId in self.LoadedRepos:
-        self.LoadedRepos[RepoId].AfterBuild()
+    return RemoteRepoUrl
 
 def CleanRunnables():
-    LaunchVerboseProcess("rm -rf "+self.Paths["executables"]+"/*")
-    LaunchVerboseProcess("rm -rf "+self.Paths["tests"]+"/*")
+    LaunchVerboseProcess("rm -rf " + Settings["paths"]["executables"]+"/*")
+    LaunchVerboseProcess("rm -rf " + Settings["paths"]["tests"]+"/*")
 
 def CleanCompiled():
-    LaunchVerboseProcess("rm -rf "+self.Paths["libraries"]+"/*")
+    LaunchVerboseProcess("rm -rf " + Settings["paths"]["libraries"]+"/*")
     CleanRunnables()
 
 def CleanAll():
-    LaunchVerboseProcess("rm -rf "+self.Paths["cmake"]+"/*")
+    LaunchVerboseProcess("rm -rf " + Settings["paths"]["cmake"]+"/*")
     CleanCompiled()
+    CleanLinterFiles()

@@ -59,6 +59,7 @@ def RunOnFolders(Paths, FunctionToRun, ListArguments={}):
             raise Exception(Path+" is not a valid directory, cannot perform "+str(FunctionToRun))
 
         os.chdir(Path)
+        sys.exit(0)
 
         Result = FunctionToRun(**ListArguments)
         OperationStatus.append(Result)
@@ -66,6 +67,7 @@ def RunOnFolders(Paths, FunctionToRun, ListArguments={}):
         sleep(0.05)
 
     os.chdir(CurrentDirectory)
+    sys.exit(0)
 
     return OperationStatus
 
@@ -76,27 +78,6 @@ def SetupScript(SourceFile, TargetFile, VariableSubstitutions={}):
     with open(SourceFile, 'r') as f:
         WholeScript += f.read()
 
-    # Perform variable substitutions
-    for VariableName in VariableSubstitutions:
-        WholeScript = WholeScript.replace("$$"+VariableName+"$$", VariableSubstitutions[VariableName])
-
-    # Write script back
-    with open(TargetFile, 'w') as f:
-        f.write(WholeScript)
-
-# Sets up a script according to its template and the target variable substitutions
-def SetupTemplateScript(ScriptName, TargetFile, VariableSubstitutions={}):
-    WholeScript = ""
-    ProjectBasePaths = GetProjectBasePaths()
-
-    if ScriptName.endswith(".sh"):
-        # Get bash header
-        with open(ProjectBasePaths["templates"]+"/scriptHeader.sh", 'r') as f:
-            WholeScript = f.read()+"\n\n"
-
-    # Get rest of script
-    with open(ProjectBasePaths["templates"]+"/"+ScriptName, 'r') as f:
-        WholeScript += f.read()
     # Perform variable substitutions
     for VariableName in VariableSubstitutions:
         WholeScript = WholeScript.replace("$$"+VariableName+"$$", VariableSubstitutions[VariableName])
