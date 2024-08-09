@@ -1,4 +1,3 @@
-from data.settings import get_active_settings
 from processes.process import *
 from common import *
 import datetime
@@ -8,119 +7,6 @@ import os
 OperationStatus = None
 
 class Git():
-    @staticmethod
-    def Fetch(TargetDirectory=""):
-        CDLaunchReturn("git fetch origin '*:*'", TargetDirectory, True)
-
-    @staticmethod
-    def GetURL(TargetDirectory=""):
-        return MultipleCDLaunch("git config --get remote.origin.url", TargetDirectory, False, 1)
-
-    @staticmethod
-    def GetDefaultBranch(TargetDirectory=""):
-        PresentDirectory = os.getcwd()
-        os.chdir(TargetDirectory)
-
-        RemoteResult = LaunchProcess("git remote show")
-        RemoteResult["output"] = RemoteResult["output"].strip()
-        if RemoteResult["code"] != 0:
-            Message  = "No remote setup, cant fetch default branch for "
-            Message += Git.GetURL() + " at " + TargetDirectory
-            Message += "Code: " + str(RemoteResult["code"]) + "\n"
-            Message += "Output: " + str(RemoteResult["output"]) + "\n"
-            os.chdir(PresentDirectory)
-            raise Exception(Message)
-
-        DefaultBranch = LaunchProcess("git remote show " + RemoteResult["output"] + " 2>/dev/null | sed -n '/HEAD branch/s/.*: //p'")
-
-        if DefaultBranch["code"] != 0:
-            Message  = "No default branch for "
-            Message += Git.GetURL() + " at " + TargetDirectory + "\n"
-            Message += "Code: " + str(DefaultBranch["code"]) + "\n"
-            Message += "Output: " + str(DefaultBranch["output"]) + "\n"
-            os.chdir(PresentDirectory)
-            raise Exception(Message)
-
-        os.chdir(PresentDirectory)
-        return DefaultBranch["output"].split("/")[-1].strip()
-
-    @staticmethod
-    def GetLocalCommit(TargetDirectory=""):
-        return ParseProcessResponse(CDLaunchReturn("git rev-parse HEAD",TargetDirectory))
-
-    @staticmethod
-    def GetRemoteCommit(TargetDirectory=""):
-        return ParseProcessResponse(CDLaunchReturn("git rev-parse `git branch -r --sort=committerdate | tail -1`", TargetDirectory))
-
-    @staticmethod
-    def GetStatus(TargetDirectory=""):
-        return MultipleCDLaunch("git status", TargetDirectory, False, 10)
-
-    @staticmethod
-    def ResetHard(TargetDirectory=""):
-        CDLaunchReturn("git reset --hard", TargetDirectory)
-
-    @staticmethod
-    def CleanUntracked(TargetDirectory=""):
-        CDLaunchReturn("git clean -fdx", TargetDirectory)
-
-    @staticmethod
-    def IsRepositoryClean():
-        return "nothing to commit, working tree clean" in Git.GetStatus()
-
-    @staticmethod
-    def FindGitRepo(BaseFolder, Url, Commit=None):
-        if Url.startswith("git@"):
-            OtherUrl = SSHToUrl(Url)
-        else:
-            OtherUrl = UrlToSSH(Url)
-
-        for SubFolder in os.listdir(BaseFolder):
-            FullPath = BaseFolder+"/"+SubFolder
-            # Only look for directories
-            if os.path.isdir(FullPath):
-                # Only search if has .git folder or ends with .git
-                # So we can filter and only look in repositories and BareGits
-                if os.path.isfile(FullPath+"/.git") or SubFolder.endswith(".git"):
-                    # Assume url is the same (until we can suppress username and
-                    # pass request
-                    PathUrl = Git.GetURL(FullPath)
-                    if Url == PathUrl or OtherUrl == PathUrl:
-                        PathCommit = Git.GetLocalCommit(FullPath)
-                        if Commit == None:
-                            return FullPath
-                        elif Commit == PathCommit:
-                            return FullPath
-                # For other types of folders, recursively call FindGitRepo
-                else:
-                    Result = Git.FindGitRepo(FullPath, Url, Commit)
-                    if Result != None:
-                        return Result
-        return None
-
-    @staticmethod
-    # Setup a git repositorys' bare data
-    def SetupBareData(BareGits, Repo):
-        ActiveSettings = get_active_settings()
-        BareGit = Git.FindGitRepo(BareGits, Repo["url"])
-        if BareGit == None:
-            logging.info('Cloning repository data into '+BareGits)
-
-            if ActiveSettings["Clone Type"] == "ssh":
-                LaunchProcess('git clone "'+UrlToSSH(Repo["url"])+'" "'+BareGits+"/"+Repo["bare_tree_path"]+'" --bare')
-            else:
-                LaunchProcess('git clone "'+Repo["url"]+'" "'+BareGits+"/"+Repo["bare_tree_path"]+'" --bare')
-
-
-            Repo["bare_path"] = BareGits + "/" + Repo["bare_tree_path"]
-
-            if False == os.path.isdir(Repo["bare_path"]):
-                print("Bare git "+Repo["bare_path"]+" could not be pulled")
-                exit(-1)
-
-        else:
-            Repo["bare_path"] = BareGit
-
     """
     Add a worktree of repo at TargetPath
     """
@@ -129,7 +15,7 @@ class Git():
         # Check required data (commit and branch
         CommitIsh = None
         CommitIshType = None
-        DefaultBranch = Git.GetDefaultBranch(Repo["bare_path"])
+        DefaultBranch = Git.GetDefaultBranch(Repo["bare path"])
         Repo["source"] = TargetPath
 
         if Repo["branch"] != None:
@@ -175,7 +61,7 @@ class Git():
 
             # -f so it overrides any previous worktrees defined in the same path
             # (project might have been present before and removed)
-            CDLaunchReturn("git worktree add "+Repo["source"]+" --track -f --checkout -b "+LocalName+" "+CommitIsh, Repo["bare_path"])
+            CDLaunchReturn("git worktree add "+Repo["source"]+" --track -f --checkout -b "+LocalName+" "+CommitIsh, Repo["bare path"])
 
             CDLaunchReturn('git config --add remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"', Repo["source"])
             CDLaunchReturn("git fetch origin '*:*'", Repo["source"])
@@ -192,7 +78,7 @@ class Git():
         # Commit worktrees cant be updated (currently) so we snip the .git
         elif CommitIshType == "commit":
             logging.info("Adding new commit based worktree ("+CommitIsh+")")
-            CDLaunchReturn("git worktree add "+Repo["source"]+" -f --detach "+CommitIsh, Repo["bare_path"])
+            CDLaunchReturn("git worktree add "+Repo["source"]+" -f --detach "+CommitIsh, Repo["bare path"])
             # Will not be able to commit but cant remove remote, otherwise we
             # will not be able to figure out what URL the bare_git is related to
 
@@ -201,7 +87,7 @@ class Git():
 
     @staticmethod
     def DelWorktree(Repo):
-        CDLaunchReturn("git worktree remove "+Repo["source"], Repo["bare_path"])
+        CDLaunchReturn("git worktree remove "+Repo["source"], Repo["bare path"])
 
 def GetStatus():
     """
@@ -295,88 +181,6 @@ def GlobalPush():
             if PushStatus["code"] != 0:
                 logging.error(ColorFormat(Colors.Red, "Could not force push ("+str(PushStatus["code"])+"): "+PushStatus["output"]))
 
-def UserChooseProject():
-    """
-    Print currently available projects and ask user
-    to choose one of them
-    """
-
-    Index = 0
-    ProjectsAvailable = []
-    print("Installed projects:")
-    for Entry in os.scandir("projects"):
-        if Entry.name == "" or Entry.name == ".gitignore":
-            continue
-
-        """
-        Repositories can have the same name (different URLs)
-        As such, we cannot rely on the name of the project to
-        """
-
-        if not Entry.is_dir():
-            print("Unexpected file in projects "+Entry.path+"/"+Entry.name)
-            continue
-
-        Url = ""
-        FolderPath = Entry.path
-        FilePath = os.path.join(FolderPath, "root_url.txt")
-
-        if os.path.isfile(FilePath):
-            with open(FilePath, "r") as file:
-                Url = file.read()[:-1].strip()
-        else:
-            print(ColorFormat(Colors.Red, "Cannot open project "+Entry.name+", root_url.txt not found"))
-            continue
-
-        if Url == "":
-            continue
-
-        Name = GetRepoNameFromURL(Url)
-        print("\t["+str(Index)+"] "+ColorFormat(Colors.Blue, Name)+" : "+Url)
-        ProjectsAvailable.append(Url)
-        Index += 1
-    if Index == 0:
-        UserInput = input("Remote project repository URL: ")
-    else:
-        UserInput = input("Insert a number to choose from the existing projects, or a URL to download a new one: ")
-
-    try:
-        InsertedIndex = int(UserInput)
-        # User chose an Index
-        RemoteRepoUrl = ProjectsAvailable[InsertedIndex]
-    except Exception as Ex:
-        # Not an Index, assume URL
-        RemoteRepoUrl = UserInput
-
-    return RemoteRepoUrl
-
-
-
-def GetRepoNameFromPath(Path):
-    CurrentDirectory = os.getcwd()
-
-    os.chdir(Path)
-
-    UrlOutput = LaunchProcess("git config --get remote.origin.url")
-    os.chdir(CurrentDirectory)
-    if UrlOutput == None or len(UrlOutput["output"]) == 0:
-        raise Exception("Could not retrieve Name from path \"" + Path + "\"")
-
-    return GetRepoNameFromURL(UrlOutput["output"])
-
-def GetRepoBareTreePath(Url):
-    if Url[-1] == '/':
-        Url = Url[:-1]
-    Url = Url.replace("https://","")
-    Url = Url.replace("http://","")
-    return Url+".git"
-
-def GetRepoURL():
-    if len(sys.argv) > 1:
-        return sys.argv[1]
-    else:
-        return UserChooseProject()
-
 def GetGitPaths(BasePath):
     GitRepos = []
     if not os.path.isdir(BasePath):
@@ -384,6 +188,7 @@ def GetGitPaths(BasePath):
         return
 
     CurrentDirectory = os.getcwd()
+    sys.exit(0)
     os.chdir(BasePath)
 
     if LaunchSilentProcess("find -maxdepth 1 -name .git")["output"] != "":
@@ -396,34 +201,3 @@ def GetGitPaths(BasePath):
             GitRepos = GitRepos + GetGitPaths(BasePath+"/"+Inode)
 
     return GitRepos
-
-"""
-From: https://<git repo>/<path el 1>/<path el 2>/<path el 3>/<path el 4>
-To: git@<git repo>:<path el 1>/<path el 2>/<path el 3>/<path el 4>.git
-"""
-def UrlToSSH(Url):
-    if "https" not in Url:
-        raise Exception("Cannot convert "+Url)
-
-    if Url.endswith(".git"):
-        Url = Url[:-4]
-
-    # split and remove repeated  '/'
-    Spl = [ x for x in Url.split("/") if len(x) != 0]
-    return "git@" + Spl[1] + ":" + '/'.join(Spl[2:])+".git"
-
-"""
-From: git@<git repo>:<path el 1>/<path el 2>/<path el 3>/<path el 4>.git
-To: https://<git repo>/<path el 1>/<path el 2>/<path el 3>/<path el 4>
-"""
-def SSHToUrl(GitSSH):
-    if "git" not in GitSSH:
-        return GitSSH
-
-    Head, Path = GitSSH.split(":")
-    Remote = Head.split("@")[1]
-
-    if Path.endswith(".git"):
-        Path = Path[:-4]
-
-    return "https://" + Remote + "/" + Path

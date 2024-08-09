@@ -2,15 +2,33 @@ import sys
 import argparse
 from data.common import *
 from data.json import *
+from data.git import GetRepoNameFromURL
+from enum import Enum
 
-Settings = {}
+class CLONE_TYPE(Enum):
+    HTTPS = "https"
+    SSH   = "ssh"
+    NONE  = "none"
+
 ActiveSettings ={}
 ActiveProjectName = ""
 
-class Settings(dict):
-    def __init__(self):
-        pass
-    
+class SETTINGS(dict):
+    def init(self):
+        # Initialize parser
+        self.parse_arguments()
+
+    def start(self):
+        # Commit or branch
+        if self["commit"] != None and self["branch"] != None:
+            Abort("Please use either commit or branch, not both")
+
+        if self["url"] == None and (self["commit"] != None or self["branch"] != None):
+            Abort("If you provide a commit/branch, you also need to provide a URL")
+
+        # Set base project settings
+        self["name"] = GetRepoNameFromURL(self["url"])
+
     def parse_arguments(self):
         Parser = argparse.ArgumentParser()
         Parser.description = "Extra command line arguments are treated as commands for ProjectBase"
@@ -37,16 +55,16 @@ class Settings(dict):
         self["action"] = ActionArgs
 
     def save_persisted_settings(self):
-        DumpJsonFile(settings["persisted"], settings["paths"]["configs"]+"/settings")
+        dump_json_file(self["persisted"], self["paths"]["configs"] + "/project_cache/settings")
 
     def load_persistent_settings(self):
         global ActiveSettings
 
-        ProjectName = settings["ProjectName"]
+        ProjectName = self["ProjectName"]
 
         DefaultSettings = {
             "Mode":       "Debug",
-            "Clone Type": "https"
+            "Clone Type": CLONE_TYPE.SSH.value
         }
 
         DefaultProjectSettings = {
@@ -54,44 +72,13 @@ class Settings(dict):
         }
 
         # Get persisted project settings
-        persisted_settings = LoadJsonFile(settings["paths"]["configs"]+"/settings", DefaultProjectSettings)
+        persisted_settings = load_json_file(self["paths"]["configs"]+"/project_cache/settings", DefaultProjectSettings)
 
         if ProjectName not in persisted_settings.keys():
             persisted_settings[ProjectName] = DefaultSettings
 
-        settings["persisted"] = persisted_settings
-        settings["active"]    = persisted_settings[ProjectName]
+        self["persisted"] = persisted_settings
+        self["active"]    = persisted_settings[ProjectName]
+        # self["active"]    = GetValueOrDefault(persisted_settings[ProjectName][""])
 
-settings = Settings()
-
-def get_active_settings():
-    global ActiveProjectName
-    if ActiveProjectName not in Settings.keys():
-        print("'" + ActiveProjectName + "' is not an existing project")
-        sys.exit(0)
-    return Settings[ActiveProjectName]
-
-def MainSettingsMenu(Project):
-    global ActiveSettings
-
-    OptionIndex = 0
-    for OptionKey in SettingsOptions.keys():
-        MenuText = ""
-        # Possible values
-        OptionValues = SettingsOptions[OptionKey][1]
-        MenuText += "\t" + str(OptionIndex) + ") [" + OptionKey + "]\t"
-
-        # If set, choose the appropriate text
-        # Otherwise just choose the first one
-        if OptionKey in ActiveSettings.keys():
-            MenuText += OptionValues[ActiveSettings[OptionKey]]
-        else:
-            MenuText += list(OptionValues.values())[0]
-
-        print(MenuText)
-
-        OptionIndex = OptionIndex + 1
-
-    Setting = int(input("[<] "))
-
-    list(SettingsOptions.values())[Setting][0](Project)
+Settings = SETTINGS()

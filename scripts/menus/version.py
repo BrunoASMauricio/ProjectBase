@@ -12,7 +12,7 @@ ResetMenu.add_callback_entry("Reset to latest sync", None)
 
 VersioningMenu = Menu("Version Menu")
 
-VersioningMenu.prologue = ColorFormat(Colors.Yellow, ">> Versioning control <<")
+VersioningMenu.prologue = ColorFormat(Colors.Yellow, ">> Versioning control <<\n")
 # Spawn a console on the repositorys' directory
 VersioningMenu.add_callback_entry("Directly manage single repository", None)
 # Get status of the repositories
