@@ -1,9 +1,10 @@
 import re
 import os
 import sys
+import difflib
 import unicodedata
-from data.colors import ColorFormat, Colors
 from data.paths import GetBasePaths
+from data.colors import ColorFormat, Colors
 
 def AppendToEnvVariable(EnvVariable, NewValue):
     if NewValue == None:
@@ -101,13 +102,6 @@ Remove 'None' elements from a list
 """
 def RemoveNone(List):
     return [ListEl for ListEl in List if ListEl != None]
-
-"""
-True if Value is None or 0
-TODO: Remove
-"""
-def IsEmptyOrNone(Value):
-    return (Value == None or len(Value) == 0)
 
 def StringIsNumber(Str):
     number_regex = '^[0-9]+$'

@@ -55,11 +55,11 @@ class PROJECT(dict):
             self.root_repo_base_config["commitish"] = None
 
         self.repositories = LoadRepositories(self.root_repo_base_config, self.cache_path)
-        Setup(self.repositories)
+
+    def setup(self):
+        Setup(self.GetRepositories())
     
     def build(self):
-        if len(self.repositories) == 0:
-            self.load()
         CMakeCommand =  'cmake'
         # Dont complain about unused -D parameters, they are not mandatory
         CMakeCommand += ' --no-warn-unused-cli'
@@ -70,21 +70,25 @@ class PROJECT(dict):
         CMakeCommand += ' -DPROJECT_BASE_SCRIPT_PATH=' + self.paths["scripts"]
         CMakeCommand += ' && cmake --build ' + self.paths["cmake"] + ' -- -j $(nproc)'
 
-        Build(self.repositories, CMakeCommand)
+        Build(self.GetRepositories(), CMakeCommand)
     
     def SetCloneType(self, clone_type):
-        if len(self.repositories) == 0:
-            self.load()
-        # print(self.repositories)
-        for url_id in self.repositories:
-            repository = self.repositories[url_id]
+        repos = self.GetRepositories()
+        for url_id in repos:
+            repository = repos[url_id]
             prev_url = GetRepositoryUrl(repository["full worktree path"])
             if clone_type == CLONE_TYPE.SSH.value:
                 url = url_HTTPS_to_SSH(prev_url)
             else:
                 url = url_SSH_to_HTTPS(prev_url)
 
-            CDLaunchReturn("git remote rm origin; git remote add origin " + url, repository["full worktree path"], True)
+            CDLaunchReturn("git remote rm origin; git remote add origin " + url, repository["full worktree path"])
+
+    def GetRepositories(self):
+        # Not loaded, load before returning
+        if len(self.repositories) == 0:
+            self.load()
+        return self.repositories
 
 Project = PROJECT()
 
