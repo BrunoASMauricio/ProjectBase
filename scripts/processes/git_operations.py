@@ -1,5 +1,7 @@
 import os
 from processes.process import MultipleCDLaunch
+from data.git import GetRepoNameFromURL
+from data.common import IsEmpty
 
 def GetGitResult(git_command, path):
     if path == None:
@@ -38,15 +40,15 @@ def GetRepoDefaultBranch(path = None):
         Message += "Output: " + str(RemoteResult["output"]) + "\n"
         raise Exception(Message)
 
-    GetGitResult("git remote show " + RemoteResult["output"] + " 2>/dev/null | sed -n '/HEAD branch/s/.*: //p'")
-    if DefaultBranch["code"] != 0:
+    DefaultBranch = GetGitResult("git remote show " + RemoteResult["output"] + " 2>/dev/null | sed -n '/HEAD branch/s/.*: //p'")
+    if IsEmpty(DefaultBranch):
         Message  = "No default branch for "
         Message += GetRepositoryUrl(path) + " at " + path + "\n"
         Message += "Code: " + str(DefaultBranch["code"]) + "\n"
         Message += "Output: " + str(DefaultBranch["output"]) + "\n"
         raise Exception(Message)
 
-    return DefaultBranch["output"].split("/")[-1].strip()
+    return DefaultBranch.split("/")[-1].strip()
 
 # ================= SET operations =================
 

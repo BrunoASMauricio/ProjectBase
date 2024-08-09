@@ -64,20 +64,6 @@ def GetRepoNameFromURL(Url):
         Url = Url[:-4]
     return Url
 
-import sys
-def GetRepoNameFromPath(Path):
-    CurrentDirectory = os.getcwd()
-
-    sys.exit(0)
-    os.chdir(Path)
-
-    UrlOutput = LaunchProcess("git config --get remote.origin.url")
-    os.chdir(CurrentDirectory)
-    if UrlOutput == None or len(UrlOutput["output"]) == 0:
-        raise Exception("Could not retrieve Name from path \"" + Path + "\"")
-
-    return GetRepoNameFromURL(UrlOutput["output"])
-
 def GetRepoBareTreePath(url):
     url = url_SSH_to_HTTPS(url)
     if url[-1] == '/':

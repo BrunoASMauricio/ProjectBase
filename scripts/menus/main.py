@@ -38,7 +38,7 @@ def generate_project_description():
 MainMenu = Menu("Main Menu", True)
 MainMenu.prologue = main_description
 MainMenu.epilogue = ColorFormat(Colors.Green, "Ctrl + D to exit")
-MainMenu.add_callback_entry(generate_project_description, Project.load)
+MainMenu.add_callback_entry(generate_project_description, Project.setup)
 MainMenu.add_callback_entry("Build project (launches the build environment for this purpose)", Project.build)
 MainMenu.add_submenu_entry("Run", RunMenu)
 MainMenu.add_submenu_entry("Analyze", AnalysisMenu)

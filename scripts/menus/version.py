@@ -1,4 +1,5 @@
 from menus.menu import Menu
+from processes.versioning import DirectlyManageSingleRepository
 from git import *
 
 SyncMenu = Menu()
@@ -14,7 +15,7 @@ VersioningMenu = Menu("Version Menu")
 
 VersioningMenu.prologue = ColorFormat(Colors.Yellow, ">> Versioning control <<\n")
 # Spawn a console on the repositorys' directory
-VersioningMenu.add_callback_entry("Directly manage single repository", None)
+VersioningMenu.add_callback_entry("Directly manage single repository", DirectlyManageSingleRepository)
 # Get status of the repositories
 VersioningMenu.add_callback_entry("Status", None)
 # Save all changes and Commit currently saved changes

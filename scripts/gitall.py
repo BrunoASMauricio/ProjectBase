@@ -20,25 +20,25 @@ def __handleGitStatus(project):
 
     print("\nManaged repositories:")
     DirtyKnownRepos = RunOnFolders(KnownPaths, GetStatus)
-    if IsEmptyOrNone(DirtyKnownRepos):
+    if IsEmpty(DirtyKnownRepos):
         print("\tNone")
 
     DirtyKnownRepos = RemoveNone(DirtyKnownRepos)
 
     print("\nUnmanaged repositories:")
     DirtyUnknownRepos = RunOnFolders(UnknownPaths, GetStatus)
-    if IsEmptyOrNone(DirtyUnknownRepos):
+    if IsEmpty(DirtyUnknownRepos):
         print("\tNone")
 
     DirtyUnknownRepos = RemoveNone(DirtyUnknownRepos)
 
     print("\nProject is ", end="")
-    if IsEmptyOrNone(DirtyKnownRepos):
+    if IsEmpty(DirtyKnownRepos):
         print(ColorFormat(Colors.Green, "clean"))
     else:
         print(ColorFormat(Colors.Red, "dirty ("+str(len(DirtyKnownRepos))+": "+', '.join(DirtyKnownRepos)+")"))
 
-    if not IsEmptyOrNone(DirtyUnknownRepos):
+    if not IsEmpty(DirtyUnknownRepos):
         print("There are dirty unknown git repositories:")
         print(ColorFormat(Colors.Red, "dirty ("+str(len(DirtyUnknownRepos))+": "+', '.join(DirtyUnknownRepos)+")"))
 
