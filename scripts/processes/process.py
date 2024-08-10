@@ -12,6 +12,28 @@ from data.settings import Settings
 
 #                           PROCESS OPERATIONS
 
+"""
+For each path, change directory to it, execute the provided function with the
+provided arguments, concatenate result into list and return said list
+"""
+def RunOnFolders(paths, callback, arguments={}):
+    op_status = []
+    current_dir = os.getcwd()
+
+    for path in paths:
+        if not os.path.isdir(path):
+            raise Exception(path+" is not a valid directory, cannot perform "+str(callback)+"("+str(arguments)+")")
+
+        os.chdir(path)
+
+        Result = callback(**arguments)
+        op_status.append(Result)
+        # Sleep to prevent what?
+
+    os.chdir(current_dir)
+
+    return op_status
+
 def RunExecutable(CommandString):
     return subprocess.run(CommandString, shell=True)
 
@@ -22,13 +44,13 @@ def LaunchProcess(Command, ToPrint=False):
     ToPrint: whether to print the output (process thinks it is in a TY)
 
     Returns:
-        _type_: {"output":"<stdout>", "code": return code}
+        _type_: {"stdout":"<stdout>", "code": return code}
     """
 
-    Returned = {"output": "", "code": ""}
+    Returned = {"stdout": "", "code": ""}
 
     if Command == "":
-        return {"output": "", "code": ""}
+        return {"stdout": "", "code": ""}
 
     if ToPrint == True:
         print(ColorFormat(Colors.Blue, Command))
@@ -52,22 +74,41 @@ def LaunchProcess(Command, ToPrint=False):
             NoEscapeUTF8 = RemoveAnsiEscapeCharacters(OutputUTF8)
             CleanUTF8 = RemoveControlCharacters(NoEscapeUTF8)
 
-            Returned["output"] = CleanUTF8
+            Returned["stdout"] = CleanUTF8
         else:
-            Returned["output"] = ""
+            Returned["stdout"] = ""
     else:
         Result = subprocess.run(['bash', '-c', Command],
                                 stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT)
-        Returned["output"] = Result.stdout.decode('utf-8')
+                                stderr=subprocess.PIPE)
+        Returned["stdout"] = Result.stdout.decode('utf-8')
+        Returned["stderr"] = Result.stderr.decode('utf-8')
         Returned["code"] = int(Result.returncode)
+
+    if Returned["code"] != 0:
+        message  = "\n\t========================= Process failed (start) =========================\n"
+        message += "\t\tProcess returned failure (" + ColorFormat(Colors.Yellow, str(Returned["code"])) + "):\n"
+        message += ColorFormat(Colors.Cyan, Command+"\n")
+        message += ColorFormat(Colors.Blue, "stdout: " + Returned["stdout"]+"\n")
+        message += ColorFormat(Colors.Red,  "stderr: " + Returned["stderr"]+"\n")
+        message += "Stack Trace:\n"
+        for line in traceback.format_stack():
+            pieces = line.strip().split("\n")
+            if len(pieces) == 2:
+                file, callback = pieces
+                function  = file.split(" in ")[-1]
+                # line NUMBER, .. # Get NUMBER, .. # Remove .. # Remove ,
+                file_line = file.split(" line ")[-1].split(" ")[0][:-1]
+                message += function + "() line " + str(file_line) + "\n" +ColorFormat(Colors.Green, callback) + "\n"
+            else:
+                message += line
+        message += "\n\t========================= Process failed (end) =========================\n"
+        logging.error(message)
 
     return Returned
 
 def ParseProcessResponse(Response):
-    if Response["code"] != 0:
-        return ""
-    return RemoveControlCharacters(Response["output"].rstrip())
+    return RemoveControlCharacters(Response["stdout"].rstrip())
 
 def OpenBashOnDirectoryAndWait(WorkingDirectory):
     print("Opening new slave terminal")
@@ -95,12 +136,12 @@ def AssertProcessRun(Process, ExpectedCode, ExpectedOutput):
         Message += "\n\tGot " + str(Result["code"])
         Abort(Message)
 
-    if Result["output"] != ExpectedOutput:
-        TextDiff = GetTextDiff(ExpectedOutput, Result["output"])
+    if Result["stdout"] != ExpectedOutput:
+        TextDiff = GetTextDiff(ExpectedOutput, Result["stdout"])
         Message  = "Wrong output for process"
         Message += ''.join(TextDiff)
-        Message += "\t\nExpected (" + str(len(Result["output"])) + " characters)"
-        Message += "="*30 + "\n>"+Result["output"]+"<"
+        Message += "\t\nExpected (" + str(len(Result["stdout"])) + " characters)"
+        Message += "="*30 + "\n>"+Result["stdout"]+"<"
         Message += "\t\nGot (" + str(len(ExpectedOutput)) + " characters)"
         Message += "="*30 + "\n>"+ExpectedOutput+"<"
         Abort(Message)
@@ -109,7 +150,7 @@ def AssertProcessRun(Process, ExpectedCode, ExpectedOutput):
 Changes to the given directory, launches the Command in a forked process and
 returns the { "stdout": "..." , "code": "..."  } dictionary
 """
-def CDLaunchReturn(Command, Path="", ToPrint=False):
+def LaunchProcessAt(Command, Path="", ToPrint=False):
     if Path != "":
         # CurrentDirectory = os.getcwd()
         # os.chdir(Path)
@@ -123,7 +164,7 @@ def CDLaunchReturn(Command, Path="", ToPrint=False):
 """
 Changes to the given directory, launches the Command in a forked process and
 returns the parsed stdout.
-While the "output" Returned is empty, tries again
+While the "stdout" Returned is empty, tries again
 """
 def MultipleCDLaunch(Command, Path, ToPrint, Attempts=3):
     i = 0
@@ -131,7 +172,7 @@ def MultipleCDLaunch(Command, Path, ToPrint, Attempts=3):
     ThrownException = None
     while (Output == None or Output == "") and i < Attempts:
         try:
-            Output = ParseProcessResponse(CDLaunchReturn(Command, Path, ToPrint))
+            Output = ParseProcessResponse(LaunchProcessAt(Command, Path, ToPrint))
         except Exception as ex:
             Output = None
             ThrownException = ex
