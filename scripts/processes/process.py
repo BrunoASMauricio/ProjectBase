@@ -47,10 +47,10 @@ def LaunchProcess(Command, ToPrint=False):
         _type_: {"stdout":"<stdout>", "code": return code}
     """
 
-    Returned = {"stdout": "", "code": ""}
+    Returned = {"stdout": "", "stderr": "", "code": ""}
 
     if Command == "":
-        return {"stdout": "", "code": ""}
+        return {"stdout": "", "stderr": "", "code": ""}
 
     if ToPrint == True:
         print(ColorFormat(Colors.Blue, Command))
