@@ -37,15 +37,15 @@ def GetRepoDefaultBranch(path = None):
         Message  = "No remote setup, cant fetch default branch for "
         Message += GetRepositoryUrl(path) + " at " + path
         Message += "Code: " + str(RemoteResult["code"]) + "\n"
-        Message += "Output: " + str(RemoteResult["output"]) + "\n"
+        Message += "Output: " + str(RemoteResult["stdout"]) + "\n"
         raise Exception(Message)
 
-    DefaultBranch = GetGitResult("git remote show " + RemoteResult["output"] + " 2>/dev/null | sed -n '/HEAD branch/s/.*: //p'")
+    DefaultBranch = GetGitResult("git remote show " + RemoteResult["stdout"] + " 2>/dev/null | sed -n '/HEAD branch/s/.*: //p'")
     if IsEmpty(DefaultBranch):
         Message  = "No default branch for "
         Message += GetRepositoryUrl(path) + " at " + path + "\n"
         Message += "Code: " + str(DefaultBranch["code"]) + "\n"
-        Message += "Output: " + str(DefaultBranch["output"]) + "\n"
+        Message += "Output: " + str(DefaultBranch["stdout"]) + "\n"
         raise Exception(Message)
 
     return DefaultBranch.split("/")[-1].strip()

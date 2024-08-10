@@ -53,10 +53,6 @@ Recursively scan a folder for a .git repository whose url matches the provided r
 If commit is not None, will only match exact commit
 """
 def FindGitRepo(base_path, repo_url, repo_commitish = None, depth=-1):
-    repo_url    = FixUrl(repo_url)
-    flipped_url = FlipUrl(repo_url)
-    Result = None
-
     if depth == 0:
         return None
 
@@ -64,10 +60,8 @@ def FindGitRepo(base_path, repo_url, repo_commitish = None, depth=-1):
     if not os.path.isdir(base_path):
         return None
 
-    # Check current path
-    path_url = GetRepositoryUrl(base_path)
     # TODO: Is this really the better option?? Just blindly assume the flipped url is valid
-    if repo_url == path_url or flipped_url == path_url:
+    if SameUrl(repo_url, GetRepositoryUrl(base_path)):
         if repo_commitish != None:
             # Look into commit
             if repo_commitish["type"] == "commit":
@@ -105,18 +99,24 @@ def FindGitRepo(base_path, repo_url, repo_commitish = None, depth=-1):
 
     return None
 
-def GetAllGitRepos(path_to_search):
+def GetAllGitRepos(path_to_search, depth=-1):
     git_repos = []
     if not os.path.isdir(path_to_search):
         logging.error(path_to_search+" is not a valid directory")
-        return
+        return None
+
+    if depth == 0:
+        return None
 
     if FolderIsGit(path_to_search):
         git_repos.append(path_to_search)
 
     for Inode in os.listdir(path_to_search):
         if os.path.isdir(path_to_search+"/"+Inode) and Inode != ".git":
-            git_repos = git_repos + GetAllGitRepos(path_to_search+"/"+Inode)
+            if depth == -1: # No depth limitation
+                git_repos = git_repos + GetAllGitRepos(path_to_search+"/"+Inode)
+            else:
+                git_repos = git_repos + GetAllGitRepos(path_to_search+"/"+Inode, depth - 1)
 
     return git_repos
 
@@ -147,6 +147,8 @@ def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
     if existing_tree != None and GetParentPath(existing_tree) == target_path:
         # Already exists, skip
         return existing_tree
+    
+    LaunchProcessAt('git worktree prune', bare_path)
     # --track: Set remote and merge configurations to track upstream
     # --force: Override safe guards and allow same branch name to be checked out by multiple worktrees
     # 
@@ -154,38 +156,38 @@ def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
     new_repo_path = RemoveSequentialDuplicates(target_path + "/" + repo_name, "/")
 
     # In case we stopped before, remove existing temporary
-    CDLaunchReturn("git worktree remove " + new_repo_path, bare_path)
-    CDLaunchReturn("rm -rf " + new_repo_path)
+    LaunchProcessAt("git worktree remove " + new_repo_path, bare_path)
+    LaunchProcessAt("rm -rf " + new_repo_path)
 
     if repo_commitish != None:
         # If commit is defined, set it detached (it wont be updated)
         if repo_commitish["type"] == "commit":
             # print("git worktree add --force --detach " + new_repo_path + " " + repo_commitish["commit"])
-            CDLaunchReturn("git worktree add --force --detach " + new_repo_path + " " + repo_commitish["commit"], bare_path)
+            LaunchProcessAt("git worktree add --force --detach " + new_repo_path + " " + repo_commitish["commit"], bare_path)
         # If branch is defined, create a new random branch and make it follow the remote (it will be updated)
         elif repo_commitish["type"] == "branch":
-            CDLaunchReturn("git worktree add --force  " + new_repo_path + " " + repo_commitish["branch"], bare_path)
+            LaunchProcessAt("git worktree add --force  " + new_repo_path + " " + repo_commitish["branch"], bare_path)
             # # Setup so we can have a remote branch checked out in multiple local worktrees
             # # -b so the $local_branch is created
             # # --track so the $local_branch tracks the $remote_branch
 
             # # -f so it overrides any previous worktrees defined in the same path
             # # (project might have been present before and removed)
-            # CDLaunchReturn("git worktree add "+Repo["source"]+" --track -f --checkout -b "+LocalName+" "+CommitIsh, Repo["bare path"])
+            # LaunchProcessAt("git worktree add "+Repo["source"]+" --track -f --checkout -b "+LocalName+" "+CommitIsh, Repo["bare path"])
 
-            # CDLaunchReturn('git config --add remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"', Repo["source"])
-            # CDLaunchReturn("git fetch origin '*:*'", Repo["source"])
+            # LaunchProcessAt('git config --add remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"', Repo["source"])
+            # LaunchProcessAt("git fetch origin '*:*'", Repo["source"])
 
             # # Ensure git push is for upstream
-            # CDLaunchReturn("git config push.default upstream", Repo["source"])
+            # LaunchProcessAt("git config push.default upstream", Repo["source"])
 
             # # Make `git branch/switch/checkout` always merge from the starting point branch
-            # CDLaunchReturn("git config branch.autoSetupMerge always", Repo["source"])
-            # CDLaunchReturn("git config pull.rebase true", Repo["source"])
+            # LaunchProcessAt("git config branch.autoSetupMerge always", Repo["source"])
+            # LaunchProcessAt("git config pull.rebase true", Repo["source"])
         else:
             raise Exception("Invalid commitish: "+str(repo_commitish))
     else:
-        CDLaunchReturn("git worktree add --force " + new_repo_path, bare_path)
+        LaunchProcessAt("git worktree add --force " + new_repo_path, bare_path)
 
     # default_branch = GetRepoDefaultBranch()
     if not os.path.isdir(new_repo_path):
@@ -199,7 +201,7 @@ def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
     return new_repo_path
 
 def RemoveWorkTree(bare_path, target_path):
-    CDLaunchReturn("git worktree remove --force " + target_path, bare_path)
+    LaunchProcessAt("git worktree remove --force " + target_path, bare_path)
 
 """
 Move worktree from from_path to to_path
@@ -217,4 +219,4 @@ def GetRepoNameFromPath(Path):
     if IsEmpty(url):
         raise Exception("Could not retrieve Name from path \"" + Path + "\"")
 
-    return GetRepoNameFromURL(url)
+    return GetRepoNameFromURL(url["stdout"])

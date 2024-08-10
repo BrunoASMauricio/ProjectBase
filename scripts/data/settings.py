@@ -44,14 +44,19 @@ class SETTINGS(dict):
                             help = "Root repository's branch",
                             default=None, required=False, type=str, nargs=1)
 
+        Parser.add_argument("-s", "--single_thread",
+                            help = "Do not run PB in multiple threads",
+                            default=False, required=False, type=bool, action=argparse.BooleanOptionalAction)
+
         Parser.add_argument("-e", "--exit", action='store_true', help = "Exit after running command line arguments", default=False, required=False)
 
         ProjectArgs, ActionArgs = Parser.parse_known_args()
 
-        self["url"]    = ProjectArgs.url
-        self["commit"] = ProjectArgs.commit
-        self["branch"] = ProjectArgs.branch
-        self["exit"]   = ProjectArgs.exit
+        self["url"]           = ProjectArgs.url
+        self["commit"]        = ProjectArgs.commit
+        self["branch"]        = ProjectArgs.branch
+        self["exit"]          = ProjectArgs.exit
+        self["single_thread"] = ProjectArgs.single_thread
         self["action"] = ActionArgs
 
     def save_persisted_settings(self):

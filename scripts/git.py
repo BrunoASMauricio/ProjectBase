@@ -61,24 +61,24 @@ class Git():
 
             # -f so it overrides any previous worktrees defined in the same path
             # (project might have been present before and removed)
-            CDLaunchReturn("git worktree add "+Repo["source"]+" --track -f --checkout -b "+LocalName+" "+CommitIsh, Repo["bare path"])
+            LaunchProcessAt("git worktree add "+Repo["source"]+" --track -f --checkout -b "+LocalName+" "+CommitIsh, Repo["bare path"])
 
-            CDLaunchReturn('git config --add remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"', Repo["source"])
-            CDLaunchReturn("git fetch origin '*:*'", Repo["source"])
+            LaunchProcessAt('git config --add remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"', Repo["source"])
+            LaunchProcessAt("git fetch origin '*:*'", Repo["source"])
 
             # Ensure git push is for upstream
-            CDLaunchReturn("git config push.default upstream", Repo["source"])
+            LaunchProcessAt("git config push.default upstream", Repo["source"])
 
             # Make `git branch/switch/checkout` always merge from the starting point branch
-            CDLaunchReturn("git config branch.autoSetupMerge always", Repo["source"])
-            CDLaunchReturn("git config pull.rebase true", Repo["source"])
+            LaunchProcessAt("git config branch.autoSetupMerge always", Repo["source"])
+            LaunchProcessAt("git config pull.rebase true", Repo["source"])
 
             #git config branch.branchB.merge refs/heads/branchB
 
         # Commit worktrees cant be updated (currently) so we snip the .git
         elif CommitIshType == "commit":
             logging.info("Adding new commit based worktree ("+CommitIsh+")")
-            CDLaunchReturn("git worktree add "+Repo["source"]+" -f --detach "+CommitIsh, Repo["bare path"])
+            LaunchProcessAt("git worktree add "+Repo["source"]+" -f --detach "+CommitIsh, Repo["bare path"])
             # Will not be able to commit but cant remove remote, otherwise we
             # will not be able to figure out what URL the bare_git is related to
 
@@ -87,7 +87,7 @@ class Git():
 
     @staticmethod
     def DelWorktree(Repo):
-        CDLaunchReturn("git worktree remove "+Repo["source"], Repo["bare path"])
+        LaunchProcessAt("git worktree remove "+Repo["source"], Repo["bare path"])
 
 def GetStatus():
     """
@@ -134,9 +134,9 @@ def CheckoutBranch(Branch):
 
     LaunchProcess("git pull")
     Result = LaunchProcess("git checkout "+Branch)
-    if Result["output"] != "":
-        RepoName = GetRepoNameFromURL(LaunchProcess("git config --get remote.origin.url")["output"][:-1])
-        print(RepoName+": "+Result["output"])
+    if Result["stdout"] != "":
+        RepoName = GetRepoNameFromURL(LaunchProcess("git config --get remote.origin.url")["stdout"][:-1])
+        print(RepoName+": "+Result["stdout"])
 
 def FullCleanUpdate():
     """
@@ -173,13 +173,13 @@ def GlobalPush():
 
     if PushStatus["code"] != 0:
         # TODO Add possibility to open a terminal on that git
-        logging.error("Could not push (" + ColorFormat(Colors.Yellow, str(PushStatus["code"])) + ")!\n "+ColorFormat(Colors.Red, PushStatus["output"]))
+        logging.error("Could not push (" + ColorFormat(Colors.Yellow, str(PushStatus["code"])) + ")!\n "+ColorFormat(Colors.Red, PushStatus["stdout"]))
         logging.error("Local path: "+ColorFormat(Colors.Yellow, os.getcwd()))
         ForcePush = UserYesNoChoice("Try force push?")
         if ForcePush == True:
             PushStatus = LaunchVerboseProcess("git push -u origin $(git branch --show-current) -f")
             if PushStatus["code"] != 0:
-                logging.error(ColorFormat(Colors.Red, "Could not force push ("+str(PushStatus["code"])+"): "+PushStatus["output"]))
+                logging.error(ColorFormat(Colors.Red, "Could not force push ("+str(PushStatus["code"])+"): "+PushStatus["stdout"]))
 
 def GetGitPaths(BasePath):
     GitRepos = []
@@ -191,7 +191,7 @@ def GetGitPaths(BasePath):
     sys.exit(0)
     os.chdir(BasePath)
 
-    if LaunchSilentProcess("find -maxdepth 1 -name .git")["output"] != "":
+    if LaunchSilentProcess("find -maxdepth 1 -name .git")["stdout"] != "":
         GitRepos.append(BasePath)
 
     os.chdir(CurrentDirectory)

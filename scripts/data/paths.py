@@ -56,7 +56,7 @@ def GetProjectPaths(ProjectName):
     Paths["default local path"] = ""
 
     # Path for repositories that don't specify local_path
-    Paths["general repository"] = ''
+    Paths["general repository"] = ""
 
     # Path for output binaries
     Paths["objects"]     = Paths["binaries"]+"/objects"
@@ -68,3 +68,9 @@ def GetProjectPaths(ProjectName):
     Paths["data"]        = Paths["project main"]+"/data"
 
     return Paths
+
+def JoinPaths(*paths):
+    final_path = ""
+    for path in paths:
+        final_path = os.path.join(final_path, path)
+    return final_path

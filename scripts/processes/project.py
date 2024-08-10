@@ -3,7 +3,7 @@
 # from common import *
 # from git import *
 from data.settings        import Settings
-from data.paths           import GetProjectPaths
+from data.paths           import GetProjectPaths, JoinPaths
 from data.git             import GetRepoNameFromURL
 from processes.repository import LoadRepositories, Setup, Build
 from processes.process    import LaunchProcess
@@ -14,6 +14,7 @@ from processes.git_operations import GetRepositoryUrl
 from processes.filesystem import create_directory
 from processes.run_linter import CleanLinterFiles
 from data.settings import Settings, CLONE_TYPE
+from data.common import LoadFromFile, DumpToFile
 
 """
 Performs operations on a project
@@ -26,18 +27,22 @@ class PROJECT(dict):
 
         self.name = GetRepoNameFromURL(Settings["url"])
         self.repositories = {}
-
         self.paths = GetProjectPaths(self.name)
 
-        # LaunchProcess('''echo  "''' + self["ProjectRepoUrl"] + ''' " >  ''' + self.Paths["project main"]+"/root_url.txt")
         # Check and generate project structure if necessary
-        for PathName in self.paths:
-            LaunchProcess('mkdir -p "'+self.paths[PathName]+'"')
+        for path_name in self.paths:
+            path = self.paths[path_name]
+            # There are relative empty paths that symbolize "here"
+            if path != "":
+                LaunchProcess('mkdir -p "'+self.paths[path_name]+'"')
+
+        DumpToFile(JoinPaths(self.paths["project main"], "root_url.txt"), Settings["url"])
 
         Settings["ProjectName"] = self.name
         Settings["paths"]       = self.paths
-        self.cache_path = Settings["paths"]["configs"] + "/project_cache/repositories/" + self.name
-        create_directory(Settings["paths"]["configs"] + "/project_cache/repositories/")
+        repo_cache_path = JoinPaths(Settings["paths"]["configs"], "project_cache", "repositories")
+        self.cache_path = JoinPaths(repo_cache_path, self.name)
+        create_directory(repo_cache_path)
 
     def load(self):
         # Build root repo configs from CLI
@@ -68,7 +73,9 @@ class PROJECT(dict):
         # CMakeCommand += ' -DBUILD_MODE='+ActiveSettings["Mode"]
         CMakeCommand += ' -DPROJECT_NAME=' + self.name
         CMakeCommand += ' -DPROJECT_BASE_SCRIPT_PATH=' + self.paths["scripts"]
-        CMakeCommand += ' && cmake --build ' + self.paths["cmake"] + ' -- -j $(nproc)'
+        CMakeCommand += ' && cmake --build ' + self.paths["cmake"]
+        # Enable multi process
+        CMakeCommand += ' -- -j $(nproc)'
 
         Build(self.GetRepositories(), CMakeCommand)
     
@@ -82,7 +89,7 @@ class PROJECT(dict):
             else:
                 url = url_SSH_to_HTTPS(prev_url)
 
-            CDLaunchReturn("git remote rm origin; git remote add origin " + url, repository["full worktree path"])
+            LaunchProcessAt("git remote rm origin; git remote add origin " + url, repository["full worktree path"])
 
     def GetRepositories(self):
         # Not loaded, load before returning
@@ -99,10 +106,10 @@ def UserChooseProject():
     """
 
     Index = 0
-    ProjectsAvailable = []
+    projects_available = []
     print("Installed projects:")
-    for Entry in os.scandir("projects"):
-        if Entry.name == "" or Entry.name == ".gitignore":
+    for entry in os.scandir("projects"):
+        if entry.name == "" or entry.name == ".gitignore":
             continue
 
         """
@@ -110,27 +117,20 @@ def UserChooseProject():
         As such, we cannot rely on the name of the project to
         """
 
-        if not Entry.is_dir():
-            print("Unexpected file in projects "+Entry.path+"/"+Entry.name)
+        if not entry.is_dir():
+            print("Unexpected file in projects "+entry.path+"/"+entry.name)
             continue
 
-        Url = ""
-        FolderPath = Entry.path
-        # Yo Alvaro, qual era a razao para este file?
-        # FilePath = os.path.join(FolderPath, "root_url.txt")
-        # if os.path.isfile(FilePath):
-        #     with open(FilePath, "r") as file:
-        #         Url = file.read()[:-1].strip()
-        # else:
-        #     print(ColorFormat(Colors.Red, "Cannot open project "+Entry.name+", root_url.txt not found"))
-        #     continue
-        Url = GetRepositoryUrl(FolderPath)
-        if Url == "":
+        url = LoadFromFile(JoinPaths(entry.path, "root_url.txt"), None)
+        if url == None:
+            logging.error("Invalid project at " + entry.path + ", cannot load root_url.txt")
             continue
 
-        Name = GetRepoNameFromURL(Url)
-        print("\t["+str(Index)+"] "+ColorFormat(Colors.Blue, Name)+" : "+Url)
-        ProjectsAvailable.append(Url)
+        # Url = file.read()[:-1].strip()
+
+        name = GetRepoNameFromURL(url)
+        print("\t["+str(Index)+"] " + ColorFormat(Colors.Blue, name) + " : " + url)
+        projects_available.append(url)
         Index += 1
     if Index == 0:
         UserInput = input("Remote project repository URL: ")
@@ -141,7 +141,7 @@ def UserChooseProject():
         try:
             InsertedIndex = int(UserInput)
             # User chose an Index
-            RemoteRepoUrl = ProjectsAvailable[InsertedIndex]
+            RemoteRepoUrl = projects_available[InsertedIndex]
             break
         except Exception as Ex:
             # Not an Index, assume URL
