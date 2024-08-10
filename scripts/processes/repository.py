@@ -1,5 +1,6 @@
 import sys
 import logging
+from time import sleep
 from data.git import GetRepoNameFromURL
 from processes.git import *
 from data.common import RemoveSequentialDuplicates, SetupTemplateScript, IsEmpty
@@ -8,7 +9,7 @@ from data.json import dump_json_file, load_json_file
 from processes.repository_configs import LoadConfigs, MergeConfigs, ParseConfigs
 from data.common import GetValueOrDefault
 from processes.filesystem import create_directory
-from processes.progress_bar import printProgressBar
+from processes.progress_bar import PrintProgressBar
 from threading import Thread, Lock
 
 repositories_lock = Lock()
@@ -127,18 +128,30 @@ def __RunRepoCommands(command_set_name, commands):
     if len(commands) > 0:
         logging.info("Running " + command_set_name + " commands")
         for block_name in commands:
-            logging.info(block_name)
+            logging.info("\t Command block:" + block_name)
             command_block     = commands[block_name]
             proceed_condition = command_block["condition to proceed"]
             command_list      = command_block["command list"]
             result = ParseProcessResponse(LaunchVerboseProcess(proceed_condition))
             if result != "":
-                logging.info(proceed_condition + " is False, skipping " + str(len(command_list)) + " commands")
+                logging.info("\t Condition to proceed: '" + proceed_condition + "' is False, skipping " + str(len(command_list)) + " commands")
                 return
 
-            logging.info(proceed_condition + " is True, running " + str(len(command_list)) + " commands")
+            logging.info("\t Condition to proceed: '" + proceed_condition + "' is True, running " + str(len(command_list)) + " commands")
             # TODO: after console merge, run these one at a time and explicitly check return value?
             LaunchVerboseProcess("set -xe && "+' && '.join(command_list))
+
+def __CurrentlyLoadedRepoAmount():
+    global repositories
+    return len([x for x in repositories if repositories[x]["reloaded"] == True])
+
+def __PrintLoadProgress():
+    current_progress = __CurrentlyLoadedRepoAmount()
+    total_repos      = len(repositories) + len(dependencies)
+    if total_repos == current_progress:
+        PrintProgressBar(current_progress, total_repos, prefix = 'Loading Repositories:', suffix = 'Loaded ('+str(current_progress)+') Repositories')
+    else:
+        PrintProgressBar(current_progress, total_repos, prefix = 'Loading Repositories:', suffix = "Loading " + str(current_progress) + "/" + str(total_repos) + " Repositories")
 
 def LoadRepositories(root_configs, cache_path):
     global repositories
@@ -157,18 +170,18 @@ def LoadRepositories(root_configs, cache_path):
 
     unloaded = True
     loaded_amount = 0
+    dependencies.clear()
     while unloaded == True:
-        printProgressBar(loaded_amount, len(repositories), prefix = 'Loading Repositories:', suffix = "Loading " + str(len(repositories)) + " repositories", length = len(repositories))
+        __PrintLoadProgress()
         loaded_amount = 0
-        dependencies.clear()
         threads = []
 
         # For each unloaded repository, load it
         for repo_id in repositories:
             if repositories[repo_id]["reloaded"] == False:
-                print("Loading "+repo_id)
                 if Settings["single_thread"]:
                     LoadRepository(repositories[repo_id])
+                    __PrintLoadProgress()
                 else:
                     thread = Thread(target=LoadRepository, args=(repositories[repo_id],))
                     threads.append(thread)
@@ -178,8 +191,15 @@ def LoadRepositories(root_configs, cache_path):
 
         # Wait for all threads
         if Settings["single_thread"] == False:
-            for thread in threads:
-                thread.join()
+            a_thread_is_alive = True
+            while a_thread_is_alive == True:
+                a_thread_is_alive = False
+                for thread in threads:
+                    if thread.is_alive():
+                        a_thread_is_alive = True
+                        continue
+                __PrintLoadProgress()
+                sleep(0.05)
 
         # Merge dependencies with existing repositories
         unloaded = False
@@ -191,7 +211,8 @@ def LoadRepositories(root_configs, cache_path):
                 repositories[repo_id]["reloaded"] = False
                 set_detected_state_change()
                 unloaded = True
-    printProgressBar(len(repositories), len(repositories), prefix = 'Loading Repositories:', suffix = 'Loaded ('+str(len(repositories))+') repositories', length = len(repositories))
+        dependencies.clear()
+    __PrintLoadProgress()
 
     if detected_state_changed():
         logging.debug("SAVING "+str(len(repositories))+" repositories in cache")
@@ -201,6 +222,7 @@ def LoadRepositories(root_configs, cache_path):
 
 def LoadRepository(imposed_configs):
     global repositories
+    global dependencies
     global repositories_lock
 
     imposed_configs["name"] = GetRepoNameFromURL(imposed_configs["url"])
@@ -246,7 +268,8 @@ def LoadRepository(imposed_configs):
         dep_repo_id = GetRepoId(dependency_configs)
         repositories_lock.acquire()
         # if dep_repo_id in dependencies??
-        dependencies[dep_repo_id] = dependency_configs
+        if dep_repo_id not in repositories and dep_repo_id not in dependencies:
+            dependencies[dep_repo_id] = dependency_configs
         repositories_lock.release()
 
 def __SetupCMake(repositories):
