@@ -1,3 +1,4 @@
+import sys
 import logging
 from data.git import GetRepoNameFromURL
 from processes.git import *
@@ -165,17 +166,20 @@ def LoadRepositories(root_configs, cache_path):
         # For each unloaded repository, load it
         for repo_id in repositories:
             if repositories[repo_id]["reloaded"] == False:
-                # print("Loading "+repo_id)
-                # LoadRepository(repositories[repo_id])
-                thread = Thread(target=LoadRepository, args=(repositories[repo_id],))
-                threads.append(thread)
-                thread.start()
+                print("Loading "+repo_id)
+                if Settings["single_thread"]:
+                    LoadRepository(repositories[repo_id])
+                else:
+                    thread = Thread(target=LoadRepository, args=(repositories[repo_id],))
+                    threads.append(thread)
+                    thread.start()
             else:
                 loaded_amount += 1
 
         # Wait for all threads
-        for thread in threads:
-            thread.join()
+        if Settings["single_thread"] == False:
+            for thread in threads:
+                thread.join()
 
         # Merge dependencies with existing repositories
         unloaded = False

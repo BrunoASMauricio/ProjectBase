@@ -73,3 +73,6 @@ def GetRepoBareTreePath(url):
     if not url.endswith(".git"):
         url = url+".git"
     return url
+
+def SameUrl(url1, url2):
+    return url_SSH_to_HTTPS(url1) == url_SSH_to_HTTPS(url2)
