@@ -148,7 +148,6 @@ def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
         # Already exists, skip
         return existing_tree
     
-    LaunchProcessAt('git worktree prune', bare_path)
     # --track: Set remote and merge configurations to track upstream
     # --force: Override safe guards and allow same branch name to be checked out by multiple worktrees
     # 
@@ -156,8 +155,9 @@ def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
     new_repo_path = RemoveSequentialDuplicates(target_path + "/" + repo_name, "/")
 
     # In case we stopped before, remove existing temporary
-    LaunchProcessAt("git worktree remove " + new_repo_path, bare_path)
+    # LaunchProcessAt("git worktree remove " + new_repo_path, bare_path)
     LaunchProcessAt("rm -rf " + new_repo_path)
+    LaunchProcessAt('git worktree prune', bare_path)
 
     if repo_commitish != None:
         # If commit is defined, set it detached (it wont be updated)
