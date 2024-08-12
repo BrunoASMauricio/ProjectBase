@@ -11,7 +11,7 @@ from data.git                  import *
 from git                  import *
 # from git                  import *
 from processes.git_operations import GetRepositoryUrl
-from processes.filesystem import create_directory
+from processes.filesystem import CreateDirectory
 from processes.run_linter import CleanLinterFiles
 from data.settings import Settings, CLONE_TYPE
 from data.common import LoadFromFile, DumpToFile
@@ -42,7 +42,7 @@ class PROJECT(dict):
         Settings["paths"]       = self.paths
         repo_cache_path = JoinPaths(Settings["paths"]["configs"], "project_cache", "repositories")
         self.cache_path = JoinPaths(repo_cache_path, self.name)
-        create_directory(repo_cache_path)
+        CreateDirectory(repo_cache_path)
 
     def load(self):
         # Build root repo configs from CLI
@@ -161,3 +161,6 @@ def CleanAll():
     LaunchVerboseProcess("rm -rf " + Settings["paths"]["cmake"]+"/*")
     CleanCompiled()
     CleanLinterFiles()
+
+def DeleteProject():
+    LaunchVerboseProcess("rm -rf " + Settings["paths"]["project main"])
