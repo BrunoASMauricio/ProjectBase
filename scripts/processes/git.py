@@ -158,38 +158,36 @@ def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
     # LaunchProcessAt("git worktree remove " + new_repo_path, bare_path)
     LaunchProcessAt("rm -rf " + new_repo_path)
     LaunchProcessAt('git worktree prune', bare_path)
-
-    if repo_commitish != None:
-        # If commit is defined, set it detached (it wont be updated)
-        if repo_commitish["type"] == "commit":
+    logging.debug("Add worktree")
+    # If commit is defined, set it detached (it wont be updated)
+    if repo_commitish != None and repo_commitish["type"] == "commit":
             # print("git worktree add --force --detach " + new_repo_path + " " + repo_commitish["commit"])
-            LaunchProcessAt("git worktree add --force --detach " + new_repo_path + " " + repo_commitish["commit"], bare_path)
+            worktree_command = "git worktree add --force --detach " + new_repo_path + " " + repo_commitish["commit"]
+            LaunchProcessAt(worktree_command, bare_path)
+            logging.debug("\tAdding git commit worktree with: " + worktree_command + " from bare at " + bare_path)
+    else:
+        if repo_commitish == None:
+            branch_to_follow = GetRepoDefaultBranch(bare_path)
+            local_branch_name = generate_local_branch(branch_to_follow)
         # If branch is defined, create a new random branch and make it follow the remote (it will be updated)
         elif repo_commitish["type"] == "branch":
-            LaunchProcessAt("git worktree add --force  " + new_repo_path + " " + repo_commitish["branch"], bare_path)
-            # # Setup so we can have a remote branch checked out in multiple local worktrees
-            # # -b so the $local_branch is created
-            # # --track so the $local_branch tracks the $remote_branch
-
-            # # -f so it overrides any previous worktrees defined in the same path
-            # # (project might have been present before and removed)
-            # LaunchProcessAt("git worktree add "+Repo["source"]+" --track -f --checkout -b "+LocalName+" "+CommitIsh, Repo["bare path"])
-
-            # LaunchProcessAt('git config --add remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"', Repo["source"])
-            # LaunchProcessAt("git fetch origin '*:*'", Repo["source"])
-
-            # # Ensure git push is for upstream
-            # LaunchProcessAt("git config push.default upstream", Repo["source"])
-
-            # # Make `git branch/switch/checkout` always merge from the starting point branch
-            # LaunchProcessAt("git config branch.autoSetupMerge always", Repo["source"])
-            # LaunchProcessAt("git config pull.rebase true", Repo["source"])
+            branch_to_follow = repo_commitish["branch"]
+            local_branch_name = generate_local_branch(branch_to_follow)
         else:
             raise Exception("Invalid commitish: "+str(repo_commitish))
-    else:
-        LaunchProcessAt("git worktree add --force " + new_repo_path, bare_path)
 
-    # default_branch = GetRepoDefaultBranch()
+        remote = GetRepoRemote(bare_path)
+        # (""+Repo["source"]+" --track -f --checkout -b "+LocalName+" "+CommitIsh, Repo["bare path"])
+        # worktree_command = "git worktree add " + new_repo_path + " --track --force --checkout -b " + local_branch_name + "  " + remote + "/" +branch_to_follow
+        worktree_command = "git worktree add --force " + new_repo_path
+        LaunchProcessAt(worktree_command, bare_path)
+        logging.debug("\tAdding git branch worktree with: " + worktree_command + " from bare at " + bare_path)
+        # worktree_command = "git worktree add --force -b " + local_branch_name + " --track " +  + " " + new_repo_path
+        worktree_command = "git checkout -b " + local_branch_name + " " + remote + "/" +branch_to_follow
+        LaunchProcessAt(worktree_command, new_repo_path)
+        logging.debug("\tConfiguring worktree with: " + worktree_command + " at " + new_repo_path)
+
+
     if not os.path.isdir(new_repo_path):
         raise Exception("Could not add worktree for " + repo_url + " at " + target_path + " from bare git at " + bare_path)
     
@@ -211,12 +209,15 @@ def MoveWorkTree(bare_path, repo_url, repo_commitish, from_path, to_path):
     AddWorkTree(bare_path, repo_url, repo_commitish, to_path)
     RemoveWorkTree(bare_path, from_path)
 
-def RepoIsClean(path):
-    return "nothing to commit, working tree clean" in GetRepoStatus(path)
+def CheckIfStatusIsClean(status):
+    return "nothing to commit, working tree clean" in status
 
-def GetRepoNameFromPath(Path):
+def RepoIsClean(path):
+    return CheckIfStatusIsClean(GetRepoStatus(path))
+
+def GetRepoNameFromPath(path):
     url = GetRepositoryUrl()
     if IsEmpty(url):
-        raise Exception("Could not retrieve Name from path \"" + Path + "\"")
+        raise Exception("Could not retrieve Name from path \"" + path + "\"")
 
-    return GetRepoNameFromURL(url["stdout"])
+    return GetRepoNameFromURL(url)

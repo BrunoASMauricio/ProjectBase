@@ -1,5 +1,6 @@
 import sys
 import logging
+import datetime
 import traceback
 from git import *
 from data.settings import Settings
@@ -19,6 +20,7 @@ logging.basicConfig(filename="/tmp/project_base.log",
 # logging.basicConfig(stream = sys.stdout, level = logging.INFO)
 
 logging.info("=============== PROJECTBASE start ===============")
+logging.info("=============== at " + str(datetime.datetime.now()) + " ===============")
 Settings.init()
 if False == ValueNotEmpty(Settings, "url"):
     Settings["url"] = UserChooseProject()
