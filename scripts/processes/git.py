@@ -168,7 +168,6 @@ def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
     # LaunchProcessAt("git worktree remove " + new_repo_path, bare_path)
     LaunchProcessAt("rm -rf " + new_repo_path)
     LaunchGitCommandAt('git worktree prune', bare_path)
-    logging.debug("Add worktree")
     # If commit is defined, set it detached (it wont be updated)
     if repo_commitish != None and repo_commitish["type"] == "commit":
         # print("git worktree add --force --detach " + new_repo_path + " " + repo_commitish["commit"])
@@ -190,17 +189,17 @@ def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
         # (""+Repo["source"]+" --track -f --checkout -b "+LocalName+" "+CommitIsh, Repo["bare path"])
         # worktree_command = "git worktree add " + new_repo_path + " --track --force --checkout -b " + local_branch_name + "  " + remote + "/" +branch_to_follow
 
-        worktree_command = "git worktree add --force " + new_repo_path
-        LaunchGitCommandAt(worktree_command, bare_path)
+        worktree_command = "git worktree add " + new_repo_path
         logging.debug("Adding git branch worktree with: " + worktree_command + " from bare at " + bare_path)
+        LaunchGitCommandAt(worktree_command, bare_path)
+        worktree_command = "git checkout -b " + local_branch_name + " " + branch_to_follow
+        LaunchGitCommandAt(worktree_command, new_repo_path)
+        logging.debug("Configuring worktree with: " + worktree_command + " at " + new_repo_path)
 
         # worktree_command = "git worktree add --force " + new_repo_path + " --b " + remote + "/" + branch_to_follow
         # LaunchGitCommandAt(worktree_command, bare_path)
         # logging.debug("Adding git branch worktree with: " + worktree_command + " from bare at " + bare_path)
         # # worktree_command = "git worktree add --force -b " + local_branch_name + " --track " +  + " " + new_repo_path
-        # worktree_command = "git checkout -b " + local_branch_name + " " + remote + "/" + branch_to_follow
-        # LaunchGitCommandAt(worktree_command, new_repo_path)
-        # logging.debug("Configuring worktree with: " + worktree_command + " at " + new_repo_path)
 
 
     if not os.path.isdir(new_repo_path):

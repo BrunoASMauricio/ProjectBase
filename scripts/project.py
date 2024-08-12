@@ -72,7 +72,7 @@
 #             PresentRepos[Repo["full_local_path"]] = IncludeEntry
 
 #         SetupTemplateScript("project/CMakeLists.txt", self.Paths["project main"]+"/CMakeLists.txt", {
-#             "INCLUDEREPOSITORYCMAKELISTS":'\n'.join(PresentRepos.values())
+#             "INCLUDE_REPOSITORY_CMAKELISTS":'\n'.join(PresentRepos.values())
 #         })
 
 

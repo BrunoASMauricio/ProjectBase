@@ -94,7 +94,7 @@ MACRO(SETUP_EXECUTABLE_EXEC FILE_PATH)
 ENDMACRO()
 
 ### Include this modules' CMakeLists
-$$INCLUDEREPOSITORYCMAKELISTS$$
+$$INCLUDE_REPOSITORY_CMAKELISTS$$
 
 ## Activate compiler flags
 #add_definitions(${GCC_COMPILE_FLAGS})
