@@ -1,6 +1,7 @@
 import re
 import os
 import sys
+import shutil
 import difflib
 import unicodedata
 from data.paths import GetBasePaths
@@ -17,6 +18,16 @@ def AppendToEnvVariable(EnvVariable, NewValue):
         BasicList = os.environ[EnvVariable].split(os.pathsep)
         if NewValue not in BasicList:
             os.environ[EnvVariable] = NewValue + os.pathsep + os.environ[EnvVariable]
+
+def PrintableCharacterLength(string):
+    return len(RemoveAnsiEscapeCharacters(RemoveControlCharacters(string)))
+
+def CLICenterString(string, pad=" "):
+    # Color characters count for length :()
+    string_len = PrintableCharacterLength(string)
+    cols, _ = shutil.get_terminal_size(fallback=(string_len, 1))
+    padding_len = int((cols - string_len) / 2)
+    return pad * padding_len + string + pad * padding_len
 
 def GetTextDiff(Text1, Text2):
     diff = difflib.ndiff(Text1.split("\n"), Text2.split("\n"))
@@ -36,7 +47,7 @@ def RemoveAnsiEscapeCharacters(Str):
 
 def RemoveSequentialDuplicates(Str, SubStr):
     List = Str.split(SubStr)
-    List = [ListEl for ListEl in List if len(ListEl) != 0]
+    List = [list_el for list_el in List if len(list_el) != 0]
 
     NewStr = SubStr.join(List)
 
@@ -100,9 +111,15 @@ def Assert(Condition, Message=None):
 """
 Remove 'None' elements from a list
 """
-def RemoveNone(List):
-    return [ListEl for ListEl in List if ListEl != None]
-
+def RemoveEmpty(iterable):
+    if type(iterable) == type(list()):
+        return [list_el for list_el in iterable if IsEmpty(list_el) == False]
+    else:
+        new_dict = {}
+        for key in iterable:
+            if IsEmpty(iterable[key]) == False:
+                new_dict[key] = iterable[key]
+        return new_dict
 def StringIsNumber(Str):
     number_regex = '^[0-9]+$'
     if(re.search(number_regex, Str)):

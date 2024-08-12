@@ -1,38 +1,82 @@
 import os
-import re
 import pty
 import logging
 import traceback
 import subprocess
 
-from data.common import Abort, AppendToEnvVariable, RemoveControlCharacters, RemoveAnsiEscapeCharacters
-from data.colors import ColorFormat, Colors
-
+from time import sleep
+from threading import Thread, Lock
 from data.settings import Settings
+from data.colors import ColorFormat, Colors
+from processes.progress_bar import PrintProgressBar
+from data.common import Abort, AppendToEnvVariable, RemoveControlCharacters, RemoveAnsiEscapeCharacters
 
 #                           PROCESS OPERATIONS
+
+def PrintProgressWhileWaitOnThreads(threads, print_function, print_arguments={}):
+    # Wait for all threads
+    if Settings["single_thread"] == False:
+        a_thread_is_alive = True
+        while a_thread_is_alive == True:
+            a_thread_is_alive = False
+            for thread in threads:
+                if thread.is_alive():
+                    a_thread_is_alive = True
+                    continue
+            print_function(**print_arguments)
+            sleep(0.05)
+
+operation_status = {}
+operation_lock = Lock()
+
+def __PrintRunOnFoldersProgress(paths):
+    current_progress = len(operation_status)
+    total_repos      = len(paths)
+    if total_repos == current_progress:
+        PrintProgressBar(current_progress, total_repos, prefix = 'Running:', suffix = 'Ran on ('+str(current_progress)+') folders')
+    else:
+        PrintProgressBar(current_progress, total_repos, prefix = 'Running:', suffix = "Done on " + str(current_progress) + "/" + str(total_repos) + " folders")
+
+def __RunOnFoldersThreadWrapper(callback, path, arguments={}):
+    global operation_lock
+    global operation_status
+    os.chdir(path)
+    Result = callback(**arguments)
+
+    operation_lock.acquire()
+    operation_status[path] = Result
+    operation_lock.release()
 
 """
 For each path, change directory to it, execute the provided function with the
 provided arguments, concatenate result into list and return said list
 """
 def RunOnFolders(paths, callback, arguments={}):
-    op_status = []
+    global operation_status
+
+    if len(paths) == 0:
+        return {}
+
+    operation_status.clear()
+    threads = []
     current_dir = os.getcwd()
 
     for path in paths:
         if not os.path.isdir(path):
             raise Exception(path+" is not a valid directory, cannot perform "+str(callback)+"("+str(arguments)+")")
+        if Settings["single_thread"]:
+            os.chdir(path)
+            operation_status[path] = callback(**arguments)
+            __PrintRunOnFoldersProgress(paths)
+        else:
+            thread = Thread(target=__RunOnFoldersThreadWrapper, args=(callback, path, arguments,))
+            threads.append(thread)
+            thread.start()
 
-        os.chdir(path)
-
-        Result = callback(**arguments)
-        op_status.append(Result)
-        # Sleep to prevent what?
-
+    PrintProgressWhileWaitOnThreads(threads, __PrintRunOnFoldersProgress, {"paths":paths})
     os.chdir(current_dir)
 
-    return op_status
+    return operation_status
 
 def RunExecutable(CommandString):
     return subprocess.run(CommandString, shell=True)
