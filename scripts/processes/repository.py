@@ -327,10 +327,10 @@ def __SetupCMake(repositories):
                 print(TestHeaders)
             if not os.path.isfile(RepoCmakeLists):
                 SetupTemplateScript("repository/CMakeLists.txt", RepoCmakeLists, {
-                    "ADDLIBRARYTYPE": "",
-                    "TARGETINCLUDETYPE": "PUBLIC",
-                    "INCLUDEREPOSITORYDIRECTORIES": '\n'.join(PublicHeaderFolders),
-                    "LINKDEPENDENCIES": '\n'.join(TempObjectsToLink),
+                    "ADD_LIBRARY_TYPE": "",
+                    "TARGET_INCLUDE_TYPE": "PUBLIC",
+                    "INCLUDE_REPOSITORY_DIRECTORIES": '\n'.join(PublicHeaderFolders),
+                    "LINK_DEPENDENCIES": '\n'.join(TempObjectsToLink),
                     "TEST_HEADER_INCLUDES": '\n'.join(TestHeaders)
                 })
         except Exception as ex:

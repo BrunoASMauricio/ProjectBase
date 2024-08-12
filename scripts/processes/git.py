@@ -82,6 +82,10 @@ def FindGitRepo(base_path, repo_url, repo_commitish = None, depth=-1):
     if not os.path.isdir(base_path):
         return None
 
+    # Nothing can be found inside baregits
+    if FolderIsBareGit(base_path):
+        return None
+
     # Now look at their files
     for sub_folder in os.listdir(base_path):
         full_path = base_path + "/" + sub_folder
@@ -128,8 +132,9 @@ def SetupBareData(repo_url):
     
     if bare_git == None:
         bare_tree_name = GetRepoBareTreePath(repo_url)
-        logging.debug("Cloning " + repo_url + " into " + bare_gits + "/" + bare_tree_name)
-        LaunchProcess('git clone "' + repo_url + '" "' + bare_gits + "/" + bare_tree_name + '" --bare')
+        clone_command = 'git clone "' + repo_url + '" "' + bare_gits + "/" + bare_tree_name + '" --bare'
+        logging.debug("Cloning bare git with: " + clone_command)
+        LaunchProcess(clone_command)
         bare_git = bare_gits + "/" + bare_tree_name
 
         if False == os.path.isdir(bare_git):
@@ -137,6 +142,11 @@ def SetupBareData(repo_url):
             exit(-1)
 
     return bare_git
+
+def LaunchGitCommandAt(command, path):
+    result_code = LaunchProcessAt(command, path)
+    if result_code["code"] != 0:
+        raise Exception("Could not run " + command)
 
 """
 Adds a worktree at target_path
@@ -157,14 +167,14 @@ def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
     # In case we stopped before, remove existing temporary
     # LaunchProcessAt("git worktree remove " + new_repo_path, bare_path)
     LaunchProcessAt("rm -rf " + new_repo_path)
-    LaunchProcessAt('git worktree prune', bare_path)
+    LaunchGitCommandAt('git worktree prune', bare_path)
     logging.debug("Add worktree")
     # If commit is defined, set it detached (it wont be updated)
     if repo_commitish != None and repo_commitish["type"] == "commit":
-            # print("git worktree add --force --detach " + new_repo_path + " " + repo_commitish["commit"])
-            worktree_command = "git worktree add --force --detach " + new_repo_path + " " + repo_commitish["commit"]
-            LaunchProcessAt(worktree_command, bare_path)
-            logging.debug("\tAdding git commit worktree with: " + worktree_command + " from bare at " + bare_path)
+        # print("git worktree add --force --detach " + new_repo_path + " " + repo_commitish["commit"])
+        worktree_command = "git worktree add --force --detach " + new_repo_path + " " + repo_commitish["commit"]
+        LaunchGitCommandAt(worktree_command, bare_path)
+        logging.debug("\tAdding git commit worktree with: " + worktree_command + " from bare at " + bare_path)
     else:
         if repo_commitish == None:
             branch_to_follow = GetRepoDefaultBranch(bare_path)
@@ -179,13 +189,18 @@ def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
         remote = GetRepoRemote(bare_path)
         # (""+Repo["source"]+" --track -f --checkout -b "+LocalName+" "+CommitIsh, Repo["bare path"])
         # worktree_command = "git worktree add " + new_repo_path + " --track --force --checkout -b " + local_branch_name + "  " + remote + "/" +branch_to_follow
-        worktree_command = "git worktree add --force " + new_repo_path + " --checkout " + remote + "/" +branch_to_follow
-        LaunchProcessAt(worktree_command, bare_path)
+
+        worktree_command = "git worktree add --force " + new_repo_path
+        LaunchGitCommandAt(worktree_command, bare_path)
         logging.debug("Adding git branch worktree with: " + worktree_command + " from bare at " + bare_path)
-        # worktree_command = "git worktree add --force -b " + local_branch_name + " --track " +  + " " + new_repo_path
-        worktree_command = "git checkout -b " + local_branch_name + " " + remote + "/" +branch_to_follow
-        LaunchProcessAt(worktree_command, new_repo_path)
-        logging.debug("Configuring worktree with: " + worktree_command + " at " + new_repo_path)
+
+        # worktree_command = "git worktree add --force " + new_repo_path + " --b " + remote + "/" + branch_to_follow
+        # LaunchGitCommandAt(worktree_command, bare_path)
+        # logging.debug("Adding git branch worktree with: " + worktree_command + " from bare at " + bare_path)
+        # # worktree_command = "git worktree add --force -b " + local_branch_name + " --track " +  + " " + new_repo_path
+        # worktree_command = "git checkout -b " + local_branch_name + " " + remote + "/" + branch_to_follow
+        # LaunchGitCommandAt(worktree_command, new_repo_path)
+        # logging.debug("Configuring worktree with: " + worktree_command + " at " + new_repo_path)
 
 
     if not os.path.isdir(new_repo_path):
