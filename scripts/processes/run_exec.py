@@ -78,7 +78,7 @@ def __locate_executable(user_input, executables_available, path_to_scan):
 
 def execute_menu(path_to_scan):
     # Allow python scripts to use ProjectBase scripts
-    PrepareExecEnvironment(Project)
+    PrepareExecEnvironment()
 
     while True:
         executables_available = __get_available_executables(path_to_scan)
@@ -93,7 +93,7 @@ def execute_menu(path_to_scan):
             og_user_input = GetNextOption()
             # No input (Enter pressed)
             if len(og_user_input) == 0:
-                print("Incorrect input '" + user_input + "'")
+                print("No input")
                 continue
 
             # Check extra program prefix
