@@ -84,3 +84,6 @@ def RepoResetToLatestSync(path=None):
     if path == None:
         path = os.getcwd()
     print("ON "+url+" resetting to origin/" + branch + " in "+path)
+
+def RepoHardReset(path=None):
+    return ParseGitResult("git reset --hard", path)

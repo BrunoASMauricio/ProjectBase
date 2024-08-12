@@ -7,6 +7,9 @@ import unicodedata
 from data.paths import GetBasePaths
 from data.colors import ColorFormat, Colors
 
+def RemoveDuplicates(lst):
+    return list(set(lst))
+
 def AppendToEnvVariable(EnvVariable, NewValue):
     if NewValue == None:
         NewValue = ""
