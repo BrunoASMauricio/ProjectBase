@@ -5,8 +5,9 @@ from data.common import RemoveEmpty, CLICenterString
 from processes.project import Project
 from processes.git     import GetAllGitRepos, GetRepoNameFromPath, RepoIsClean, CheckIfStatusIsClean
 from processes.process import OpenBashOnDirectoryAndWait, RunOnFolders
-from processes.git_operations import GetRepoStatus, GetRepositoryUrl, RepoCleanUntracked, RepoSaveChanges, RepoResetToLatestSync, RepoHardReset
+from processes.git_operations import RepoPull, RepoPush, RepoFetch, GetRepoStatus, GetRepositoryUrl, RepoCleanUntracked, RepoSaveChanges, RepoResetToLatestSync, RepoHardReset
 from menus.menu import GetNextOption
+from processes.repository import __RepoHasFlagSet
 
 def GetKnownAndUnknownGitRepos():
     repos = Project.GetRepositories()
@@ -17,38 +18,45 @@ def GetKnownAndUnknownGitRepos():
     all_paths = known_paths + unknown_paths
     return all_paths, known_paths, unknown_paths
 
-def RunOnAllManagedRepos(callback, arguments={}):
+def RunOnAllRepos(callback, arguments={}):
     _, known_paths, _ = GetKnownAndUnknownGitRepos()
-    print(known_paths)
     return RunOnFolders(known_paths, callback, arguments)
+
+def RunOnAllManagedRepos(callback, arguments={}):
+    repos = Project.GetRepositories()
+    known_paths   = [repos[repo]["full worktree path"] for repo in repos if False == __RepoHasFlagSet(repos[repo], "no commit")]
+
+    return RunOnFolders(known_paths, RepoPush, {})
 
 def DirectlyManageSingleRepository():
     all_paths, known_paths, _ = GetKnownAndUnknownGitRepos()
 
-    print("What repo to manage:")
+    dynamic_entries = []
     for path_ind in range(len(all_paths)):
+        new_entry = []
         path = all_paths[path_ind]
-        Message =  "[" + str(path_ind) + "] "
-        Message += GetRepoNameFromPath(path) + " ("
+        message =  " ("
 
         if RepoIsClean(path):
-            Message += ColorFormat(Colors.Green, "clean")
+            message += ColorFormat(Colors.Green, "clean")
         else:
-            Message += ColorFormat(Colors.Red, "dirty")
-        Message += ") "
+            message += ColorFormat(Colors.Red, "dirty")
+        message += ") "
 
         # Managed or Unmanaged
         if path in known_paths:
-            Message += ColorFormat(Colors.Yellow, " (managed)")
+            message += ColorFormat(Colors.Yellow, " (managed)")
         else:
-            Message += ColorFormat(Colors.Magenta, " (unmanaged)")
+            message += ColorFormat(Colors.Magenta, " (unmanaged)")
         
         # Print path (relative to cwd)
-        Message += "." + path.replace(Settings["paths"]["project main"], "")
-        print(Message)
+        message += " " + ColorFormat(Colors.Blue, GetRepoNameFromPath(path))
+        message += " ." + path.replace(Settings["paths"]["project main"], "")
+        # print(Message)
+        new_entry = [message, OpenBashOnDirectoryAndWait, {"working_directory":all_paths[path_ind]}]
+        dynamic_entries.append(new_entry)
 
-    UserInput = input("[<] ")
-    OpenBashOnDirectoryAndWait(all_paths[int(UserInput)])
+    return dynamic_entries
 
 def __AssembleReposStatusMessage(statuses):
     status_message = ""
@@ -94,10 +102,19 @@ def PrintProjectStatus():
 Remove all uncommited (unsaved) files and folders
 """
 def CleanAllUnsaved():
-    RunOnAllManagedRepos(RepoCleanUntracked)
+    RunOnAllRepos(RepoCleanUntracked)
 
 def UndoChanges():
-    RunOnAllManagedRepos(RepoHardReset)
+    RunOnAllRepos(RepoHardReset)
+
+def FetchAll():
+    RunOnAllRepos(RepoFetch)
+
+def PullAll():
+    RunOnAllRepos(RepoPull)
+
+def PushAll():
+    RunOnAllManagedRepos(RepoPush)
 
 def GlobalSave():
     commit_message = GetNextOption("[commit message <] ")
@@ -105,12 +122,11 @@ def GlobalSave():
     if commit_message == "":
         print("Commit message cannot be empty")
     else:
-
         try:
-            RunOnAllManagedRepos(RepoSaveChanges, {"commit_message":commit_message})
+            RunOnAllRepos(RepoSaveChanges, {"commit_message":commit_message})
         except:
             print("Unacceptable commit message")
 
 def ResetToLatestSync():
-    RunOnAllManagedRepos(RepoResetToLatestSync)
+    RunOnAllRepos(RepoResetToLatestSync)
 

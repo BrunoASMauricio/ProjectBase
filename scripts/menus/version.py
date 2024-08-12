@@ -1,11 +1,14 @@
 from menus.menu import Menu
 from processes.versioning import DirectlyManageSingleRepository, PrintProjectStatus, CleanAllUnsaved, GlobalSave, ResetToLatestSync, UndoChanges
+from processes.versioning import FetchAll, PullAll, PushAll
 from git import *
 from processes.project import DeleteProject
 
 SyncMenu = Menu("Sync Menu")
-SyncMenu.add_callback_entry("Pull data from remote", None)
-SyncMenu.add_callback_entry("Push data to remote", None)
+# SyncMenu.add_callback_entry("Fetch data from remote", FetchAll)
+# SyncMenu.add_callback_entry("Merge local data with fetched data", PullAll)
+SyncMenu.add_callback_entry("Pull data from remote", PullAll)
+SyncMenu.add_callback_entry("Push data to remote", PushAll)
 
 ResetMenu = Menu("Reset Menu")
 ResetMenu.add_callback_entry("Clean unsaved files and folders", CleanAllUnsaved)
@@ -15,7 +18,11 @@ ResetMenu.add_callback_entry("Undo changes", UndoChanges)
 ResetMenu.add_callback_entry("Reset files to latest sync", ResetToLatestSync)
 # ResetMenu.add_callback_entry(ColorFormat(Colors.Red, ">> !!Delete Project!! <<"), DeleteProject)
 
-VersioningMenu = Menu("Version Menu")
+DirectSingleRepoManageMenu = Menu("What repo to manage:", stay_in_menu=True)
+# DirectlyManageSingleRepository
+DirectSingleRepoManageMenu.add_dynamic_entries(DirectlyManageSingleRepository)
+
+VersioningMenu = Menu("Version Menu", stay_in_menu=True)
 
 VersioningMenu.prologue = ColorFormat(Colors.Yellow, ">> Versioning control <<\n")
 # Get status of the repositories
@@ -35,6 +42,6 @@ VersioningMenu.add_submenu_entry("Sync", SyncMenu)
 # 
 VersioningMenu.add_submenu_entry("Reset", ResetMenu)
 # Spawn a console on the repository's directory
-VersioningMenu.add_callback_entry("Manage single repository (spawn console)", DirectlyManageSingleRepository)
+VersioningMenu.add_submenu_entry("Manage single repository (spawn console)", DirectSingleRepoManageMenu)
 # Use above menu for a single repository
 # VersioningMenu.add_callback_entry("Manage single repository (via ProjectBase)", None)

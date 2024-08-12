@@ -54,18 +54,18 @@ def FlipUrl(url):
         raise Exception("Cannot convert " + url)
 
 
-def GetRepoNameFromURL(Url):
-    if Url == None or len(Url) == 0:
-        raise Exception("Requested URL ("+Url+") is empty")
-    Url = url_SSH_to_HTTPS(Url)
+def GetRepoNameFromURL(url):
+    if url == None or len(url) == 0:
+        raise Exception("Requested URL ("+url+") is empty")
+    url = url_SSH_to_HTTPS(url)
 
-    if Url[-1] == '/':
-        Url = Url[:-1]
+    if url[-1] == '/':
+        url = url[:-1]
 
-    Url = Url.split('/')[-1].strip()
-    if Url.endswith(".git"):
-        Url = Url[:-4]
-    return Url
+    url = url.split('/')[-1].strip()
+    if url.endswith(".git"):
+        url = url[:-4]
+    return url
 
 def GetRepoBareTreePath(url):
     url = url_SSH_to_HTTPS(url)

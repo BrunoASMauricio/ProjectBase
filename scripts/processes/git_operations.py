@@ -49,10 +49,10 @@ def GetRepoDefaultBranch(path = None):
 
 # ================= SET operations =================
 
-def RepoResetHard(path = None):
+def RepoHardReset(path=None):
     return ParseGitResult("git reset --hard", path)
 
-def RepoResetSoft(path = None):
+def RepoSoftReset(path = None):
     return ParseGitResult("git reset --soft HEAD~", path)
 
 """
@@ -65,6 +65,12 @@ def RepoCleanUntracked(path = None):
 
 def RepoFetch(path = None):
     ParseGitResult("git fetch origin '*:*'", path)
+
+def RepoPull(path = None):
+    ParseGitResult("git pull", path)
+
+def RepoPush(path = None):
+    ParseGitResult("git push", path)
 
 def GenAutoCommitMessage():
     return ""
@@ -85,5 +91,3 @@ def RepoResetToLatestSync(path=None):
         path = os.getcwd()
     print("ON "+url+" resetting to origin/" + branch + " in "+path)
 
-def RepoHardReset(path=None):
-    return ParseGitResult("git reset --hard", path)
