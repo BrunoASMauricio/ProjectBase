@@ -78,4 +78,8 @@ def GetRepoBareTreePath(url):
     return url
 
 def SameUrl(url1, url2):
-    return url_SSH_to_HTTPS(url1) == url_SSH_to_HTTPS(url2)
+    try:
+        equal = url_SSH_to_HTTPS(url1) == url_SSH_to_HTTPS(url2)
+        return equal
+    except:
+        return False
