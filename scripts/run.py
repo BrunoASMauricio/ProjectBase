@@ -19,7 +19,7 @@ logging.basicConfig(filename="/tmp/project_base.log",
 
 # logging.basicConfig(stream = sys.stdout, level = logging.INFO)
 
-logging.info("=============== PROJECTBASE start ===============")
+logging.info("\n\n\n=============== PROJECTBASE start ===============")
 logging.info("=============== at " + str(datetime.datetime.now()) + " ===============")
 Settings.init()
 if False == ValueNotEmpty(Settings, "url"):
