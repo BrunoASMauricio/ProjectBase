@@ -198,7 +198,7 @@ def LaunchProcessAt(Command, Path="", ToPrint=False):
     if Path != "":
         # CurrentDirectory = os.getcwd()
         # os.chdir(Path)
-        ReturnValue = LaunchProcess("cd " + Path + "; " +Command, ToPrint)
+        ReturnValue = LaunchProcess("set -e; cd " + Path + "; " +Command, ToPrint)
         # os.chdir(CurrentDirectory)
     else:
         ReturnValue = LaunchProcess(Command, ToPrint)
