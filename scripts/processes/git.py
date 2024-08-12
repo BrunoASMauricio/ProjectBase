@@ -179,13 +179,13 @@ def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
         remote = GetRepoRemote(bare_path)
         # (""+Repo["source"]+" --track -f --checkout -b "+LocalName+" "+CommitIsh, Repo["bare path"])
         # worktree_command = "git worktree add " + new_repo_path + " --track --force --checkout -b " + local_branch_name + "  " + remote + "/" +branch_to_follow
-        worktree_command = "git worktree add --force " + new_repo_path
+        worktree_command = "git worktree add --force " + new_repo_path + " --checkout " + remote + "/" +branch_to_follow
         LaunchProcessAt(worktree_command, bare_path)
-        logging.debug("\tAdding git branch worktree with: " + worktree_command + " from bare at " + bare_path)
+        logging.debug("Adding git branch worktree with: " + worktree_command + " from bare at " + bare_path)
         # worktree_command = "git worktree add --force -b " + local_branch_name + " --track " +  + " " + new_repo_path
         worktree_command = "git checkout -b " + local_branch_name + " " + remote + "/" +branch_to_follow
         LaunchProcessAt(worktree_command, new_repo_path)
-        logging.debug("\tConfiguring worktree with: " + worktree_command + " at " + new_repo_path)
+        logging.debug("Configuring worktree with: " + worktree_command + " at " + new_repo_path)
 
 
     if not os.path.isdir(new_repo_path):

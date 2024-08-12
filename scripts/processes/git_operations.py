@@ -15,9 +15,9 @@ Obtain the URL of the repository located at path
 def GetRepositoryUrl(path = None):
     import sys
     url = ParseGitResult("git config --get remote.origin.url", path)
-    if "brunoasmauricio/ProjectBase" in url:
-        print("fuck")
-        sys.exit(-1)
+    # if "brunoasmauricio/ProjectBase" in url:
+    #     print("fuck")
+    #     sys.exit(-1)
     return url
 
 def GetRepoLocalCommit(path = None):
@@ -37,13 +37,6 @@ def GetRepoRemote(path = None):
 
 def GetRepoDefaultBranch(path = None):
     remote = GetRepoRemote(path)
-    # if RemoteResult["code"] != 0:
-    #     Message  = "No remote setup, cant fetch default branch for "
-    #     Message += GetRepositoryUrl(path) + " at " + path
-    #     Message += "Code: " + str(RemoteResult["code"]) + "\n"
-    #     Message += "Output: " + str(RemoteResult["stdout"]) + "\n"
-    #     raise Exception(Message)
-
     default_branch = ParseGitResult("git remote show " + remote + " 2>/dev/null | sed -n '/HEAD branch/s/.*: //p'", path)
     if IsEmpty(default_branch):
         Message  = "No default branch for "
