@@ -3,7 +3,7 @@ import logging
 from time import sleep
 from data.git import GetRepoNameFromURL
 from processes.git import *
-from data.common import RemoveSequentialDuplicates, SetupTemplateScript, IsEmpty
+from data.common import RemoveSequentialDuplicates, SetupTemplateScript
 from data.settings import Settings
 from data.json import dump_json_file, load_json_file
 from processes.repository_configs import LoadConfigs, MergeConfigs, ParseConfigs

@@ -230,7 +230,7 @@ def RepoIsClean(path):
     return CheckIfStatusIsClean(GetRepoStatus(path))
 
 def GetRepoNameFromPath(path):
-    url = GetRepositoryUrl()
+    url = GetRepositoryUrl(path)
     if IsEmpty(url):
         raise Exception("Could not retrieve Name from path \"" + path + "\"")
 

@@ -9,21 +9,22 @@ from data.common import RemoveNonAlfanumeric
 
 class EntryType(Enum):
     CALLBACK = 1
-    MENU = 2
+    MENU     = 2
+    DYNAMIC  = 3
 
-def GetNextOption():
+def GetNextOption(prompt="[<] "):
     global ProjectArgs
     
     if len(Settings["action"]) != 0:
         # Next automated action
         next_input = Settings["action"][0]
         del Settings["action"][0]
-        print("[< Auto <] {" + next_input + "}")
+        print("[< Auto " + prompt + " <] {" + next_input + "}")
     else:
         # Called with --exit and no command, just exit
         if Settings["exit"] == True:
             sys.exit(0)
-        next_input = input("[<] ")
+        next_input = input(prompt)
 
         # Check if we received multiple commands
         SplitInput = next_input.split(" ")
@@ -60,6 +61,15 @@ class Menu():
     
     def add_submenu_entry(self, entry, menu):
         self.entries.append([entry, EntryType.MENU, menu])
+
+    """
+    A function will run during menu selection and return the entries to show
+    These entries come in a list of lists like so:
+    [["entry 0 name", entry_0_callback, args_for_callback], ...]
+    The callback will be called first with args_for_callback as named arguments
+    """
+    def add_dynamic_entries(self, entry_generator):
+        self.entries.append([entry_generator, EntryType.DYNAMIC])
     
     """
     If obj is string, returns it
@@ -83,11 +93,22 @@ class Menu():
         menu = self.get_text(self.prologue)
 
         for entry in self.entries:
-            if entry[1] == EntryType.MENU:
-                menu  += ("| " * depth) + str(index)+">) " + self.get_text(entry[0]) + "\n"
+            if entry[1] == EntryType.DYNAMIC:
+                # Remove previously generated entries
+                if len(entry) == 3:
+                    del entry[2]
+                entries = entry[0]()
+                for new_entry in entries:
+                    menu  += ("| " * depth) + str(index)+" ) " + new_entry[0] + "\n"
+                    index += 1
+                # Store generated entries in dynamic entry
+                entry.append(entries)
             else:
-                menu  += ("| " * depth) + str(index)+" ) " + self.get_text(entry[0]) + "\n"
-            index += 1
+                if entry[1] == EntryType.MENU:
+                    menu  += ("| " * depth) + str(index)+">) " + self.get_text(entry[0]) + "\n"
+                elif entry[1] == EntryType.CALLBACK:
+                    menu  += ("| " * depth) + str(index)+" ) " + self.get_text(entry[0]) + "\n"
+                index += 1
 
         menu += self.get_text(self.epilogue)
 
@@ -96,16 +117,41 @@ class Menu():
     Activate the entry selected via its' index
     """
     def select_entry(self, index, depth):
-        if index > len(self.entries):
-            print("Menu has " + str(len(self.entries)) + " entries, input " + str(index) + " is not valid")
-            return 
+        # if index > len(self.entries):
+        #     print("Menu has " + str(len(self.entries)) + " entries, input " + str(index) + " is not valid")
+        #     return 
 
-        entry = self.entries[index-1]
+        # entry = self.entries[index-1]
 
-        if entry[1] == EntryType.CALLBACK:
-            entry[2]()
+        picked_index = index - 1
+        picked_entry = None
+        current_index = 0
+
+        for saved_entry in self.entries:
+            if saved_entry[1] == EntryType.DYNAMIC:
+                # If the adjusted index belongs to the dynamic entry being evaluated
+                if picked_index - current_index < len(saved_entry[2]):
+                    picked_index = picked_index - current_index
+                    picked_entry = saved_entry
+                    break
+                current_index += len(saved_entry[2])
+            else:
+                if current_index == picked_index:
+                    picked_entry = saved_entry
+                    break
+                current_index += 1
+
+        if picked_entry == None:
+            print("Menu has " + str(current_index) + " entries, input " + str(index) + " is not valid")
+            return
+
+        if picked_entry[1] == EntryType.CALLBACK:
+            picked_entry[2]()
+        elif picked_entry[1] == EntryType.MENU:
+            picked_entry[2].handle_input(depth + 1)
         else:
-            entry[2].handle_input(depth + 1)
+            dynamic_entry = picked_entry[2][picked_index]
+            dynamic_entry[1](**dynamic_entry[2])
     """
     Print menu and handle input from user
     """
