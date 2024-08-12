@@ -14,7 +14,12 @@ def GetGitResult(git_command, path):
 Obtain the URL of the repository located at path
 """
 def GetRepositoryUrl(path = None):
-    return GetGitResult("git config --get remote.origin.url", path)
+    import sys
+    url = GetGitResult("git config --get remote.origin.url", path)
+    if "brunoasmauricio/ProjectBase" in url:
+        print("fuck")
+        sys.exit(-1)
+    return url
 
 def GetRepoLocalCommit(path = None):
     return GetGitResult("git rev-parse HEAD", path)
