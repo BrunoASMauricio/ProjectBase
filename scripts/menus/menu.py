@@ -68,8 +68,8 @@ class Menu():
     [["entry 0 name", entry_0_callback, args_for_callback], ...]
     The callback will be called first with args_for_callback as named arguments
     """
-    def add_dynamic_entries(self, entry_generator):
-        self.entries.append([entry_generator, EntryType.DYNAMIC])
+    def add_dynamic_entries(self, entry_generator, fallback=None):
+        self.entries.append([entry_generator, EntryType.DYNAMIC, fallback])
     
     """
     If obj is string, returns it
@@ -95,13 +95,16 @@ class Menu():
         for entry in self.entries:
             if entry[1] == EntryType.DYNAMIC:
                 # Remove previously generated entries
-                if len(entry) == 3:
-                    del entry[2]
+                if len(entry) == 4:
+                    del entry[3]
                 entries = entry[0]()
-                for new_entry in entries:
-                    menu  += ("| " * depth) + str(index)+" ) " + new_entry[0] + "\n"
-                    index += 1
-                # Store generated entries in dynamic entry
+                if len(entries) == 0:
+                    entry.append(self.get_text(entry[2]))
+                else:
+                    for new_entry in entries:
+                        menu  += ("| " * depth) + str(index)+" ) " + new_entry[0] + "\n"
+                        index += 1
+                    # Store generated entries in dynamic entry
                 entry.append(entries)
             else:
                 if entry[1] == EntryType.MENU:
@@ -130,11 +133,11 @@ class Menu():
         for saved_entry in self.entries:
             if saved_entry[1] == EntryType.DYNAMIC:
                 # If the adjusted index belongs to the dynamic entry being evaluated
-                if picked_index - current_index < len(saved_entry[2]):
+                if picked_index - current_index < len(saved_entry[3]):
                     picked_index = picked_index - current_index
                     picked_entry = saved_entry
                     break
-                current_index += len(saved_entry[2])
+                current_index += len(saved_entry[3])
             else:
                 if current_index == picked_index:
                     picked_entry = saved_entry
