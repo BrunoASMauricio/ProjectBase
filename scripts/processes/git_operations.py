@@ -1,9 +1,8 @@
 import os
 from processes.process import MultipleCDLaunch
-from data.git import GetRepoNameFromURL
 from data.common import IsEmpty
 
-def GetGitResult(git_command, path):
+def ParseGitResult(git_command, path):
     if path == None:
         path = os.getcwd()
     return MultipleCDLaunch(git_command, path, False, 1)
@@ -15,56 +14,80 @@ Obtain the URL of the repository located at path
 """
 def GetRepositoryUrl(path = None):
     import sys
-    url = GetGitResult("git config --get remote.origin.url", path)
+    url = ParseGitResult("git config --get remote.origin.url", path)
     if "brunoasmauricio/ProjectBase" in url:
         print("fuck")
         sys.exit(-1)
     return url
 
 def GetRepoLocalCommit(path = None):
-    return GetGitResult("git rev-parse HEAD", path)
+    return ParseGitResult("git rev-parse HEAD", path)
 
 def GetRepoLocalBranch(path = None):
-    return GetGitResult("git rev-parse --abbrev-ref HEAD", path)
+    return ParseGitResult("git rev-parse --abbrev-ref HEAD", path)
 
 def GetRepoRemoteCommit(path = None):
-    return GetGitResult("git rev-parse `git branch -r --sort=committerdate | tail -1`", path)
+    return ParseGitResult("git rev-parse `git branch -r --sort=committerdate | tail -1`", path)
 
 def GetRepoStatus(path = None):
-    return GetGitResult("git status", path)
+    return ParseGitResult("git status", path)
 
 def GetRepoRemote(path = None):
-    return GetGitResult("git remote show", path)
+    return ParseGitResult("git remote show", path)
 
 def GetRepoDefaultBranch(path = None):
-    RemoteResult = GetRepoRemote(path)
-    if RemoteResult["code"] != 0:
-        Message  = "No remote setup, cant fetch default branch for "
-        Message += GetRepositoryUrl(path) + " at " + path
-        Message += "Code: " + str(RemoteResult["code"]) + "\n"
-        Message += "Output: " + str(RemoteResult["stdout"]) + "\n"
-        raise Exception(Message)
+    remote = GetRepoRemote(path)
+    # if RemoteResult["code"] != 0:
+    #     Message  = "No remote setup, cant fetch default branch for "
+    #     Message += GetRepositoryUrl(path) + " at " + path
+    #     Message += "Code: " + str(RemoteResult["code"]) + "\n"
+    #     Message += "Output: " + str(RemoteResult["stdout"]) + "\n"
+    #     raise Exception(Message)
 
-    DefaultBranch = GetGitResult("git remote show " + RemoteResult["stdout"] + " 2>/dev/null | sed -n '/HEAD branch/s/.*: //p'")
-    if IsEmpty(DefaultBranch):
+    default_branch = ParseGitResult("git remote show " + remote + " 2>/dev/null | sed -n '/HEAD branch/s/.*: //p'", path)
+    if IsEmpty(default_branch):
         Message  = "No default branch for "
         Message += GetRepositoryUrl(path) + " at " + path + "\n"
-        Message += "Code: " + str(DefaultBranch["code"]) + "\n"
-        Message += "Output: " + str(DefaultBranch["stdout"]) + "\n"
+        Message += "Code: " + str(default_branch) + "\n"
+        Message += "Output: " + str(default_branch) + "\n"
         raise Exception(Message)
 
-    return DefaultBranch.split("/")[-1].strip()
+    return default_branch.split("/")[-1].strip()
 
 # ================= SET operations =================
 
 def RepoResetHard(path = None):
-    return GetGitResult("git reset --hard", path)
+    return ParseGitResult("git reset --hard", path)
 
+def RepoResetSoft(path = None):
+    return ParseGitResult("git reset --soft HEAD~", path)
 
+"""
+Remove untracked files and folders, including those present in .gitignore
+"""
 def RepoCleanUntracked(path = None):
-    return GetGitResult("git clean -fdx", path)
+    return ParseGitResult("git clean -fdx", path)
 
 # ================= Update operations =================
 
 def RepoFetch(path = None):
-    GetGitResult("git fetch origin '*:*'", path)
+    ParseGitResult("git fetch origin '*:*'", path)
+
+def GenAutoCommitMessage():
+    return ""
+
+"""
+Stages all changes, within the current directory and its subdirectories.
+"""
+def RepoSaveChanges(path = None, commit_message=""):
+    if len(commit_message) == 0:
+        commit_message = GenAutoCommitMessage()
+    ParseGitResult("git add .; git commit -m " + commit_message, path)
+
+def RepoResetToLatestSync(path=None):
+    url = GetRepositoryUrl(path)
+    branch = GetRepoLocalBranch(path)
+    ParseGitResult("git reset --hard origin/" + branch, path)
+    if path == None:
+        path = os.getcwd()
+    print("ON "+url+" resetting to origin/" + branch + " in "+path)

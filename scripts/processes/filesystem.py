@@ -4,8 +4,8 @@ from data.paths import GetParentPath
 def remove(target):
     LaunchProcess('rm -rf ' + target)
 
-def create_directory(path):
+def CreateDirectory(path):
     LaunchProcess('mkdir -p "' + path + '"')
 
 def create_parent_directory(path_to_child):
-    create_directory(GetParentPath(path_to_child))
+    CreateDirectory(GetParentPath(path_to_child))
