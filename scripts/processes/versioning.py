@@ -5,7 +5,7 @@ from data.common import RemoveEmpty, CLICenterString
 from processes.project import Project
 from processes.git     import GetAllGitRepos, GetRepoNameFromPath, RepoIsClean, CheckIfStatusIsClean
 from processes.process import OpenBashOnDirectoryAndWait, RunOnFolders
-from processes.git_operations import GetRepoStatus, GetRepositoryUrl, RepoCleanUntracked, RepoSaveChanges, RepoResetToLatestSync
+from processes.git_operations import GetRepoStatus, GetRepositoryUrl, RepoCleanUntracked, RepoSaveChanges, RepoResetToLatestSync, RepoHardReset
 from menus.menu import GetNextOption
 
 def GetKnownAndUnknownGitRepos():
@@ -19,6 +19,7 @@ def GetKnownAndUnknownGitRepos():
 
 def RunOnAllManagedRepos(callback, arguments={}):
     _, known_paths, _ = GetKnownAndUnknownGitRepos()
+    print(known_paths)
     return RunOnFolders(known_paths, callback, arguments)
 
 def DirectlyManageSingleRepository():
@@ -94,6 +95,9 @@ Remove all uncommited (unsaved) files and folders
 """
 def CleanAllUnsaved():
     RunOnAllManagedRepos(RepoCleanUntracked)
+
+def UndoChanges():
+    RunOnAllManagedRepos(RepoHardReset)
 
 def GlobalSave():
     commit_message = GetNextOption("[commit message <] ")

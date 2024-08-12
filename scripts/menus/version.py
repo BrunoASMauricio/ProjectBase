@@ -1,5 +1,5 @@
 from menus.menu import Menu
-from processes.versioning import DirectlyManageSingleRepository, PrintProjectStatus, CleanAllUnsaved, GlobalSave, ResetToLatestSync
+from processes.versioning import DirectlyManageSingleRepository, PrintProjectStatus, CleanAllUnsaved, GlobalSave, ResetToLatestSync, UndoChanges
 from git import *
 from processes.project import DeleteProject
 
@@ -9,6 +9,7 @@ SyncMenu.add_callback_entry("Push data to remote", None)
 
 ResetMenu = Menu("Reset Menu")
 ResetMenu.add_callback_entry("Clean unsaved files and folders", CleanAllUnsaved)
+ResetMenu.add_callback_entry("Undo changes", UndoChanges)
 # ResetMenu.add_callback_entry("Soft reset to latest tagged save (dont remove changes)", None)
 # ResetMenu.add_callback_entry("Hard reset to latest tagged save (remove changes)", None)
 ResetMenu.add_callback_entry("Reset files to latest sync", ResetToLatestSync)
