@@ -1,5 +1,8 @@
-import os
+import datetime
 
+def generate_local_branch(branch):
+    now = str(datetime.datetime.now()).replace(" ", "_").replace(":","_").replace(".","_").replace("-","_")
+    return branch + "_" + now
 """
 From: https://<git repo>/<path el 1>/<path el 2>/<path el 3>/<path el 4>
 To: git@<git repo>:<path el 1>/<path el 2>/<path el 3>/<path el 4>.git
