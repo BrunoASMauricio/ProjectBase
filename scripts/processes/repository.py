@@ -8,7 +8,7 @@ from data.settings import Settings
 from data.json import dump_json_file, load_json_file
 from processes.repository_configs import LoadConfigs, MergeConfigs, ParseConfigs
 from data.common import GetValueOrDefault
-from processes.filesystem import create_directory
+from processes.filesystem import CreateDirectory
 from processes.progress_bar import PrintProgressBar
 from threading import Thread, Lock
 
@@ -82,7 +82,7 @@ def __LoadRepositoryFolder(imposed_configs):
         expected_local_path = RemoveSequentialDuplicates(expected_local_path, "/")
 
         # Move worktree to appropriate place
-        create_directory(expected_local_path)
+        CreateDirectory(expected_local_path)
         MoveWorkTree(repository["bare path"], repository["url"], repository["commitish"], helper_path, expected_local_path)
         current_local_path = expected_local_path
         set_detected_state_change()
