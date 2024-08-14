@@ -272,8 +272,12 @@ def LoadRepository(imposed_configs):
             dependencies[dep_repo_id] = dependency_configs
         repositories_lock.release()
 
+def __RepoPathToBuild(repository):
+    return repository["repo path"].replace(Settings["paths"]["project code"], Settings["paths"]["build env"])
+
+
 def __SetupCMake(repositories):
-    PublicHeaderFolders = []
+    public_header_folders = []
     ObjectsToLink       = []
     ReposToBuild        = []
     for repo_id in repositories:
@@ -281,7 +285,8 @@ def __SetupCMake(repositories):
             repository = repositories[repo_id]
             # Fetch all public headers
             if len(repository["public headers"]) > 0:
-                PublicHeaderFolders += [repository["full worktree path"] + "/" + x for x in repository["public headers"]]
+                # build_dir = __RepoPathToBuild(repository)
+                public_header_folders += [repository["repo path"] + "/" + x for x in repository["public headers"]]
 
             # Fetch all objects to link
             if not __RepoHasFlagSet(repository, "independent project") and not __RepoHasFlagSet(repository, "no auto build"):
@@ -289,24 +294,27 @@ def __SetupCMake(repositories):
         except Exception as ex:
             traceback.print_exc()
             print(repositories[repo_id])
-
+    # print([repositories[x]["full worktree path"] for x in repositories])
+    # sys.exit(0)
     for repo_id in repositories:
         try:
             repository = repositories[repo_id]
             if __RepoHasFlagSet(repository, "no auto build"):
                 continue
 
+            build_dir = __RepoPathToBuild(repository)
             if __RepoHasFlagSet(repository, "independent project"):
                 # TODO Throw error if CMakeLists.txt does not exist in sub_dire
-                IncludeEntry = 'add_subdirectory("' + repository["full worktree path"] + '")'
+                IncludeEntry = 'add_subdirectory("' + build_dir + '")'
             else:
-                IncludeEntry = 'include("' + repository["full worktree path"] + '/CMakeLists.txt")'
+                IncludeEntry = 'include("' + build_dir + '/CMakeLists.txt")'
             ReposToBuild.append(IncludeEntry)
 
-            RepoCmakeLists = repository["full worktree path"] + "/CMakeLists.txt"
+            RepoCmakeLists = build_dir + "/CMakeLists.txt"
+
             PrivateHeaderFolders = []
             if len(repository["private headers"]) > 0:
-                PrivateHeaderFolders += [repository["full worktree path"] + "/" + x for x in repository["public headers"]]
+                PrivateHeaderFolders += [repository["repo path"] + "/" + x for x in repository["public headers"]]
 
             # Check if there is already a CMakeLists and it isn't ours
             if os.path.isfile(RepoCmakeLists):
@@ -321,7 +329,7 @@ def __SetupCMake(repositories):
                     os.unlink(RepoCmakeLists)
 
             TempObjectsToLink = [x for x in ObjectsToLink if x != repository["name"]+'_lib']
-            TestHeaders = [repository["full worktree path"] + "/" + Header for Header in repository["test_headers"]]
+            TestHeaders = [repository["repo path"] + "/" + Header for Header in repository["test_headers"]]
             if len(TestHeaders) > 0:
                 print("TestHeaders")
                 print(TestHeaders)
@@ -329,9 +337,10 @@ def __SetupCMake(repositories):
                 SetupTemplateScript("repository/CMakeLists.txt", RepoCmakeLists, {
                     "ADD_LIBRARY_TYPE": "",
                     "TARGET_INCLUDE_TYPE": "PUBLIC",
-                    "INCLUDE_REPOSITORY_DIRECTORIES": '\n'.join(PublicHeaderFolders),
+                    "INCLUDE_REPOSITORY_DIRECTORIES": '\n'.join(public_header_folders),
                     "LINK_DEPENDENCIES": '\n'.join(TempObjectsToLink),
-                    "TEST_HEADER_INCLUDES": '\n'.join(TestHeaders)
+                    "TEST_HEADER_INCLUDES": '\n'.join(TestHeaders),
+                    "REPO_SOURCES": repository["repo path"]
                 })
         except Exception as ex:
             traceback.print_exc()

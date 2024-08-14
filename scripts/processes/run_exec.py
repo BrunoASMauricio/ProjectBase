@@ -140,7 +140,7 @@ def run_all_tests():
     print("Running " + str(len(tests)) + " tests in " + Settings["paths"]["tests"].replace(Settings["paths"]["project base"], ""))
 
     # Allow python scripts to use ProjectBase scripts
-    PrepareExecEnvironment(Project)
+    PrepareExecEnvironment()
 
     for test_name in tests:
         try:
