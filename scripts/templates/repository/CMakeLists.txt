@@ -6,7 +6,7 @@
 ### RESPECT THE CURRENT ORDER OF COMMANDS
 
 ### Obtain this repositorys' name
-get_filename_component(RepositoryName ${CMAKE_CURRENT_LIST_DIR} NAME)
+get_filename_component(RepositoryName $$REPO_SOURCES$$ NAME)
 string(REPLACE " " "_" RepositoryName ${RepositoryName})
 
 MESSAGE("Generating ${RepositoryName}")
@@ -27,10 +27,10 @@ unset(REP_DEBUG_C_FLAGS)
 unset(REP_RELEASE_C_FLAGS)
 
 ###Setup useful variables
-SET(src_path ${CMAKE_CURRENT_LIST_DIR}/code/source)
-SET(header_path ${CMAKE_CURRENT_LIST_DIR}/code/headers)
-SET(REPO_CODE_PATH ${CMAKE_CURRENT_LIST_DIR}/code)
-SET(REPO_PATH ${CMAKE_CURRENT_LIST_DIR})
+SET(src_path $$REPO_SOURCES$$/code/source)
+SET(header_path $$REPO_SOURCES$$/code/headers)
+SET(REPO_CODE_PATH $$REPO_SOURCES$$/code)
+SET(REPO_PATH $$REPO_SOURCES$$)
 
 SET(DEPENDENCY_HEADER_INCLUDES
 $$INCLUDE_REPOSITORY_DIRECTORIES$$
@@ -44,8 +44,8 @@ SET(EXECUTABLES)
 SET(TESTS)
 
 ### Include custom CMakeLists
-if(EXISTS ${CMAKE_CURRENT_LIST_DIR}/configs/CMakeLists.txt)
-	include(${CMAKE_CURRENT_LIST_DIR}/configs/CMakeLists.txt)
+if(EXISTS $$REPO_SOURCES$$/configs/CMakeLists.txt)
+	include($$REPO_SOURCES$$/configs/CMakeLists.txt)
 
 	SET(CUSTOM_C_FLAGS "")
 	### Use repository specific C Flags

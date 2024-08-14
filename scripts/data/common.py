@@ -6,6 +6,7 @@ import difflib
 import unicodedata
 from data.paths import GetBasePaths
 from data.colors import ColorFormat, Colors
+from data.paths import CreateParentPath
 
 def RemoveDuplicates(lst):
     return list(set(lst))
@@ -158,22 +159,23 @@ def UserYesNoChoice(Message):
     return Answer
 
 # Sets up a script according to its template and the target variable substitutions
-def SetupTemplateScript(ScriptName, TargetFile, VariableSubstitutions={}):
-    WholeScript = ""
-    ProjectBasePaths = GetBasePaths()
+def SetupTemplateScript(script_name, target_file, variable_substitutions={}):
+    whole_script = ""
+    project_base_paths = GetBasePaths()
 
-    if ScriptName.endswith(".sh"):
+    if script_name.endswith(".sh"):
         # Get bash header
-        with open(ProjectBasePaths["templates"]+"/scriptHeader.sh", 'r') as f:
-            WholeScript = f.read()+"\n\n"
+        with open(project_base_paths["templates"]+"/scriptHeader.sh", 'r') as f:
+            whole_script = f.read()+"\n\n"
 
     # Get rest of script
-    with open(ProjectBasePaths["templates"]+"/"+ScriptName, 'r') as f:
-        WholeScript += f.read()
+    with open(project_base_paths["templates"]+"/"+script_name, 'r') as f:
+        whole_script += f.read()
     # Perform variable substitutions
-    for VariableName in VariableSubstitutions:
-        WholeScript = WholeScript.replace("$$"+VariableName+"$$", VariableSubstitutions[VariableName])
+    for variable_name in variable_substitutions:
+        whole_script = whole_script.replace("$$"+variable_name+"$$", variable_substitutions[variable_name])
 
     # Write script back
-    with open(TargetFile, 'w') as f:
-        f.write(WholeScript)
+    CreateParentPath(target_file)
+    with open(target_file, 'w') as f:
+        f.write(whole_script)

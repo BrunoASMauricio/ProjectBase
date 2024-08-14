@@ -19,7 +19,7 @@ def runProjectTests(RemoteRepoUrl, ProjectBranch, ProjetCommit):
     print("Running " + str(len(Tests)) + " tests in " + Project.Paths["tests"])
 
     # Allow python scripts to use ProjectBase scripts
-    PrepareExecEnvironment(Project)
+    PrepareExecEnvironment()
 
     for test in Tests:
         # Must be fully executable

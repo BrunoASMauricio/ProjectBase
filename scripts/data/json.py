@@ -1,7 +1,7 @@
 import traceback
 import json
 
-def load_json_file(Path, ErrorValue=None, VariableSubstitutions={}):
+def load_json_file(Path, ErrorValue=None, variable_substitutions={}):
     """
     Returns the json from the given file, or ErrorValue in cas of an error
     Parameters
@@ -16,8 +16,8 @@ def load_json_file(Path, ErrorValue=None, VariableSubstitutions={}):
         with open(Path, 'r') as File:
             JsonData = json.load(File)
 
-        for VariableName in VariableSubstitutions:
-            JsonData = JsonData.replace("$$" + VariableName + "$$", VariableSubstitutions[VariableName])
+        for variable_name in variable_substitutions:
+            JsonData = JsonData.replace("$$" + variable_name + "$$", variable_substitutions[variable_name])
 
         if JsonData == None:
             raise Exception("Null json data")

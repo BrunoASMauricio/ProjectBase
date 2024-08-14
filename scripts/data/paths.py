@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 def GetCurrentFolderName(path_to_child):
     return path_to_child.split("/")[-2]
@@ -8,6 +9,10 @@ def GetParentFolderName(path_to_child):
 
 def GetParentPath(path_to_child):
     return '/'.join(path_to_child.split("/")[:-1])
+
+def CreateParentPath(path_to_child):
+    parent_path = GetParentPath(path_to_child)
+    Path(parent_path).mkdir(parents=True, exist_ok=True)
 
 # Assume scripts is on the base folder
 def GetProjectBasePath():
@@ -44,8 +49,11 @@ def GetProjectPaths(ProjectName):
     # Projects main directory
     Paths["project main"] = Paths["project base"]+"/projects/" + ProjectName + ".ProjectBase"
 
-    # Projects cmake cache
-    Paths["cmake"] =        Paths["project main"]+"/cmake"
+    # Projects build directory
+    Paths["build"]       = Paths["project main"] + "/build"
+    # Cache for the build artifacts
+    Paths["build cache"] = Paths["build"] + "/cache"
+    Paths["build env"]   = Paths["build"] + "/cmake"
 
     # Project output binaries
     Paths["binaries"] =     Paths["project main"]+"/binaries"

@@ -69,11 +69,11 @@ class PROJECT(dict):
         # Dont complain about unused -D parameters, they are not mandatory
         CMakeCommand += ' --no-warn-unused-cli'
         CMakeCommand += ' -S ' + self.paths["project main"]
-        CMakeCommand += ' -B ' + self.paths["cmake"]
+        CMakeCommand += ' -B ' + self.paths["build cache"]
         # CMakeCommand += ' -DBUILD_MODE='+ActiveSettings["Mode"]
         CMakeCommand += ' -DPROJECT_NAME=' + self.name
         CMakeCommand += ' -DPROJECT_BASE_SCRIPT_PATH=' + self.paths["scripts"]
-        CMakeCommand += ' && cmake --build ' + self.paths["cmake"]
+        CMakeCommand += ' && cmake --build ' + self.paths["build cache"]
         # Enable multi process
         CMakeCommand += ' -- -j $(nproc)'
 

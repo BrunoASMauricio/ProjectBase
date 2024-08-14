@@ -71,7 +71,7 @@ def RunOnFolders(Paths, FunctionToRun, ListArguments={}):
 
     return OperationStatus
 
-def SetupScript(SourceFile, TargetFile, VariableSubstitutions={}):
+def SetupScript(SourceFile, TargetFile, variable_substitutions={}):
     WholeScript = ""
 
     # Get rest of script
@@ -79,8 +79,8 @@ def SetupScript(SourceFile, TargetFile, VariableSubstitutions={}):
         WholeScript += f.read()
 
     # Perform variable substitutions
-    for VariableName in VariableSubstitutions:
-        WholeScript = WholeScript.replace("$$"+VariableName+"$$", VariableSubstitutions[VariableName])
+    for variable_name in variable_substitutions:
+        WholeScript = WholeScript.replace("$$"+variable_name+"$$", variable_substitutions[variable_name])
 
     # Write script back
     with open(TargetFile, 'w') as f:
