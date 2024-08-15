@@ -134,7 +134,7 @@ def __RunRepoCommands(command_set_name, commands):
             command_block     = commands[block_name]
             proceed_condition = command_block["condition to proceed"]
             command_list      = command_block["command list"]
-            result = ParseProcessResponse(LaunchVerboseProcess(proceed_condition))
+            result = ParseProcessResponse(LaunchProcess(proceed_condition))
             if result != "":
                 logging.info("\t Condition to proceed: '" + proceed_condition + "' is False, skipping " + str(len(command_list)) + " commands")
                 return
@@ -237,8 +237,8 @@ def LoadRepository(imposed_configs):
     repositories[repo_id] = imposed_configs
 
     config_variable_data = {
-        "PROJECT_PATH":  Settings["paths"]["project main"],
-        "REPO_PATH":     imposed_configs["repo path"],
+        "PROJECT_PATH": Settings["paths"]["project main"],
+        "REPO_PATH":    imposed_configs["repo path"],
         "REPOPATH":     imposed_configs["repo path"]
     }
 
@@ -291,6 +291,7 @@ def __SetupCMake(repositories):
                 ObjectsToLink.append(repository["name"]+'_lib')
         except Exception as ex:
             traceback.print_exc()
+            print(str(ex))
             print(repositories[repo_id])
     # print([repositories[x]["full worktree path"] for x in repositories])
     # sys.exit(0)
@@ -341,6 +342,7 @@ def __SetupCMake(repositories):
                 })
         except Exception as ex:
             traceback.print_exc()
+            print(str(ex))
             sys.exit(0)
 
     SetupTemplateScript("project/CMakeLists.txt", JoinPaths(Settings["paths"]["build env"], "CMakeLists.txt"), {

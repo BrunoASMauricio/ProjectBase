@@ -9,7 +9,7 @@ class Colors(Enum):
     Cyan = 5
     Magenta = 6
 
-ColorDict = {
+color_dict = {
     Colors.Red: Fore.RED,
     Colors.Blue: Fore.BLUE,
     Colors.Yellow: Fore.YELLOW,
@@ -18,5 +18,5 @@ ColorDict = {
     Colors.Magenta: Fore.MAGENTA
 }
 
-def ColorFormat(Color, Message):
-    return ColorDict[Color] + str(Message) + Style.RESET_ALL
+def ColorFormat(color, message):
+    return color_dict[color] + str(message) + Style.RESET_ALL
