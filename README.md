@@ -83,7 +83,8 @@ ProjectBase is licensed under GNU General Public License Version 3
 ## TODO
 
 - [ ] Figure out why loading takes so much time
-- [ ] Add abstraction similar to menu, but for multiple choice stuff (i.e. executable/test/project/single repo to manage operations)
+- [X] Add abstraction similar to menu, but for multiple choice stuff (i.e. executable/test/project/single repo to manage operations)
+- [ ] Add information on sync status in getting repo status
 - [X] Separate loading from setup (loading loads the repos internally, setup forces a load and runs setup commands)
 - [ ] Add some statistics (i.e. baregit vs direct clone sizes and time delta between first and second project setups)
 - [ ] Find a way to identify repositories without using URLs (different URLs can point to the same repo)

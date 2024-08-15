@@ -11,6 +11,7 @@ from data.common import GetValueOrDefault
 from processes.filesystem import CreateDirectory
 from processes.progress_bar import PrintProgressBar
 from threading import Thread, Lock
+from data.paths import JoinPaths
 
 repositories_lock = Lock()
 dependencies = {}
@@ -78,8 +79,7 @@ def __LoadRepositoryFolder(imposed_configs):
         helper_path = AddWorkTree(imposed_configs["bare path"], imposed_configs["url"], imposed_configs["commitish"], Settings["paths"]["temporary"])
         repository  = MergeConfigs(imposed_configs, LoadConfigs(helper_path))
 
-        expected_local_path = Settings["paths"]["project code"] + "/" + repository["local path"]
-        expected_local_path = RemoveSequentialDuplicates(expected_local_path, "/")
+        expected_local_path = JoinPaths(Settings["paths"]["project code"], repository["local path"])
 
         # Move worktree to appropriate place
         CreateDirectory(expected_local_path)
@@ -92,18 +92,20 @@ def __LoadRepositoryFolder(imposed_configs):
         repository = MergeConfigs(imposed_configs, LoadConfigs(current_local_path))
 
         # Is that the expected path?
-        expected_local_path = Settings["paths"]["project code"] + "/" + repository["local path"] + "/" + repository["name"]
-        expected_local_path = RemoveSequentialDuplicates(expected_local_path, "/")
+        expected_local_path = JoinPaths(Settings["paths"]["project code"], repository["local path"])
+        repo_path = JoinPaths(expected_local_path, repository["name"])
 
-        if current_local_path != expected_local_path:
-            logging.warning("Repository not in expected place (at \"" + current_local_path + "\" instead of \"" + expected_local_path + "\"). Moving it")
-            MoveWorkTree(repository["bare path"], repository["url"], repository["commitish"], current_local_path, expected_local_path)
-            current_local_path = expected_local_path
+        if current_local_path != repo_path:
+            logging.warning("Repository not in expected place (at \"" + current_local_path + "\" instead of \"" + repo_path + "\"). Moving it")
+            MoveWorkTree(repository["bare path"], repository["url"], repository["commitish"], current_local_path, repo_path)
+            current_local_path = repo_path
             set_detected_state_change()
+        current_local_path = expected_local_path
 
     # repository dict exists containing configs, repo is at current_local_path and congruent with the path requested in configs
     repository["full worktree path"] = current_local_path
-    repository["repo path"] = current_local_path + "/" + repository["name"]
+    repository["repo path"]  = JoinPaths(current_local_path, repository["name"])
+    repository["build path"] = repository["repo path"].replace(Settings["paths"]["project code"], Settings["paths"]["build env"])
 
     return repository
 
@@ -236,8 +238,8 @@ def LoadRepository(imposed_configs):
 
     config_variable_data = {
         "PROJECT_PATH":  Settings["paths"]["project main"],
-        "REPO_PATH":     imposed_configs["full worktree path"],
-        "REPOPATH":     imposed_configs["full worktree path"]
+        "REPO_PATH":     imposed_configs["repo path"],
+        "REPOPATH":     imposed_configs["repo path"]
     }
 
     # Reload metadata
@@ -272,10 +274,6 @@ def LoadRepository(imposed_configs):
             dependencies[dep_repo_id] = dependency_configs
         repositories_lock.release()
 
-def __RepoPathToBuild(repository):
-    return repository["repo path"].replace(Settings["paths"]["project code"], Settings["paths"]["build env"])
-
-
 def __SetupCMake(repositories):
     public_header_folders = []
     ObjectsToLink       = []
@@ -286,7 +284,7 @@ def __SetupCMake(repositories):
             # Fetch all public headers
             if len(repository["public headers"]) > 0:
                 # build_dir = __RepoPathToBuild(repository)
-                public_header_folders += [repository["repo path"] + "/" + x for x in repository["public headers"]]
+                public_header_folders += [JoinPaths(repository["repo path"], x) for x in repository["public headers"]]
 
             # Fetch all objects to link
             if not __RepoHasFlagSet(repository, "independent project") and not __RepoHasFlagSet(repository, "no auto build"):
@@ -302,19 +300,18 @@ def __SetupCMake(repositories):
             if __RepoHasFlagSet(repository, "no auto build"):
                 continue
 
-            build_dir = __RepoPathToBuild(repository)
             if __RepoHasFlagSet(repository, "independent project"):
                 # TODO Throw error if CMakeLists.txt does not exist in sub_dire
-                IncludeEntry = 'add_subdirectory("' + build_dir + '")'
+                IncludeEntry = 'add_subdirectory("' + repository["build path"] + '")'
             else:
-                IncludeEntry = 'include("' + build_dir + '/CMakeLists.txt")'
+                IncludeEntry = 'include("' + JoinPaths(repository["build path"], "CMakeLists.txt") + '")'
             ReposToBuild.append(IncludeEntry)
 
-            RepoCmakeLists = build_dir + "/CMakeLists.txt"
+            RepoCmakeLists = JoinPaths(repository["build path"], "CMakeLists.txt")
 
             PrivateHeaderFolders = []
             if len(repository["private headers"]) > 0:
-                PrivateHeaderFolders += [repository["repo path"] + "/" + x for x in repository["public headers"]]
+                PrivateHeaderFolders += [JoinPaths(repository["repo path"], x) for x in repository["public headers"]]
 
             # Check if there is already a CMakeLists and it isn't ours
             if os.path.isfile(RepoCmakeLists):
@@ -329,7 +326,7 @@ def __SetupCMake(repositories):
                     os.unlink(RepoCmakeLists)
 
             TempObjectsToLink = [x for x in ObjectsToLink if x != repository["name"]+'_lib']
-            TestHeaders = [repository["repo path"] + "/" + Header for Header in repository["test_headers"]]
+            TestHeaders = [JoinPaths(repository["repo path"], Header) for Header in repository["test_headers"]]
             if len(TestHeaders) > 0:
                 print("TestHeaders")
                 print(TestHeaders)
@@ -346,7 +343,7 @@ def __SetupCMake(repositories):
             traceback.print_exc()
             sys.exit(0)
 
-    SetupTemplateScript("project/CMakeLists.txt", Settings["paths"]["project main"]+"/CMakeLists.txt", {
+    SetupTemplateScript("project/CMakeLists.txt", JoinPaths(Settings["paths"]["build env"], "CMakeLists.txt"), {
         "INCLUDE_REPOSITORY_CMAKELISTS":'\n'.join(ReposToBuild)
     })
 

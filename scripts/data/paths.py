@@ -81,4 +81,6 @@ def JoinPaths(*paths):
     final_path = ""
     for path in paths:
         final_path = os.path.join(final_path, path)
+    while "//" in final_path:
+        final_path = final_path.replace("//", "/")
     return final_path
