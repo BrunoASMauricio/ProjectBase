@@ -16,66 +16,66 @@ def CreateParentPath(path_to_child):
 
 # Assume scripts is on the base folder
 def GetProjectBasePath():
-    ProjectBaseScriptsPath = os.path.dirname(os.path.realpath(__file__))
-    return ProjectBaseScriptsPath.replace("/scripts/data", "")
+    project_base_scripts_path = os.path.dirname(os.path.realpath(__file__))
+    return project_base_scripts_path.replace("/scripts/data", "")
 
 def GetBasePaths():
-    ProjectBasePath = GetProjectBasePath()
+    project_base_path = GetProjectBasePath()
 
     # Setup paths
-    Paths = {
-        "project base": ProjectBasePath,
+    paths = {
+        "project base": project_base_path,
     }
 
-    Paths["scripts"] = Paths["project base"]+"/scripts"
-    Paths["templates"] = Paths["scripts"]+"/templates"
+    paths["scripts"] = paths["project base"]+"/scripts"
+    paths["templates"] = paths["scripts"]+"/templates"
 
-    Paths["configs"] = Paths["project base"]+"/configs"
+    paths["configs"] = paths["project base"]+"/configs"
 
-    Paths["history"]   = Paths["configs"]+"/history"
-    Paths["temporary"] = Paths["configs"]+"/temporary"
+    paths["history"]   = paths["configs"]+"/history"
+    paths["temporary"] = paths["configs"]+"/temporary"
     # Where the .git files are located
-    Paths["bare gits"] = Paths["configs"]+"/bare_gits"
+    paths["bare gits"] = paths["configs"]+"/bare_gits"
 
-    return Paths
+    return paths
 
-def GetProjectPaths(ProjectName):
+def GetProjectPaths(project_name):
     """
     Builds and returns a dictionary with a projects' directory structure
     indexed by a string describing each paths' purpose
     """
-    Paths = GetBasePaths()
+    paths = GetBasePaths()
 
     # Projects main directory
-    Paths["project main"] = Paths["project base"]+"/projects/" + ProjectName + ".ProjectBase"
+    paths["project main"] = paths["project base"]+"/projects/" + project_name + ".ProjectBase"
 
     # Projects build directory
-    Paths["build"]       = Paths["project main"] + "/build"
+    paths["build"]       = paths["project main"] + "/build"
     # Cache for the build artifacts
-    Paths["build cache"] = Paths["build"] + "/cache"
-    Paths["build env"]   = Paths["build"] + "/cmake"
+    paths["build cache"] = paths["build"] + "/cache"
+    paths["build env"]   = paths["build"] + "/cmake"
 
     # Project output binaries
-    Paths["binaries"] =     Paths["project main"]+"/binaries"
+    paths["binaries"] =     paths["project main"]+"/binaries"
 
     # Project repository worktrees
-    Paths["project code"] = Paths["project main"]+'/code'
+    paths["project code"] = paths["project main"]+'/code'
     # 
-    Paths["default local path"] = ""
+    paths["default local path"] = ""
 
     # Path for repositories that don't specify local_path
-    Paths["general repository"] = ""
+    paths["general repository"] = ""
 
     # Path for output binaries
-    Paths["objects"]     = Paths["binaries"]+"/objects"
-    Paths["executables"] = Paths["objects"]+"/executables"
-    Paths["tests"]       = Paths["objects"]+"/tests"
-    Paths["libraries"]   = Paths["binaries"]+"/libs"
+    paths["objects"]     = paths["binaries"]+"/objects"
+    paths["executables"] = paths["objects"]+"/executables"
+    paths["tests"]       = paths["objects"]+"/tests"
+    paths["libraries"]   = paths["binaries"]+"/libs"
 
     # Path for whatever data might be used/needed
-    Paths["data"]        = Paths["project main"]+"/data"
+    paths["data"]        = paths["project main"]+"/data"
 
-    return Paths
+    return paths
 
 def JoinPaths(*paths):
     final_path = ""

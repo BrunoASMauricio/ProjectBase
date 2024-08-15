@@ -126,8 +126,8 @@ def GlobalSave():
     else:
         try:
             RunOnAllRepos(RepoSaveChanges, {"commit_message":commit_message})
-        except:
-            print("Unacceptable commit message")
+        except Exception as ex:
+            print("Unacceptable commit message: "+str(ex))
 
 def ResetToLatestSync():
     RunOnAllRepos(RepoResetToLatestSync)

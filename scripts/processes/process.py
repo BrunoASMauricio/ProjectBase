@@ -84,11 +84,11 @@ def RunOnFolders(paths, callback, arguments={}):
 def RunExecutable(CommandString):
     return subprocess.run(CommandString, shell=True)
 
-def LaunchProcess(Command, ToPrint=False):
+def LaunchProcess(Command, to_print=False):
     """
     Launch new process
 
-    ToPrint: whether to print the output (process thinks it is in a TY)
+    to_print: whether to print the output (process thinks it is in a TY)
 
     Returns:
         _type_: {"stdout":"<stdout>", "code": return code}
@@ -99,7 +99,7 @@ def LaunchProcess(Command, ToPrint=False):
     if Command == "":
         return {"stdout": "", "stderr": "", "code": ""}
 
-    if ToPrint == True:
+    if to_print == True:
         print(ColorFormat(Colors.Blue, Command))
         OutputBytes = []
         def read(fd):
@@ -112,7 +112,7 @@ def LaunchProcess(Command, ToPrint=False):
 
         Returned["code"] = int(pty.spawn(['bash', '-c', Command], read))
 
-        if ToPrint == True:
+        if to_print == True:
             print(ColorFormat(Colors.Blue, "Returned " + str(Returned["code"])))
 
         if len(OutputBytes) != 0:
@@ -150,7 +150,7 @@ def LaunchProcess(Command, ToPrint=False):
             else:
                 message += line
         message += "\n\t========================= Process failed (end) =========================\n"
-        logging.error(message)
+        raise Exception(message)
 
     return Returned
 
@@ -197,14 +197,14 @@ def AssertProcessRun(Process, ExpectedCode, ExpectedOutput):
 Changes to the given directory, launches the Command in a forked process and
 returns the { "stdout": "..." , "code": "..."  } dictionary
 """
-def LaunchProcessAt(Command, Path="", ToPrint=False):
+def LaunchProcessAt(Command, Path="", to_print=False):
     if Path != "":
         # CurrentDirectory = os.getcwd()
         # os.chdir(Path)
-        ReturnValue = LaunchProcess("set -e; cd " + Path + "; " +Command, ToPrint)
+        ReturnValue = LaunchProcess("set -e; cd " + Path + "; " +Command, to_print)
         # os.chdir(CurrentDirectory)
     else:
-        ReturnValue = LaunchProcess(Command, ToPrint)
+        ReturnValue = LaunchProcess(Command, to_print)
 
     return ReturnValue
 
@@ -213,13 +213,13 @@ Changes to the given directory, launches the Command in a forked process and
 returns the parsed stdout.
 While the "stdout" Returned is empty, tries again
 """
-def MultipleCDLaunch(Command, Path, ToPrint, Attempts=3):
+def MultipleCDLaunch(Command, Path, to_print, Attempts=3):
     i = 0
     Output = None
     ThrownException = None
     while (Output == None or Output == "") and i < Attempts:
         try:
-            Output = ParseProcessResponse(LaunchProcessAt(Command, Path, ToPrint))
+            Output = ParseProcessResponse(LaunchProcessAt(Command, Path, to_print))
         except Exception as ex:
             Output = None
             ThrownException = ex
@@ -227,8 +227,8 @@ def MultipleCDLaunch(Command, Path, ToPrint, Attempts=3):
 
     if Output == None:
         if ThrownException != None:
-            logging.error("MultipleCDLaunch(" + Command + ") exception with: " + str(ThrownException))
-            logging.error(traceback.format_exc())
+            # logging.error("MultipleCDLaunch(" + Command + ") exception with: " + str(ThrownException))
+            # logging.error(traceback.format_exc())
             raise ThrownException
 
     return Output
