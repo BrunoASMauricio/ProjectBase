@@ -125,7 +125,7 @@ def GlobalSave():
         print("Commit message cannot be empty")
     else:
         try:
-            RunOnAllRepos(RepoSaveChanges, {"commit_message":commit_message})
+            RunOnAllManagedRepos(RepoSaveChanges, {"commit_message":commit_message})
         except Exception as ex:
             print("Unacceptable commit message: "+str(ex))
 
