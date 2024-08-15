@@ -169,9 +169,13 @@ class Menu():
                 self.completer.setup()
                 # Get next input and save to history
                 try:
-                    next_input = int(GetNextOption())
+                    next_input_str = GetNextOption()
+                    next_input = int(next_input_str)
                     previous_invalid = False
                 except ValueError:
+                    # Empty enter goes to previous menu
+                    if len(next_input_str) == 0:
+                        return
                     if previous_invalid == False:
                         print("Invalid input")
                         previous_invalid = True
