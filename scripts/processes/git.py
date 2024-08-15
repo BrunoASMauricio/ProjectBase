@@ -3,7 +3,7 @@ from data.settings import Settings, CLONE_TYPE
 from data.common import RemoveSequentialDuplicates
 from data.git import *
 from processes.git_operations import *
-from data.paths import GetParentPath, GetCurrentFolderName
+from data.paths import GetParentPath, GetCurrentFolderName, JoinPaths
 
 """
 Fix url so it is according to settings
@@ -88,7 +88,7 @@ def FindGitRepo(base_path, repo_url, repo_commitish = None, depth=-1):
 
     # Now look at their files
     for sub_folder in os.listdir(base_path):
-        full_path = base_path + "/" + sub_folder
+        full_path = JoinPaths(base_path, sub_folder)
         # Only look for directories that are git repositories (worktrees/bare gits)
         if not os.path.isdir(full_path):
             continue
@@ -116,11 +116,11 @@ def GetAllGitRepos(path_to_search, depth=-1):
         git_repos.append(path_to_search)
 
     for Inode in os.listdir(path_to_search):
-        if os.path.isdir(path_to_search+"/"+Inode) and Inode != ".git":
+        if os.path.isdir(JoinPaths(path_to_search, Inode)) and Inode != ".git":
             if depth == -1: # No depth limitation
-                git_repos = git_repos + GetAllGitRepos(path_to_search+"/"+Inode)
+                git_repos = git_repos + GetAllGitRepos(JoinPaths(path_to_search, Inode))
             else:
-                git_repos = git_repos + GetAllGitRepos(path_to_search+"/"+Inode, depth - 1)
+                git_repos = git_repos + GetAllGitRepos(JoinPaths(path_to_search, Inode), depth - 1)
 
     return git_repos
 
@@ -132,10 +132,10 @@ def SetupBareData(repo_url):
     
     if bare_git == None:
         bare_tree_name = GetRepoBareTreePath(repo_url)
-        clone_command = 'git clone "' + repo_url + '" "' + bare_gits + "/" + bare_tree_name + '" --bare'
+        clone_command = 'git clone "' + repo_url + '" "' + JoinPaths(bare_gits, bare_tree_name) + '" --bare'
         logging.debug("Cloning bare git with: " + clone_command)
         LaunchProcess(clone_command)
-        bare_git = bare_gits + "/" + bare_tree_name
+        bare_git = JoinPaths(bare_gits, bare_tree_name)
 
         if False == os.path.isdir(bare_git):
             print("Bare git " + bare_git + " could not be pulled")
@@ -143,11 +143,17 @@ def SetupBareData(repo_url):
 
     return bare_git
 
-def LaunchGitCommandAt(command, path):
+def LaunchGitCommandAt(command, path=None, message=None):
+    if message != None:
+        logging.debug(message)
+        logging.debug(command + " at " + str(path))
+
     result_code = LaunchProcessAt(command, path)
     if result_code["code"] != 0:
         raise Exception("Could not run " + command)
 
+    if message != None:
+        logging.debug(result_code)
 """
 Adds a worktree at target_path
 Returns path to worktree: target_path + "/" + wortkree_name
@@ -162,7 +168,7 @@ def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
     # --force: Override safe guards and allow same branch name to be checked out by multiple worktrees
     # 
     repo_name = GetRepoNameFromURL(repo_url)
-    new_repo_path = RemoveSequentialDuplicates(target_path + "/" + repo_name, "/")
+    new_repo_path = JoinPaths(target_path, repo_name)
 
     # In case we stopped before, remove existing temporary
     # LaunchProcessAt("git worktree remove " + new_repo_path, bare_path)
@@ -186,21 +192,20 @@ def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
             raise Exception("Invalid commitish: "+str(repo_commitish))
 
         remote = GetRepoRemote(bare_path)
-        # (""+Repo["source"]+" --track -f --checkout -b "+LocalName+" "+CommitIsh, Repo["bare path"])
-        # worktree_command = "git worktree add " + new_repo_path + " --track --force --checkout -b " + local_branch_name + "  " + remote + "/" +branch_to_follow
 
-        worktree_command = "git worktree add " + new_repo_path
-        logging.debug("Adding git branch worktree with: " + worktree_command + " from bare at " + bare_path)
-        LaunchGitCommandAt(worktree_command, bare_path)
-        worktree_command = "git checkout -b " + local_branch_name + " " + branch_to_follow
-        LaunchGitCommandAt(worktree_command, new_repo_path)
-        logging.debug("Configuring worktree with: " + worktree_command + " at " + new_repo_path)
+        LaunchGitCommandAt("git worktree add " + new_repo_path, bare_path, "Adding git branch worktree")
+        # New branches track the remote of the current local branch
+        LaunchGitCommandAt("git config branch.autoSetupMerge always", new_repo_path, "Configuring branch.autoSetupMerge to always")
+        # 
+        LaunchGitCommandAt("git config push.default upstream", new_repo_path, "Configuring branch.autoSetupMerge")
+        # Pull will rebase instead of merge
+        LaunchGitCommandAt("git config pull.rebase true", new_repo_path, "Configuring pull.rebase to true")
 
-        # worktree_command = "git worktree add --force " + new_repo_path + " --b " + remote + "/" + branch_to_follow
-        # LaunchGitCommandAt(worktree_command, bare_path)
-        # logging.debug("Adding git branch worktree with: " + worktree_command + " from bare at " + bare_path)
-        # # worktree_command = "git worktree add --force -b " + local_branch_name + " --track " +  + " " + new_repo_path
+        # Auto stash before pull and apply afterwards
+        LaunchGitCommandAt("git config rebase.autoStash true", new_repo_path, "Configuring pull.rebase to true")
 
+        LaunchGitCommandAt("git checkout -b " + local_branch_name, new_repo_path, "Following branch " + branch_to_follow)
+        LaunchGitCommandAt("git branch --set-upstream-to=" + branch_to_follow + " " + local_branch_name, new_repo_path)
 
     if not os.path.isdir(new_repo_path):
         raise Exception("Could not add worktree for " + repo_url + " at " + target_path + " from bare git at " + bare_path)

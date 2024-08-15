@@ -6,6 +6,7 @@ from enum import Enum
 from processes.auto_completer import CustomCompleter
 from data.settings import Settings
 from data.common import RemoveNonAlfanumeric
+from data.paths import JoinPaths
 
 class EntryType(Enum):
     CALLBACK = 1
@@ -52,7 +53,7 @@ class Menu():
         if name != None:
             name = RemoveNonAlfanumeric(name)
             Assert(name not in all_menu_names, "Repeated name " + name)
-            self.history_file = Settings["paths"]["history"] + "/" + name
+            self.history_file = JoinPaths(Settings["paths"]["history"], name)
             self.completer = CustomCompleter(self.history_file, [])
             all_menu_names.append(name)
 
@@ -120,12 +121,6 @@ class Menu():
     Activate the entry selected via its' index
     """
     def select_entry(self, index, depth):
-        # if index > len(self.entries):
-        #     print("Menu has " + str(len(self.entries)) + " entries, input " + str(index) + " is not valid")
-        #     return 
-
-        # entry = self.entries[index-1]
-
         picked_index = index - 1
         picked_entry = None
         current_index = 0
@@ -153,7 +148,7 @@ class Menu():
         elif picked_entry[1] == EntryType.MENU:
             picked_entry[2].handle_input(depth + 1)
         else:
-            dynamic_entry = picked_entry[2][picked_index]
+            dynamic_entry = picked_entry[3][picked_index]
             dynamic_entry[1](**dynamic_entry[2])
     """
     Print menu and handle input from user

@@ -25,6 +25,8 @@ def PrintProgressWhileWaitOnThreads(threads, print_function, print_arguments={})
                     continue
             print_function(**print_arguments)
             sleep(0.05)
+    # else:
+        # print_function(**print_arguments)
 
 operation_status = {}
 operation_lock = Lock()
@@ -40,7 +42,8 @@ def __PrintRunOnFoldersProgress(paths):
 def __RunOnFoldersThreadWrapper(callback, path, arguments={}):
     global operation_lock
     global operation_status
-    os.chdir(path)
+
+    arguments["path"] = path
     Result = callback(**arguments)
 
     operation_lock.acquire()

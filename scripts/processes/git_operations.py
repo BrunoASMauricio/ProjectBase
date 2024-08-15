@@ -13,12 +13,14 @@ def ParseGitResult(git_command, path):
 Obtain the URL of the repository located at path
 """
 def GetRepositoryUrl(path = None):
-    import sys
     url = ParseGitResult("git config --get remote.origin.url", path)
-    # if "brunoasmauricio/ProjectBase" in url:
-    #     print("fuck")
-    #     sys.exit(-1)
+    top_level = GetGitTopLevel(path)
+    if top_level != path:
+        return ""
     return url
+
+def GetGitTopLevel(path = None):
+    return ParseGitResult("git rev-parse --show-toplevel", path)
 
 def GetRepoLocalCommit(path = None):
     return ParseGitResult("git rev-parse HEAD", path)
@@ -67,10 +69,15 @@ def RepoFetch(path = None):
     ParseGitResult("git fetch origin '*:*'", path)
 
 def RepoPull(path = None):
-    ParseGitResult("git pull", path)
+    if GetRepoLocalBranch(path) != "HEAD":
+        ParseGitResult("git rebase", path)
+        ParseGitResult("git pull", path)
 
 def RepoPush(path = None):
+    # Push to bare git
     ParseGitResult("git push", path)
+    # Push to remote server
+    ParseGitResult("git push origin HEAD:$(git for-each-ref --format='%(upstream:short)' $(git symbolic-ref -q HEAD))", path)
 
 def GenAutoCommitMessage():
     return ""
