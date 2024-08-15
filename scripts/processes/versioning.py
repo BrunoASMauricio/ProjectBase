@@ -1,7 +1,7 @@
 from data.settings     import Settings
 from data.colors       import ColorFormat, Colors
+from data.common import RemoveEmpty, CLICenterString, RemoveSequentialDuplicates
 from data.git import GetRepoNameFromURL
-from data.common import RemoveEmpty, CLICenterString
 from processes.project import Project
 from processes.git     import GetAllGitRepos, GetRepoNameFromPath, RepoIsClean, CheckIfStatusIsClean
 from processes.process import OpenBashOnDirectoryAndWait, RunOnFolders
@@ -11,7 +11,7 @@ from processes.repository import __RepoHasFlagSet
 
 def GetKnownAndUnknownGitRepos():
     repos = Project.GetRepositories()
-    known_paths   = [repos[repo]["full worktree path"] for repo in repos]
+    known_paths   = [repos[repo]["repo path"] for repo in repos]
     all_git_repos = GetAllGitRepos(Settings["paths"]["project main"])
 
     unknown_paths = [repo for repo in all_git_repos if repo not in known_paths]
@@ -24,7 +24,7 @@ def RunOnAllRepos(callback, arguments={}):
 
 def RunOnAllManagedRepos(callback, arguments={}):
     repos = Project.GetRepositories()
-    known_paths   = [repos[repo]["full worktree path"] for repo in repos if False == __RepoHasFlagSet(repos[repo], "no commit")]
+    known_paths   = [repos[repo]["repo path"] for repo in repos if False == __RepoHasFlagSet(repos[repo], "no commit")]
 
     return RunOnFolders(known_paths, RepoPush, {})
 
@@ -35,6 +35,7 @@ def DirectlyManageSingleRepository():
     for path_ind in range(len(all_paths)):
         new_entry = []
         path = all_paths[path_ind]
+        path = RemoveSequentialDuplicates(path, "/")
         message =  " ("
 
         if RepoIsClean(path):
@@ -70,7 +71,8 @@ def __AssembleReposStatusMessage(statuses):
             status_message += ColorFormat(Colors.Green, repo_name + " is clean") + "\n"
         else:
             status_message += "\n" + CLICenterString(" " + ColorFormat(Colors.Red, repo_name + " is dirty "), "=")
-            status_message += "\n\t" +ColorFormat(Colors.Yellow, status).replace("\n", "\n\t") + "\n\n"
+            status_message += "\n\t" + path
+            status_message += "\n\t" + ColorFormat(Colors.Yellow, status).replace("\n", "\n\t") + "\n\n"
             status_message += "\n" + CLICenterString("", "=")
             dirty += 1
     return dirty, status_message

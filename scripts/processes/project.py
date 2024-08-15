@@ -68,7 +68,7 @@ class PROJECT(dict):
         CMakeCommand =  'cmake'
         # Dont complain about unused -D parameters, they are not mandatory
         CMakeCommand += ' --no-warn-unused-cli'
-        CMakeCommand += ' -S ' + self.paths["project main"]
+        CMakeCommand += ' -S ' + self.paths["build env"]
         CMakeCommand += ' -B ' + self.paths["build cache"]
         # CMakeCommand += ' -DBUILD_MODE='+ActiveSettings["Mode"]
         CMakeCommand += ' -DPROJECT_NAME=' + self.name
@@ -158,7 +158,7 @@ def CleanCompiled():
     CleanRunnables()
 
 def CleanAll():
-    LaunchVerboseProcess("rm -rf " + Settings["paths"]["cmake"]+"/*")
+    LaunchVerboseProcess("rm -rf " + Settings["paths"]["build cache"]+"/*")
     CleanCompiled()
     CleanLinterFiles()
 
