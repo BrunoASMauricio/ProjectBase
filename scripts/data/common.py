@@ -11,17 +11,17 @@ from data.paths import CreateParentPath
 def RemoveDuplicates(lst):
     return list(set(lst))
 
-def AppendToEnvVariable(EnvVariable, NewValue):
-    if NewValue == None:
-        NewValue = ""
+def AppendToEnvVariable(env_variable, new_value):
+    if new_value == None:
+        new_value = ""
 
-    if EnvVariable not in os.environ.keys():
-        os.environ[EnvVariable] = NewValue
+    if env_variable not in os.environ.keys():
+        os.environ[env_variable] = new_value
     else:
         # Only append if not already present
-        BasicList = os.environ[EnvVariable].split(os.pathsep)
-        if NewValue not in BasicList:
-            os.environ[EnvVariable] = NewValue + os.pathsep + os.environ[EnvVariable]
+        BasicList = os.environ[env_variable].split(os.pathsep)
+        if new_value not in BasicList:
+            os.environ[env_variable] = new_value + os.pathsep + os.environ[env_variable]
 
 def PrintableCharacterLength(string):
     return len(RemoveAnsiEscapeCharacters(RemoveControlCharacters(string)))
@@ -37,48 +37,48 @@ def GetTextDiff(Text1, Text2):
     diff = difflib.ndiff(Text1.split("\n"), Text2.split("\n"))
     return ''.join(diff)
 
-def RemoveControlCharacters(Str):
+def RemoveControlCharacters(str):
     """
     Removes control characters. Keeps \\n except if trailing
     """
-    AllowedCCs = ['\n', '\t']
-    NewStr = "".join(Ch for Ch in Str if (unicodedata.category(Ch)[0] != "C" or Ch in AllowedCCs))
-    return NewStr.rstrip()
+    allowed_CCs = ['\n', '\t']
+    new_str = "".join(ch for ch in str if (unicodedata.category(ch)[0] != "C" or ch in allowed_CCs))
+    return new_str.rstrip()
 
-def RemoveAnsiEscapeCharacters(Str):
-    AnsiEscape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
-    return AnsiEscape.sub("", Str)
+def RemoveAnsiEscapeCharacters(str):
+    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+    return ansi_escape.sub("", str)
 
-def RemoveSequentialDuplicates(Str, SubStr):
-    List = Str.split(SubStr)
+def RemoveSequentialDuplicates(str, sub_str):
+    List = str.split(sub_str)
     List = [list_el for list_el in List if len(list_el) != 0]
 
-    NewStr = SubStr.join(List)
+    NewStr = sub_str.join(List)
 
-    # Special cases for starting/ending with SubStr (will lead to empty
+    # Special cases for starting/ending with sub_str (will lead to empty
     # element on either side, without being sequential duplicate)
-    if Str[0] == SubStr:
-        NewStr = SubStr + NewStr
+    if str[0] == sub_str:
+        NewStr = sub_str + NewStr
 
-    if Str[-1] == SubStr:
-        NewStr = NewStr + SubStr
+    if str[-1] == sub_str:
+        NewStr = NewStr + sub_str
 
     return NewStr
 
-def IsEmpty(Object):
-    if Object == None:
+def IsEmpty(object):
+    if object == None:
         return True
 
-    if type(Object) == type({}):
-        return len(Object.keys()) == 0
+    if type(object) == type({}):
+        return len(object.keys()) == 0
 
-    if type(Object) == type([]) or type(Object) == type(""):
-        return len(Object) == 0
+    if type(object) == type([]) or type(object) == type(""):
+        return len(object) == 0
 
-    raise Exception("Unknown type for IsEmpty: " + str(type(Object)))
+    raise Exception("Unknown type for IsEmpty: " + str(type(object)))
 
-def RemoveNonAlfanumeric(String):
-    return re.sub(r'[^A-Za-z0-9]+', '', String)
+def RemoveNonAlfanumeric(string):
+    return re.sub(r'[^A-Za-z0-9]+', '', string)
 
 def ValueNotEmpty(list, name):
     if name in list and False == IsEmpty(list[name]):
@@ -89,28 +89,28 @@ def ValueNotEmpty(list, name):
 Gets the value from the dict if Name exists, or
 Default is returned if it does not exist
 """
-def GetValueOrDefault(Dict, Name, Default = None):
-    if Name in Dict.keys():
-        return Dict[Name]
-    return Default
+def GetValueOrDefault(dict, name, default = None):
+    if name in dict.keys():
+        return dict[name]
+    return default
 
 """
 Abort running program
 """
-def Abort(Message):
-    print(ColorFormat(Colors.Red, Message))
+def Abort(message):
+    print(ColorFormat(Colors.Red, message))
     sys.stdout.flush()
     sys.exit(-1)
 
 """
 Abort if a condition is false
 """
-def Assert(Condition, Message=None):
-    if not Condition:
-        if Message == None:
+def Assert(condition, message=None):
+    if not condition:
+        if message == None:
             Abort("Failed condition")
         else:
-            Abort(Message)
+            Abort(message)
 
 """
 Remove 'None' elements from a list
@@ -144,19 +144,19 @@ def DumpToFile(file_path, data, mode='w'):
 Present Message to user and return True if the response is y or Y, False if n or N
 Loop if response is not in nNyY
 """
-def UserYesNoChoice(Message):
+def UserYesNoChoice(message):
     while True:
-        print(Message)
-        Answer = input("("+ColorFormat(Colors.Green,"Yy")+"/"+ColorFormat(Colors.Red,"Nn")+"): ")
-        if Answer in ["y", "Y"]:
-            Answer = True
+        print(message)
+        answer = input("("+ColorFormat(Colors.Green,"Yy")+"/"+ColorFormat(Colors.Red,"Nn")+"): ")
+        if answer in ["y", "Y"]:
+            answer = True
             break
-        elif Answer in ["n", "N"]:
-            Answer = False
+        elif answer in ["n", "N"]:
+            answer = False
             break
         else:
             continue
-    return Answer
+    return answer
 
 # Sets up a script according to its template and the target variable substitutions
 def SetupTemplateScript(script_name, target_file, variable_substitutions={}):

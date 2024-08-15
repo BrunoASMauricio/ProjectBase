@@ -30,34 +30,34 @@ class SETTINGS(dict):
         self["name"] = GetRepoNameFromURL(self["url"])
 
     def parse_arguments(self):
-        Parser = argparse.ArgumentParser()
-        Parser.description = "Extra command line arguments are treated as commands for ProjectBase"
+        parser = argparse.ArgumentParser()
+        parser.description = "Extra command line arguments are treated as commands for ProjectBase"
 
         # Adding optional argument
-        Parser.add_argument("-u", "--url", help = "Root repository's URL", default=None, required=False)
+        parser.add_argument("-u", "--url", help = "Root repository's URL", default=None, required=False)
 
-        Parser.add_argument("-c", "--commit",
+        parser.add_argument("-c", "--commit",
                             help = "Root repository's commit",
                             default=None, required=False, nargs=1)
 
-        Parser.add_argument("-b", "--branch",
+        parser.add_argument("-b", "--branch",
                             help = "Root repository's branch",
                             default=None, required=False, type=str, nargs=1)
 
-        Parser.add_argument("-s", "--single_thread",
+        parser.add_argument("-s", "--single_thread",
                             help = "Do not run PB in multiple threads",
                             default=False, required=False, type=bool, action=argparse.BooleanOptionalAction)
 
-        Parser.add_argument("-e", "--exit", action='store_true', help = "Exit after running command line arguments", default=False, required=False)
+        parser.add_argument("-e", "--exit", action='store_true', help = "Exit after running command line arguments", default=False, required=False)
 
-        ProjectArgs, ActionArgs = Parser.parse_known_args()
+        project_args, action_args = parser.parse_known_args()
 
-        self["url"]           = ProjectArgs.url
-        self["commit"]        = ProjectArgs.commit
-        self["branch"]        = ProjectArgs.branch
-        self["exit"]          = ProjectArgs.exit
-        self["single_thread"] = ProjectArgs.single_thread
-        self["action"] = ActionArgs
+        self["url"]           = project_args.url
+        self["commit"]        = project_args.commit
+        self["branch"]        = project_args.branch
+        self["exit"]          = project_args.exit
+        self["single_thread"] = project_args.single_thread
+        self["action"] = action_args
 
     def save_persisted_settings(self):
         dump_json_file(self["persisted"], self["paths"]["configs"] + "/project_cache/settings")
@@ -65,25 +65,25 @@ class SETTINGS(dict):
     def load_persistent_settings(self):
         global ActiveSettings
 
-        ProjectName = self["ProjectName"]
+        project_name = self["ProjectName"]
 
-        DefaultSettings = {
+        default_settings = {
             "Mode":       "Debug",
             "Clone Type": CLONE_TYPE.SSH.value
         }
 
-        DefaultProjectSettings = {
-            ProjectName: DefaultSettings
+        default_project_settings = {
+            project_name: default_settings
         }
 
         # Get persisted project settings
-        persisted_settings = load_json_file(self["paths"]["configs"]+"/project_cache/settings", DefaultProjectSettings)
+        persisted_settings = load_json_file(self["paths"]["configs"]+"/project_cache/settings", default_project_settings)
 
-        if ProjectName not in persisted_settings.keys():
-            persisted_settings[ProjectName] = DefaultSettings
+        if project_name not in persisted_settings.keys():
+            persisted_settings[project_name] = default_settings
 
         self["persisted"] = persisted_settings
-        self["active"]    = persisted_settings[ProjectName]
+        self["active"]    = persisted_settings[project_name]
         # self["active"]    = GetValueOrDefault(persisted_settings[ProjectName][""])
 
 Settings = SETTINGS()

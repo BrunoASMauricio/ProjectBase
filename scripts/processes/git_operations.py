@@ -15,12 +15,24 @@ Obtain the URL of the repository located at path
 def GetRepositoryUrl(path = None):
     url = ParseGitResult("git config --get remote.origin.url", path)
     top_level = GetGitTopLevel(path)
+
+    if path == None:
+        path = os.getcwd()
+
     if top_level != path:
         return ""
     return url
 
 def GetGitTopLevel(path = None):
-    return ParseGitResult("git rev-parse --show-toplevel", path)
+    top_level = ""
+    try:
+        top_level = ParseGitResult("git rev-parse --show-toplevel", path)
+    except Exception as ex:
+        # Failure in bare gits
+        if "fatal: this operation must be run in a work tree" in str(ex):
+            top_level = path
+    return top_level
+
 
 def GetRepoLocalCommit(path = None):
     return ParseGitResult("git rev-parse HEAD", path)

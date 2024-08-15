@@ -1,6 +1,7 @@
 import os
-import traceback
 import sys
+import logging
+import traceback
 from data.common import Assert
 from enum import Enum
 from processes.auto_completer import CustomCompleter
@@ -181,16 +182,15 @@ class Menu():
                 # Activate selected entry
                 self.select_entry(next_input, depth)
 
-                # Always reset directory after running an operation
-                os.chdir(current_dir)
-                if self.stay_in_menu == False:
-                    break
             except KeyboardInterrupt:
                 print("\nCtrl+C exits running operations. Press Ctrl+D to back out of ProjectBase")
                 continue
             except EOFError:
                 break
             except Exception as Ex:
-                print("Uncaught exception: "+str(Ex))
-                traceback.print_exc()
-                sys.exit(0)
+                logging.error("Uncaught exception: "+str(Ex))
+                logging.error(traceback.format_stack())
+            # Always reset directory after running an operation
+            os.chdir(current_dir)
+            if self.stay_in_menu == False:
+                break
