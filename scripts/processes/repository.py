@@ -346,7 +346,8 @@ def __SetupCMake(repositories):
             sys.exit(0)
 
     SetupTemplateScript("project/CMakeLists.txt", JoinPaths(Settings["paths"]["build env"], "CMakeLists.txt"), {
-        "INCLUDE_REPOSITORY_CMAKELISTS":'\n'.join(ReposToBuild)
+        "INCLUDE_REPOSITORY_CMAKELISTS":'\n'.join(ReposToBuild),
+        "PROJECT_PATH": Settings["paths"]["project main"]
     })
 
 
