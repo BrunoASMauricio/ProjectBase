@@ -84,6 +84,7 @@ def RepoPull(path = None):
     if GetRepoLocalBranch(path) != "HEAD":
         ParseGitResult("git rebase", path)
         ParseGitResult("git pull", path)
+        ParseGitResult("git pull origin", path)
 
 def RepoPush(path = None):
     # Push to bare git
@@ -100,7 +101,7 @@ Stages all changes, within the current directory and its subdirectories.
 def RepoSaveChanges(path = None, commit_message=""):
     if len(commit_message) == 0:
         commit_message = GenAutoCommitMessage()
-    ParseGitResult("git add .; git commit -m " + commit_message, path)
+    ParseGitResult('git add .; git commit -m "' + commit_message + '"', path)
 
 def RepoResetToLatestSync(path=None):
     url = GetRepositoryUrl(path)
