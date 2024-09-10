@@ -148,6 +148,7 @@ class Menu():
             picked_entry[2]()
         elif picked_entry[1] == EntryType.MENU:
             picked_entry[2].handle_input(depth + 1)
+            self.completer.setup()
         else:
             dynamic_entry = picked_entry[3][picked_index]
             dynamic_entry[1](**dynamic_entry[2])
