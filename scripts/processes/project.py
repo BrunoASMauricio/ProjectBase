@@ -108,30 +108,31 @@ def UserChooseProject():
     Index = 0
     projects_available = []
     print("Installed projects:")
-    for entry in os.scandir("projects"):
-        if entry.name == "" or entry.name == ".gitignore":
-            continue
+    if(os.path.exists("projects")):
+        for entry in  os.scandir("projects"):
+            if entry.name == "" or entry.name == ".gitignore":
+                continue
 
-        """
-        Repositories can have the same name (different URLs)
-        As such, we cannot rely on the name of the project to
-        """
+            """
+            Repositories can have the same name (different URLs)
+            As such, we cannot rely on the name of the project to
+            """
 
-        if not entry.is_dir():
-            print("Unexpected file in projects "+entry.path+"/"+entry.name)
-            continue
+            if not entry.is_dir():
+                print("Unexpected file in projects "+entry.path+"/"+entry.name)
+                continue
 
-        url = LoadFromFile(JoinPaths(entry.path, "root_url.txt"), None)
-        if url == None:
-            logging.error("Invalid project at " + entry.path + ", cannot load root_url.txt")
-            continue
+            url = LoadFromFile(JoinPaths(entry.path, "root_url.txt"), None)
+            if url == None:
+                logging.error("Invalid project at " + entry.path + ", cannot load root_url.txt")
+                continue
 
-        # Url = file.read()[:-1].strip()
+            # Url = file.read()[:-1].strip()
 
-        name = GetRepoNameFromURL(url)
-        print("\t["+str(Index)+"] " + ColorFormat(Colors.Blue, name) + " : " + url)
-        projects_available.append(url)
-        Index += 1
+            name = GetRepoNameFromURL(url)
+            print("\t["+str(Index)+"] " + ColorFormat(Colors.Blue, name) + " : " + url)
+            projects_available.append(url)
+            Index += 1
     if Index == 0:
         UserInput = input("Remote project repository URL: ")
     else:
@@ -146,6 +147,7 @@ def UserChooseProject():
         except Exception as Ex:
             # Not an Index, assume URL
             RemoteRepoUrl = UserInput
+            break
 
     return RemoteRepoUrl
 
