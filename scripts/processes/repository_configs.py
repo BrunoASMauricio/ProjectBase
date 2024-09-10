@@ -135,6 +135,8 @@ def LoadConfigs(current_repo_path):
 
     # Headers to include when compiling as part of this repository
     private_headers = []
+    private_headers.append("code/")
+    private_headers.append("code/source")
     for header in basic_headers:
         private_headers.append("tests/" + header)
         private_headers.append("execs/" + header)

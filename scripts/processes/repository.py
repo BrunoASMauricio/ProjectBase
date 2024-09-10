@@ -297,6 +297,7 @@ def __SetupCMake(repositories):
     # sys.exit(0)
     for repo_id in repositories:
         try:
+            header_folders = public_header_folders.copy()
             repository = repositories[repo_id]
             if __RepoHasFlagSet(repository, "no auto build"):
                 continue
@@ -310,9 +311,9 @@ def __SetupCMake(repositories):
 
             RepoCmakeLists = JoinPaths(repository["build path"], "CMakeLists.txt")
 
-            PrivateHeaderFolders = []
             if len(repository["private headers"]) > 0:
-                PrivateHeaderFolders += [JoinPaths(repository["repo path"], x) for x in repository["public headers"]]
+                header_folders += [JoinPaths(repository["repo path"], x) for x in repository["public headers"]]
+                header_folders += [JoinPaths(repository["repo path"], x) for x in repository["private headers"]]
 
             # Check if there is already a CMakeLists and it isn't ours
             if os.path.isfile(RepoCmakeLists):
@@ -335,7 +336,7 @@ def __SetupCMake(repositories):
                 SetupTemplateScript("repository/CMakeLists.txt", RepoCmakeLists, {
                     "ADD_LIBRARY_TYPE": "",
                     "TARGET_INCLUDE_TYPE": "PUBLIC",
-                    "INCLUDE_REPOSITORY_DIRECTORIES": '\n'.join(public_header_folders),
+                    "INCLUDE_REPOSITORY_DIRECTORIES": '\n'.join(header_folders),
                     "LINK_DEPENDENCIES": '\n'.join(TempObjectsToLink),
                     "TEST_HEADER_INCLUDES": '\n'.join(TestHeaders),
                     "REPO_SOURCES": repository["repo path"]
