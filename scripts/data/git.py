@@ -2,7 +2,7 @@ import datetime
 
 def generate_local_branch(branch):
     now = str(datetime.datetime.now()).replace(" ", "_").replace(":","_").replace(".","_").replace("-","_")
-    return branch + "_" + now
+    return branch + "_ProjectBase_" + now
 """
 From: https://<git repo>/<path el 1>/<path el 2>/<path el 3>/<path el 4>
 To: git@<git repo>:<path el 1>/<path el 2>/<path el 3>/<path el 4>.git
@@ -83,3 +83,12 @@ def SameUrl(url1, url2):
         return equal
     except:
         return False
+
+"""
+Local branches have custom unique names so they don't clash when checked out in multiple
+projects
+"""
+def SameBranch(branch1, branch2):
+    real_branch1 = branch1.split("_ProjectBase")[0]
+    real_branch2 = branch2.split("_ProjectBase")[0]
+    return real_branch1 == real_branch2
