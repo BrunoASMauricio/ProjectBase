@@ -71,7 +71,7 @@ def FindGitRepo(base_path, repo_url, repo_commitish = None, depth=-1):
             # Look into branch
             elif repo_commitish["type"] == "branch":
                 branch = GetRepoLocalBranch(base_path)
-                if branch == repo_commitish["branch"]:
+                if SameBranch(branch, repo_commitish["branch"]):
                     return RemoveSequentialDuplicates(base_path, "/")
             else:
                 raise Exception("Invalid commitish: "+str(repo_commitish))
@@ -209,7 +209,7 @@ def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
 
     if not os.path.isdir(new_repo_path):
         raise Exception("Could not add worktree for " + repo_url + " at " + target_path + " from bare git at " + bare_path)
-    
+
     # print("parent_path "+ parent_path)
     new_tree_path = FindGitRepo(new_repo_path, repo_url, repo_commitish, depth=1)
     if new_tree_path == None or new_tree_path != new_repo_path:
