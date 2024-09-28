@@ -26,7 +26,7 @@ def RunOnAllManagedRepos(callback, arguments={}):
     repos = Project.GetRepositories()
     known_paths   = [repos[repo]["repo path"] for repo in repos if False == __RepoHasFlagSet(repos[repo], "no commit")]
 
-    return RunOnFolders(known_paths, RepoPush, {})
+    return RunOnFolders(known_paths, callback, arguments)
 
 def DirectlyManageSingleRepository():
     all_paths, known_paths, _ = GetKnownAndUnknownGitRepos()
