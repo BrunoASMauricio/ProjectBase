@@ -30,7 +30,7 @@ class CustomCompleter(object):  # Custom completer
             open(histfile, 'wb').close()
             self.old_len = 0
 
-    def update(self, Input):
+    def update(self, input):
         readline.append_history_file(readline.get_current_history_length() - self.old_len, self.histfile)
         self.old_len = readline.get_current_history_length()
 
