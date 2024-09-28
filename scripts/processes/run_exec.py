@@ -89,6 +89,7 @@ def execute_menu(path_to_scan):
         print("!V for valgrind. !G for GDB. !S for GDB server @ 127.0.0.1:6175")
         print("Upper case (V,G,S) uses default parameters, lower case doesn't.")
         print("[![G|V|S]]<INDEX [0-9]+> [Space separated argument list]")
+        print("exit or Ctr+D to exit")
         try:
             og_user_input = GetNextOption()
             # No input (Enter pressed)
@@ -98,10 +99,13 @@ def execute_menu(path_to_scan):
 
             # Check extra program prefix
             prefix, user_input = __parse_input(og_user_input)
+            if "exit" == user_input:
+                return
 
             # Locate executable
             path_to_exec, input_list = __locate_executable(user_input, executables_available, path_to_scan)
             if path_to_exec == None:
+                print("Executable not found")
                 continue
 
             # Assemble command and run
@@ -117,6 +121,7 @@ def execute_menu(path_to_scan):
                     print(ColorFormat(Colors.Red, '"' + full_command + '" returned code = '+str(Result.returncode)))
                 else:
                     print(ColorFormat(Colors.Green, '"' + full_command + '" returned code = '+str(Result.returncode)))
+                return
             except KeyboardInterrupt:
                 print("Keyboard Interrupt")
 
