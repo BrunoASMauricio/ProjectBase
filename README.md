@@ -147,4 +147,9 @@ Mass run valgrind, and collect how many bytes are lost and how many different er
 Configs that CAN NOT have variables
   local path
   url
-  
+
+
+would be nice if inputs counted for completion.
+i.e. '3 3 ' and then TAB would show the possible completions of menu 3.3 and not current menu
+
+tests should be divided into the respective modules
