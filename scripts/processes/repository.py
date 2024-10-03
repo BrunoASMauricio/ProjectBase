@@ -105,6 +105,7 @@ def __LoadRepositoryFolder(imposed_configs):
     # repository dict exists containing configs, repo is at current_local_path and congruent with the path requested in configs
     repository["full worktree path"] = current_local_path
     repository["repo path"]  = JoinPaths(current_local_path, repository["name"])
+    repository["repo name"]  = GetRepositoryName(repository["repo path"])
     repository["build path"] = repository["repo path"].replace(Settings["paths"]["project code"], Settings["paths"]["build env"])
 
     return repository
@@ -339,7 +340,8 @@ def __SetupCMake(repositories):
                     "INCLUDE_REPOSITORY_DIRECTORIES": '\n'.join(header_folders),
                     "LINK_DEPENDENCIES": '\n'.join(TempObjectsToLink),
                     "TEST_HEADER_INCLUDES": '\n'.join(TestHeaders),
-                    "REPO_SOURCES": repository["repo path"]
+                    "REPO_SOURCES": repository["repo path"],
+                    "REPO_NAME": repository["repo name"]
                 })
         except Exception as ex:
             traceback.print_exc()

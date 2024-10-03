@@ -59,9 +59,11 @@ ENDMACRO()
 
 ### Prepare a test executable to be compiled
 MACRO(COMPILE_TEST TEST_NAME TEST_SOURCE)
-    ADD_EXECUTABLE(${TEST_NAME} ${TEST_SOURCE})
-    TARGET_LINK_LIBRARIES(${TEST_NAME} ${RepositoryName}_lib)
-    LIST(APPEND TESTS ${TEST_NAME})
+    set(FULL_TEST_NAME "${REPO_NAME}_${TEST_NAME}")
+
+    ADD_EXECUTABLE(${FULL_TEST_NAME} ${TEST_SOURCE})
+    TARGET_LINK_LIBRARIES(${FULL_TEST_NAME} ${RepositoryName}_lib)
+    LIST(APPEND TESTS ${FULL_TEST_NAME})
 ENDMACRO()
 
 ### Copy file over to tests folder
