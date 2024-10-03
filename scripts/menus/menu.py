@@ -36,6 +36,15 @@ def GetNextOption(prompt="[<] "):
 
     return next_input
 
+def MenuExit(input):
+    # If "exit" is entered, ProjectBase exits ()
+    if Settings["exit"] == True or input == "out":
+        return True
+    if input == "exit":
+        Settings["action"].append(input)
+        return True
+    return False
+
 all_menu_names = []
 class Menu():
     """
@@ -171,6 +180,8 @@ class Menu():
                 # Get next input and save to history
                 try:
                     next_input_str = GetNextOption()
+                    if (MenuExit(next_input_str) == True):
+                        return
                     next_input = int(next_input_str)
                     previous_invalid = False
                 except ValueError:
