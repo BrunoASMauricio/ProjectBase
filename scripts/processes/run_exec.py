@@ -3,8 +3,7 @@ from data.settings import Settings
 from data.common import StringIsNumber
 from data.colors import *
 from processes.process import RunExecutable, PrepareExecEnvironment
-from processes.git import GetRepositoryName
-from menus.menu import GetNextOption
+from menus.menu import GetNextOption, MenuExit
 import traceback
 
 """
@@ -109,10 +108,10 @@ def execute_menu(path_to_scan):
                 print("No input")
                 continue
 
+            if MenuExit(og_user_input):
+                return
             # Check extra program prefix
             prefix, user_input = __parse_input(og_user_input)
-            if "exit" == user_input:
-                return
 
             # Locate executable
             path_to_exec, input_list = __locate_executable(user_input, executables_available, path_to_scan)
