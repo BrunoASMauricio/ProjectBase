@@ -3,7 +3,7 @@ from data.settings import Settings
 from data.common import StringIsNumber
 from data.colors import *
 from processes.process import RunExecutable, PrepareExecEnvironment
-from processes.project import Project
+from processes.git import GetRepositoryName
 from menus.menu import GetNextOption
 import traceback
 
@@ -25,9 +25,21 @@ def __get_available_executables(path_to_scan):
         if not entry.is_file():
             continue
 
-        print("\t["+str(index)+"] "+ColorFormat(Colors.Blue, entry.name))
         executables_available.append(entry.name)
         index += 1
+
+    executables_available.sort()
+    previous_repo_name = ""
+    for index in range(len(executables_available)):
+        exploded = executables_available[index].split("_")
+        repo = exploded[0]
+        name = '_'.join(exploded[1:])
+        if previous_repo_name != repo:
+            print(ColorFormat(Colors.Yellow, "\t<" + repo + ">"))
+            previous_repo_name = repo
+        print("["+str(index)+"]" +ColorFormat(Colors.Blue, name))
+    print()
+
     return executables_available
 
 """
