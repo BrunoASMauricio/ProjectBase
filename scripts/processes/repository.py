@@ -151,10 +151,7 @@ def __CurrentlyLoadedRepoAmount():
 def __PrintLoadProgress():
     current_progress = __CurrentlyLoadedRepoAmount()
     total_repos      = len(repositories) + len(dependencies)
-    if total_repos == current_progress:
-        PrintProgressBar(current_progress, total_repos, prefix = 'Loading Repositories:', suffix = 'Loaded ('+str(current_progress)+') Repositories')
-    else:
-        PrintProgressBar(current_progress, total_repos, prefix = 'Loading Repositories:', suffix = "Loading " + str(current_progress) + "/" + str(total_repos) + " Repositories")
+    PrintProgressBar(current_progress, total_repos, prefix = 'Loading Repositories:', suffix = "Loading " + str(current_progress) + "/" + str(total_repos) + " Repositories")
 
 def LoadRepositories(root_configs, cache_path):
     global repositories
@@ -175,34 +172,17 @@ def LoadRepositories(root_configs, cache_path):
     loaded_amount = 0
     dependencies.clear()
     while unloaded == True:
-        __PrintLoadProgress()
         loaded_amount = 0
-        threads = []
 
         # For each unloaded repository, load it
+        repo_args = []
         for repo_id in repositories:
             if repositories[repo_id]["reloaded"] == False:
-                if Settings["single_thread"]:
-                    LoadRepository(repositories[repo_id])
-                    __PrintLoadProgress()
-                else:
-                    thread = Thread(target=LoadRepository, args=(repositories[repo_id],))
-                    threads.append(thread)
-                    thread.start()
+                repo_args.append((repositories[repo_id],))
             else:
                 loaded_amount += 1
 
-        # Wait for all threads
-        if Settings["single_thread"] == False:
-            a_thread_is_alive = True
-            while a_thread_is_alive == True:
-                a_thread_is_alive = False
-                for thread in threads:
-                    if thread.is_alive():
-                        a_thread_is_alive = True
-                        continue
-                __PrintLoadProgress()
-                sleep(0.05)
+        RunInThreadsWithProgress(LoadRepository, repo_args, __PrintLoadProgress)
 
         # Merge dependencies with existing repositories
         unloaded = False
@@ -215,7 +195,8 @@ def LoadRepositories(root_configs, cache_path):
                 set_detected_state_change()
                 unloaded = True
         dependencies.clear()
-    __PrintLoadProgress()
+    PrintProgressBar(len(repo_args), len(repo_args), prefix = 'Loading Repositories:', suffix = "Loaded " + str(len(repo_args)) + "/" + str(len(repo_args)) + " Repositories")
+    print()
 
     if detected_state_changed():
         logging.debug("SAVING "+str(len(repositories))+" repositories in cache")
