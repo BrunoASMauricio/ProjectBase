@@ -24,5 +24,3 @@ def PrintProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     bar = fill * filledLength + '-' * (length - filledLength)
     print('\r%s' % styling.replace(fill, bar), end = '\r')
     # Print New Line on Complete
-    if iteration == total: 
-        print()

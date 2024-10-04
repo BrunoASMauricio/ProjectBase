@@ -13,20 +13,31 @@ from data.common import Abort, AppendToEnvVariable, RemoveControlCharacters, Rem
 
 #                           PROCESS OPERATIONS
 
-def PrintProgressWhileWaitOnThreads(threads, print_function, print_arguments={}):
+def PrintProgressWhileWaitOnThreads(Threads, PrintFunction=None, PrintArguments=None):
+    if PrintArguments == None:
+        PrintArguments = {}
+
+    def PrintProgress():
+        if PrintFunction != None:
+            PrintFunction(**PrintArguments)
+        else:
+            Progress = len(Threads) - ThreadsAlive
+            PrintProgressBar(Progress, len(Threads), prefix = 'Running:', suffix = 'Threads finished ' + str(Progress) + '/' + str(len(Threads)))
+
     # Wait for all threads
-    if Settings["single_thread"] == False:
-        a_thread_is_alive = True
-        while a_thread_is_alive == True:
-            a_thread_is_alive = False
-            for thread in threads:
-                if thread.is_alive():
-                    a_thread_is_alive = True
-                    continue
-            print_function(**print_arguments)
-            sleep(0.05)
-    # else:
-        # print_function(**print_arguments)
+    ThreadsAlive = len(Threads)
+    Progress = 0
+    prev_alive = ThreadsAlive
+    while ThreadsAlive != Progress:
+        ThreadsAlive = len(Threads)
+        for thread in Threads:
+            if thread.is_alive():
+                continue
+            ThreadsAlive -= 1
+        if prev_alive != ThreadsAlive:
+            PrintProgress()
+        sleep(0.05)
+    PrintProgress()
 
 operation_status = {}
 operation_lock = Lock()
@@ -38,6 +49,49 @@ def __PrintRunOnFoldersProgress(paths):
         PrintProgressBar(current_progress, total_repos, prefix = 'Running:', suffix = 'Ran on ('+str(current_progress)+') folders')
     else:
         PrintProgressBar(current_progress, total_repos, prefix = 'Running:', suffix = "Done on " + str(current_progress) + "/" + str(total_repos) + " folders")
+
+"""
+Run run_callback in a separate thread for each argument in run_args (which is also passed to that thread)
+"""
+def RunInThreads(run_callback, run_args):
+    threads = []
+    for run_arg in run_args:
+        thread = Thread(target=run_callback, args=run_arg)
+        threads.append(thread)
+        thread.start()
+    return threads
+
+"""
+Run run_callback with each argument in run_args, in separate threads or
+sequentially if "single thread" mode is on
+If print_callback is present, it will be called to register the operation progress
+"""
+def RunInThreadsWithProgress(run_callback, run_args, print_callback=None, print_args=None):
+    PrintProgressBar(0, len(run_args), prefix = 'Starting...', suffix = '0/' + str(len(run_args)))
+    if Settings["single thread"]:
+        for run_arg_ind in run_args:
+            run_arg = run_args[run_arg_ind]
+            try:
+                run_callback(*run_arg)
+                if print_callback != None:
+                    if print_args != None:
+                        print_callback(print_args)
+                    else:
+                        print_callback()
+                else:
+                    PrintProgressBar(run_arg_ind, len(run_args), prefix = 'Running:', suffix = 'Work finished ' + str(run_arg_ind) + '/' + str(len(run_args)))
+            except KeyboardInterrupt:
+                print("Keyboard Interrupt, stopping")
+                return
+    else:
+        try:
+            threads = RunInThreads(run_callback, run_args)
+            PrintProgressWhileWaitOnThreads(threads, print_callback, print_args)
+        except KeyboardInterrupt:
+            print("Keyboard Interrupt, stopping threads")
+            for thread in threads:
+                if thread.is_alive():
+                    thread._stop()
 
 def __RunOnFoldersThreadWrapper(callback, path, arguments={}):
     global operation_lock
@@ -61,28 +115,27 @@ def RunOnFolders(paths, callback, arguments={}):
         return {}
 
     operation_status.clear()
-    threads = []
     current_dir = os.getcwd()
+    run_args = []
 
     for path in paths:
         if not os.path.isdir(path):
             raise Exception(path+" is not a valid directory, cannot perform "+str(callback)+"("+str(arguments)+")")
-        if Settings["single_thread"]:
-            os.chdir(path)
-            operation_status[path] = callback(**arguments)
-            __PrintRunOnFoldersProgress(paths)
-        else:
-            thread = Thread(target=__RunOnFoldersThreadWrapper, args=(callback, path, arguments,))
-            threads.append(thread)
-            thread.start()
+        run_args.append((callback, path, arguments,))
 
-    PrintProgressWhileWaitOnThreads(threads, __PrintRunOnFoldersProgress, {"paths":paths})
+    RunInThreadsWithProgress(__RunOnFoldersThreadWrapper, run_args, __PrintRunOnFoldersProgress, {"paths":paths})
     os.chdir(current_dir)
 
     return operation_status
 
 def RunExecutable(CommandString):
     return subprocess.run(CommandString, shell=True)
+
+class ProcessError(Exception):
+    def __init__(self, Message, Returned):
+        # Call the base class constructor with the parameters it needs
+        super().__init__(Message)
+        self.Returned = Returned
 
 def LaunchProcess(Command, to_print=False):
     """
@@ -133,24 +186,24 @@ def LaunchProcess(Command, to_print=False):
         Returned["code"] = int(Result.returncode)
 
     if Returned["code"] != 0:
-        message  = "\n\t========================= Process failed (start) =========================\n"
-        message += "\t\tProcess returned failure (" + ColorFormat(Colors.Yellow, str(Returned["code"])) + "):\n"
-        message += ColorFormat(Colors.Cyan, Command+"\n")
-        message += ColorFormat(Colors.Blue, "stdout: " + Returned["stdout"]+"\n")
-        message += ColorFormat(Colors.Red,  "stderr: " + Returned["stderr"]+"\n")
-        message += "Stack Trace:\n"
-        for line in traceback.format_stack():
-            pieces = line.strip().split("\n")
-            if len(pieces) == 2:
-                file, callback = pieces
+        Message  = "\n\t========================= Process failed (start) =========================\n"
+        Message += "\t\tProcess returned failure (" + ColorFormat(Colors.Yellow, str(Returned["code"])) + "):\n"
+        Message += ColorFormat(Colors.Cyan, Command+"\n")
+        Message += ColorFormat(Colors.Blue, "stdout: " + Returned["stdout"]+"\n")
+        Message += ColorFormat(Colors.Red,  "stderr: " + Returned["stderr"]+"\n")
+        Message += "Stack Trace:\n"
+        for Line in traceback.format_stack():
+            Pieces = Line.strip().split("\n")
+            if len(Pieces) == 2:
+                file, callback = Pieces
                 function  = file.split(" in ")[-1]
-                # line NUMBER, .. # Get NUMBER, .. # Remove .. # Remove ,
-                file_line = file.split(" line ")[-1].split(" ")[0][:-1]
-                message += function + "() line " + str(file_line) + "\n" +ColorFormat(Colors.Green, callback) + "\n"
+                # Line NUMBER, .. # Get NUMBER, .. # Remove .. # Remove ,
+                file_Line = file.split(" Line ")[-1].split(" ")[0][:-1]
+                Message += function + "() Line " + str(file_Line) + "\n" +ColorFormat(Colors.Green, callback) + "\n"
             else:
-                message += line
-        message += "\n\t========================= Process failed (end) =========================\n"
-        raise Exception(message)
+                Message += Line
+        Message += "\n\t========================= Process failed (end) =========================\n"
+        raise ProcessError(Message, Returned)
 
     return Returned
 
