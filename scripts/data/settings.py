@@ -56,7 +56,7 @@ class SETTINGS(dict):
         self["commit"]        = project_args.commit
         self["branch"]        = project_args.branch
         self["exit"]          = project_args.exit
-        self["single_thread"] = project_args.single_thread
+        self["single thread"] = project_args.single_thread
         self["action"] = action_args
 
     def save_persisted_settings(self):

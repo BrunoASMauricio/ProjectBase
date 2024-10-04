@@ -3,6 +3,7 @@ from data.settings import Settings
 from data.common import StringIsNumber
 from data.colors import *
 from processes.process import RunExecutable, PrepareExecEnvironment
+from processes.process import LaunchSilentProcess, ProcessError, RunInThreadsWithProgress
 from menus.menu import GetNextOption, MenuExit
 import traceback
 
@@ -148,49 +149,77 @@ def run_single_test():
 def run_single_executable():
     execute_menu(Settings["paths"]["executables"])
 
-def run_all_tests():
-    error_names = []
-    successes = 0
-    tests = __get_available_executables(Settings["paths"]["tests"])
+def _RunAllTests(Prefix=""):
+    AllOutputs = []
+    Tests = __get_available_executables(Settings["paths"]["tests"])
 
-    print("Running " + str(len(tests)) + " tests in " + Settings["paths"]["tests"].replace(Settings["paths"]["project base"], ""))
-
+    print("Running " + str(len(Tests)) + " tests in " + Settings["paths"]["tests"].replace(Settings["paths"]["project base"], ""))
     # Allow python scripts to use ProjectBase scripts
     PrepareExecEnvironment()
 
-    for test_name in tests:
+    def Run(TestPath, TestName):
+        Command = Prefix + " " + TestPath + "/" + TestName
         try:
-            print(ColorFormat(Colors.Blue, "\n\tRUNNING "+test_name))
+            Result = LaunchSilentProcess(Command)
+        except ProcessError as ex:
+            Result = ex.Returned
+        Result["test name"] = TestName
+        AllOutputs.append(Result)
 
-            try:
-                Result = RunExecutable(Settings["paths"]["tests"] + "/" + test_name)
-                if Result.returncode != 0:
-                    print(ColorFormat(Colors.Red, '"' + test_name + '" returned code = '+str(Result.returncode)))
-                else:
-                    print(ColorFormat(Colors.Green, '"' + test_name + '" returned code = '+str(Result.returncode)))
-            except KeyboardInterrupt:
-                print("Keyboard Interrupt")
+    TestsArgs = []
+    for TestIndex in range(len(Tests)):
+        TestName = Tests[TestIndex]
+        TestsArgs.append((Settings["paths"]["tests"] + "/", TestName, ))
 
-            # Result = subprocess.run(Project.Paths["tests"]+"/"+test_name, shell=True)
-
-            print(ColorFormat(Colors.Blue, "\t"+test_name+" finished"))
-
-            if Result.returncode != 0:
-                print(ColorFormat(Colors.Red, "Return code = "+str(Result.returncode)))
-                error_names.append(test_name)
-            else:
-                print(ColorFormat(Colors.Green, "Return code = "+str(Result.returncode)))
-                successes = successes + 1
-
-        except Exception as ex:
-            print("Error in running the executable\nException caught: "+str(ex))
-            traceback.print_exc()
-
+    RunInThreadsWithProgress(Run, TestsArgs)
     print("\n")
 
-    if len(error_names) == 0:
-        print(ColorFormat(Colors.Green, "No errors on "+str(successes)+" tests!"))
+    return AllOutputs
+
+def run_all_tests():
+    Errors = 0
+    AllOutputs = _RunAllTests()
+    for Output in AllOutputs:
+        if Output["code"] != 0:
+            Errors += 1
+            print(ColorFormat(Colors.Red, Output["test name"] + " ( " + str(Output["code"]) + " )"))
+            if len(Output["stdout"]) != 0:
+                print(ColorFormat(Colors.Blue, "\t\tSTDOUT\n") + Output["stdout"])
+            if len(Output["stderr"]) != 0:
+                print(ColorFormat(Colors.Yellow, "\t\tSTDERR\n") + Output["stderr"])
+        else:
+            print(ColorFormat(Colors.Green, '"' + Output["test name"] + '" returned code = '+str(Output["code"])))
+
+
+    if Errors == 0:
+        print(ColorFormat(Colors.Green, "All "+str(len(AllOutputs))+" tests successful!"))
+        return
+
+    print(ColorFormat(Colors.Red, ("="*40)+"\n          " + str(Errors) + " Errors reported\n"+("="*40)))
+    print(ColorFormat(Colors.Green, "Successes: ["+str(len(AllOutputs) - len(Errors))+"]"))
+
+def run_all_tests_on_valgrind():
+    Errors = 0
+    AllOutputs = _RunAllTests("valgrind --fair-sched=yes -s --leak-check=full --track-origins=yes")
+    for Output in AllOutputs:
+        # print(Output["stderr"])
+        if "ERROR SUMMARY: 0 errors from 0 contexts" not in Output["stderr"]:
+            print(ColorFormat(Colors.Red, "\t" + Output["test name"] + " (" + str(Output["code"]) + ")"))
+            if len(Output["stderr"]) != 0:
+                print(ColorFormat(Colors.Yellow, "\t\tSTDERR"))
+                print(Output["stderr"])
+
+            if len(Output["stdout"]) != 0:
+                print(ColorFormat(Colors.Blue, "\t\tSTDOUT"))
+                print(Output["stdout"])
+            Errors = Errors+ 1
+        else:
+            print(ColorFormat(Colors.Green, "\t" + Output["test name"] + " is clean"))
+
+    if Errors == 0:
+        print(ColorFormat(Colors.Green, "No leaks found in "+str(len(AllOutputs))+" tests!"))
     else:
-        print(ColorFormat(Colors.Red, ("="*40)+"\n          Some errors reported\n"+("="*40)))
-        print(ColorFormat(Colors.Green, "successes: ["+str(successes)+"]"))
-        print(ColorFormat(Colors.Red, "Errors: ["+str(len(error_names))+"]\n"+"\n".join(error_names)))
+        # ErrorSentence = "Leaks found in " + str(Errors) + " tests"
+        # print(ColorFormat(Colors.Red, ("="*40)+"\n          " + ErrorSentence + "\n"+("="*40)))
+        print(ColorFormat(Colors.Green, "Clean:\t["+str(len(AllOutputs) - Errors)+"]"))
+        print(ColorFormat(Colors.Red, "Leaks:\t["+str(Errors)+"]"))
