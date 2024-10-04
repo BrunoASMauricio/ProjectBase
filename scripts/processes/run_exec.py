@@ -8,16 +8,14 @@ from menus.menu import GetNextOption, MenuExit
 import traceback
 
 """
-scan path_to_scan for appropriate executables
+scan PathToScan for appropriate executables
 Return a list with the executables
 """
-def __get_available_executables(path_to_scan):
+def __get_available_executables(PathToScan):
     executables_available = []
     os.chdir(Settings["paths"]["project main"])
-    print("Executables available in "+path_to_scan+":")
 
-    index = 0
-    for entry in os.scandir(path_to_scan):
+    for entry in os.scandir(PathToScan):
         # Must be fully executable
         if entry.stat().st_mode & 0o111 != 0o111:
             continue
@@ -26,20 +24,6 @@ def __get_available_executables(path_to_scan):
             continue
 
         executables_available.append(entry.name)
-        index += 1
-
-    executables_available.sort()
-    previous_repo_name = ""
-    for index in range(len(executables_available)):
-        exploded = executables_available[index].split("_")
-        repo = exploded[0]
-        name = '_'.join(exploded[1:])
-        if previous_repo_name != repo:
-            print(ColorFormat(Colors.Yellow, "\t<" + repo + ">"))
-            previous_repo_name = repo
-        print("["+str(index)+"]" +ColorFormat(Colors.Blue, name))
-    print()
-
     return executables_available
 
 """
@@ -67,7 +51,7 @@ def __parse_input(og_user_input):
 """
 Locate the actual executable used and return its' path
 """
-def __locate_executable(user_input, executables_available, path_to_scan):
+def __locate_executable(user_input, executables_available, PathToScan):
     input_list = user_input.split(' ')
     executable = input_list[0]
     if StringIsNumber(executable):
@@ -75,11 +59,11 @@ def __locate_executable(user_input, executables_available, path_to_scan):
         if exec_ind > len(executables_available):
             print("Out of bounds index: " + user_input)
             return None, None
-        path_to_exec = path_to_scan + "/" + executables_available[exec_ind]
+        path_to_exec = PathToScan + "/" + executables_available[exec_ind]
     else:
         # By name
-        if os.path.isfile(path_to_scan + "/" + executable):
-            path_to_exec = path_to_scan + "/" + executable
+        if os.path.isfile(PathToScan + "/" + executable):
+            path_to_exec = PathToScan + "/" + executable
         # By absolute path
         elif os.path.isfile(executable):
             path_to_exec = executable
@@ -88,15 +72,29 @@ def __locate_executable(user_input, executables_available, path_to_scan):
             return None, None
     return path_to_exec, input_list
 
-def execute_menu(path_to_scan):
+def execute_menu(PathToScan):
     # Allow python scripts to use ProjectBase scripts
     PrepareExecEnvironment()
 
     while True:
-        executables_available = __get_available_executables(path_to_scan)
+        executables_available = __get_available_executables(PathToScan)
         if len(executables_available) == 0:
             print("No executables found")
             return
+
+        print("Executables available in "+PathToScan+":")
+        executables_available.sort()
+        PreviousRepoName = ""
+        for Index in range(len(executables_available)):
+            Exploded = executables_available[Index].split("_")
+            Repo = Exploded[0]
+            Name = '_'.join(Exploded[1:])
+            if PreviousRepoName != Repo:
+                print(ColorFormat(Colors.Yellow, "\t<" + Repo + ">"))
+                PreviousRepoName = Repo
+            print("["+str(Index)+"]" +ColorFormat(Colors.Blue, Name))
+        print()
+
         
         print("!V for valgrind. !G for GDB. !S for GDB server @ 127.0.0.1:6175")
         print("Upper case (V,G,S) uses default parameters, lower case doesn't.")
@@ -115,7 +113,7 @@ def execute_menu(path_to_scan):
             prefix, user_input = __parse_input(og_user_input)
 
             # Locate executable
-            path_to_exec, input_list = __locate_executable(user_input, executables_available, path_to_scan)
+            path_to_exec, input_list = __locate_executable(user_input, executables_available, PathToScan)
             if path_to_exec == None:
                 print("Executable not found")
                 continue
@@ -189,7 +187,6 @@ def run_all_tests():
                 print(ColorFormat(Colors.Yellow, "\t\tSTDERR\n") + Output["stderr"])
         else:
             print(ColorFormat(Colors.Green, '"' + Output["test name"] + '" returned code = '+str(Output["code"])))
-
 
     if Errors == 0:
         print(ColorFormat(Colors.Green, "All "+str(len(AllOutputs))+" tests successful!"))
