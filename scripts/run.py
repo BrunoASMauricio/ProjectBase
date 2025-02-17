@@ -2,7 +2,6 @@ import sys
 import logging
 import datetime
 import traceback
-from git import *
 from data.settings import Settings
 from processes.project import Project, UserChooseProject
 from data.common import ValueNotEmpty

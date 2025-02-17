@@ -1,15 +1,9 @@
-# from repository import *
-# from settings import get_active_settings
-# from common import *
-# from git import *
 from data.settings        import Settings
 from data.paths           import GetProjectPaths, JoinPaths
 from data.git             import GetRepoNameFromURL
 from processes.repository import LoadRepositories, Setup, Build
 from processes.process    import LaunchProcess
 from data.git                  import *
-from git                  import *
-# from git                  import *
 from processes.git_operations import GetRepositoryUrl
 from processes.filesystem import CreateDirectory
 from processes.run_linter import CleanLinterFiles

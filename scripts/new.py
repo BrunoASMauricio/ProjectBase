@@ -6,7 +6,6 @@ import os
 
 from common import *
 from process import *
-from git import *
 
 if __name__ != "__main__":
     Abort("This script is not meant to be imported, please run directly")

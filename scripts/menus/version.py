@@ -1,8 +1,8 @@
 from menus.menu import Menu
 from processes.versioning import DirectlyManageSingleRepository, PrintProjectStatus, CleanAllUnsaved, GlobalSave, ResetToLatestSync, UndoChanges
 from processes.versioning import FetchAll, PullAll, PushAll
-from git import *
 from processes.project import DeleteProject
+from data.colors import ColorFormat, Colors
 
 SyncMenu = Menu("Sync Menu")
 # SyncMenu.add_callback_entry("Fetch data from remote", FetchAll)
