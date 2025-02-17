@@ -342,6 +342,7 @@ def Setup(repositories):
     # Run setup scripts
     for repo_id in repositories:
         repository = repositories[repo_id]
+        logging.info(f"Setting up repo {repository['name']}")
         __RunRepoCommands("setup", repository["setup"])
 
 def Build(repositories, build_command):
@@ -349,6 +350,7 @@ def Build(repositories, build_command):
         repository = repositories[repo_id]
         __RunRepoCommands("before build", repository["before build"])
 
+    logging.info(f"Building project with {build_command}")
     LaunchVerboseProcess(build_command)
 
     for repo_id in repositories:
