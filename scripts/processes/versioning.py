@@ -94,11 +94,11 @@ def PrintProjectStatus():
     if known_dirty == 0 and unknown_dirty == 0:
         print("\nProject is " + ColorFormat(Colors.Green, "clean"))
     else:
-        print(ColorFormat(Colors.Red, "there are "+str(known_dirty)+" dirty managed repos"))
         print(known_repos_message)
+        print(unknown_repos_message)
+        print(ColorFormat(Colors.Red, "there are "+str(known_dirty)+" dirty managed repos"))
         if unknown_dirty == 0:
             print(CLICenterString(" There are " + str(unknown_dirty) +" dirty unknown git repositories "))
-        print(unknown_repos_message)
 
 """
 Remove all uncommited (unsaved) files and folders
