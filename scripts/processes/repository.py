@@ -151,7 +151,8 @@ def __CurrentlyLoadedRepoAmount():
 def __PrintLoadProgress():
     current_progress = __CurrentlyLoadedRepoAmount()
     total_repos      = len(repositories) + len(dependencies)
-    PrintProgressBar(current_progress, total_repos, prefix = 'Loading Repositories:', suffix = "Loading " + str(current_progress) + "/" + str(total_repos) + " Repositories")
+    if current_progress != total_repos:
+        PrintProgressBar(current_progress, total_repos, prefix = 'Loading Repositories:', suffix = "Loading " + str(current_progress) + "/" + str(total_repos) + " Repositories")
 
 def LoadRepositories(root_configs, cache_path):
     global repositories
@@ -174,6 +175,7 @@ def LoadRepositories(root_configs, cache_path):
     while unloaded == True:
         loaded_amount = 0
 
+        print("\nUnloaded dependencies found")
         # For each unloaded repository, load it
         repo_args = []
         for repo_id in repositories:
@@ -182,6 +184,7 @@ def LoadRepositories(root_configs, cache_path):
             else:
                 loaded_amount += 1
 
+        # Load remaining repositories
         RunInThreadsWithProgress(LoadRepository, repo_args, __PrintLoadProgress)
 
         # Merge dependencies with existing repositories
@@ -195,8 +198,8 @@ def LoadRepositories(root_configs, cache_path):
                 set_detected_state_change()
                 unloaded = True
         dependencies.clear()
-    PrintProgressBar(len(repo_args), len(repo_args), prefix = 'Loading Repositories:', suffix = "Loaded " + str(len(repo_args)) + "/" + str(len(repo_args)) + " Repositories")
-    print()
+        PrintProgressBar(len(repositories), len(repositories), prefix = 'Loading Repositories:', suffix = "Loaded " + str(len(repositories)) + "/" + str(len(repositories)) + " Repositories")
+        print("\nFinished dependency round")
 
     if detected_state_changed():
         logging.debug("SAVING "+str(len(repositories))+" repositories in cache")
