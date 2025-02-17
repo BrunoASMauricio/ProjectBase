@@ -82,74 +82,68 @@ ProjectBase is licensed under GNU General Public License Version 3
 
 ## TODO
 
-- [ ] Figure out why loading takes so much time
+### General
 - [X] Add abstraction similar to menu, but for multiple choice stuff (i.e. executable/test/project/single repo to manage operations)
-- [ ] Add information on sync status in getting repo status
-- [X] Separate loading from setup (loading loads the repos internally, setup forces a load and runs setup commands)
 - [ ] Add some statistics (i.e. baregit vs direct clone sizes and time delta between first and second project setups)
-- [ ] Find a way to identify repositories without using URLs (different URLs can point to the same repo)
-      Use the X commit of the default branch?
-- [ ] Update documentation
-- [ ] Allow the review of code when add/commiting ?
-      On push, allow per repo fix on conflict
-- [ ] Try and setup git so normal pushes via single repo manipulation work as expected
 - [ ] Allow config customization when creating a new project with new.py
   - [ ] Initial directory
   - [ ] Initial dependencies
   - [ ] Default README?
   - [ ] Default example?
   - [ ] Use options (y/n/a yes/no/all)
-- [ ] Add support for a configuration system (i.e. Kconfig)
 - [ ] Add support for some documentation system (i.e. doxygen)
+- [ ] Project metadata visualization (dependency tree, test amount and percentage of failures, ...)
+- [ ] Add time (with seconds) to banner. Helps in knowing when we ran the last commands
+- [ ] Detect when ProjectBase was copy pasted into a different repository (messed up worktrees) and fix it
+- [ ] Inserting commands during other commands does not work, but it should be possible to chain commands using a separator like ';'
+- [ ] Reset terminal after recovering control from external programs
+- [ ] ?Organize the binaries by either date or name (maybe hash and say last time changed?)?
+- [ ] Mass run valgrind
+  - [ ],Collect how many bytes are lost and how many different errors, per each test
+- [ ] Fix completion
+  - [ ] Current input counts for completion. i.e. '3 3 ' and then TAB would show the possible completions of menu 3.3 and not current menu
+- [ ] Divide testresults into their respective modules
+- [ ] Give warning if the same link (repository) has been checked out in different places
+- [ ] Deal with projects that have no code (simple message stating nothing to do)
+
+### Setup
+
+- [X] Figure out why loading takes so much time
+- [ ] Allow tp clean configuration
+- [X] Separate loading from setup (loading loads the repos internally, setup forces a load and runs setup commands)
+
+### Configurability
+- [ ] Add support for a configuration system (i.e. Kconfig)
 - [ ] Investigate necessity/feasibility of sending strings into code
-- [ ] gitall tasks
-  - [ ] Failed clones should automatically be cleaned up
-          Current bug, failed pulls somehow obtain the projectbase URL and subsequent `setup` clones projectbase instead of the respective repository
-  - [ ] Do not perform `cd` for every git operation
-  - [ ] Periodically fetch new data from repos
-  - [ ] Periodically remove non-existing worktrees
-  - [ ] Add option for custom command to run on all repos
-  - [X] Add single repo manipulation by providing a semi-independent console,
+- [ ] Add option for custom command to run on all repos
+- [ ] Allow public, private and test headers to be defined by each project. Or simply allow public and private, and tests have access to both?
+- [ ] Allow extra cflags per
+  - [ ] object
+  - [ ] module
+  - [ ] globally
+
+### Versioning
+- [ ] Add information on sync status in getting repo status
+- [ ] Find a way to identify repositories without using URLs (different URLs can point to the same repo)
+      Use the X commit of the default branch?
+- [ ] Allow the review of code when add/commiting ?
+      On push, allow per repo fix on conflict
+- [ ] Try and setup git so normal pushes via single repo manipulation work as expected
+
+- [ ] Failed clones should automatically be cleaned up
+        Current bug, failed pulls somehow obtain the projectbase URL and subsequent `setup` clones projectbase instead of the respective repository
+- [ ] Do not perform `cd` for every git operation
+- [ ] Periodically fetch new data from repos
+- [ ] Periodically remove non-existing worktrees
+- [X] Add single repo manipulation by providing a semi-independent console,
 already in the relevant directory
-  - [ ] Improve detection of desync between baregit and upstream so push doesn't
+- [ ] Improve detection of desync between baregit and upstream so push doesn't
 need to work on clean repos
- - [ ] Silence certain output (i.e. gitall needs to load .git repos but seeing the load output isnt ok)
+- [ ] Allow two types of commits
+  - [ ] "fixed" commits (other word isencouraged) are normal commits
+  - [ ] "save" commits are temporary, and will be squashed into the next "fixed" commit
 
- Add more types of headers (public vs private)
- Allow tests to include both public and private, but executables only include public headers
-
- Possible to add cflags per
-  object
-  repository
-  globally
-
-git
-  Possible to specify two types of commits, "save" commits and "fixed" commits
-    Actually, add a specific git strategy. Clone branches for feature development saving that collapse into commits on the actual feature branch (unnecessary?...)
-  Save commits have automatic commit messages and should eventually be squashed into a fixed commit
-
-Show project metadata (dependency tree and whatnot)
-
-Add time (with seconds) to banner. Helps in knowing when we ran the last commands
-
-Inserting commands during other commands does not work, but it should be possible to chain commands using a separator like ';'
-
-Organize the binaries by either date or name (maybe hash and say last time changed?)
-
-either prevent rogue characters from messing the terminal, or reset it after recovering control from external programs
-
-Clean before starting setup
-
-Allow config files to provide toggleable macro variables (possibly with values). May require pagination and/or search
-
-Mass run valgrind, and collect how many bytes are lost and how many different errors, per each test
 
 Configs that CAN NOT have variables
   local path
   url
-
-
-would be nice if inputs counted for completion.
-i.e. '3 3 ' and then TAB would show the possible completions of menu 3.3 and not current menu
-
-tests should be divided into the respective modules
