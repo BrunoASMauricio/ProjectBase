@@ -61,7 +61,7 @@ def DirectlyManageSingleRepository():
 
 def __AssembleReposStatusMessage(statuses):
     status_message = ""
-    dirty = 0
+    dirty = []
     for path in statuses:
         status    = statuses[path]
         repo_url  = GetRepositoryUrl(path)
@@ -74,7 +74,7 @@ def __AssembleReposStatusMessage(statuses):
             status_message += "\n\t" + path
             status_message += "\n\t" + ColorFormat(Colors.Yellow, status).replace("\n", "\n\t") + "\n\n"
             status_message += "\n" + CLICenterString("", "=")
-            dirty += 1
+            dirty.append(repo_name)
     return dirty, status_message
 
 def PrintProjectStatus():
@@ -91,14 +91,14 @@ def PrintProjectStatus():
     known_dirty,   known_repos_message   = __AssembleReposStatusMessage(known_repo_status)
     unknown_dirty, unknown_repos_message = __AssembleReposStatusMessage(unknown_repo_status)
 
-    if known_dirty == 0 and unknown_dirty == 0:
+    if len(known_dirty) == 0 and len(unknown_dirty) == 0:
         print("\nProject is " + ColorFormat(Colors.Green, "clean"))
     else:
-        print(known_repos_message)
-        print(unknown_repos_message)
-        print(ColorFormat(Colors.Red, "there are "+str(known_dirty)+" dirty managed repos"))
-        if unknown_dirty == 0:
-            print(CLICenterString(" There are " + str(unknown_dirty) +" dirty unknown git repositories "))
+        print(f"\n{known_repos_message}")
+        print(f"\n{unknown_repos_message}")
+        print(ColorFormat(Colors.Red, f"there are {len(known_dirty)} dirty managed repos: {', '.join(known_dirty)}"))
+        if len(unknown_dirty) == 0:
+            print(CLICenterString(f" There are {len(unknown_dirty)} dirty unknown git repositories: {', '.join(unknown_dirty)}"))
 
 """
 Remove all uncommited (unsaved) files and folders
