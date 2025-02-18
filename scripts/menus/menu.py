@@ -160,6 +160,8 @@ class Menu():
             try:
                 ResetTerminal()
 
+                # Newline is useful in general here
+                print()
                 # Show menu
                 print(self.get_menu(depth))
                 if previous_command != None:
