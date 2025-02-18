@@ -1,14 +1,15 @@
-from data.settings        import Settings
-from data.paths           import GetProjectPaths, JoinPaths
-from data.git             import GetRepoNameFromURL
-from processes.repository import LoadRepositories, Setup, Build
-from processes.process    import LaunchProcess
-from data.git                  import *
-from processes.git_operations import GetRepositoryUrl
-from processes.filesystem import CreateDirectory
-from processes.run_linter import CleanLinterFiles
 from data.settings import Settings, CLONE_TYPE
-from data.common import LoadFromFile, DumpToFile
+from data.paths    import GetProjectPaths, JoinPaths
+from data.git      import GetRepoNameFromURL
+from data.common   import LoadFromFile, DumpToFile
+
+from processes.repository     import LoadRepositories, Setup, Build
+from processes.process        import LaunchProcess
+from processes.git_operations import GetRepositoryUrl
+from processes.filesystem     import CreateDirectory
+from processes.run_linter     import CleanLinterFiles
+
+import logging
 
 """
 Performs operations on a project
@@ -34,9 +35,9 @@ class PROJECT(dict):
 
         Settings["ProjectName"] = self.name
         Settings["paths"]       = self.paths
-        repo_cache_path = JoinPaths(Settings["paths"]["configs"], "project_cache", "repositories")
-        self.cache_path = JoinPaths(repo_cache_path, self.name)
-        CreateDirectory(repo_cache_path)
+        self.repo_cache_path = JoinPaths(Settings["paths"]["configs"], "project_cache", "repositories")
+        self.cache_path = JoinPaths(self.repo_cache_path, self.name)
+        CreateDirectory(self.repo_cache_path)
 
     def load(self):
         # Build root repo configs from CLI
@@ -56,9 +57,13 @@ class PROJECT(dict):
         self.repositories = LoadRepositories(self.root_repo_base_config, self.cache_path)
 
     def setup(self):
+        logging.info("Setting up project")
+
         Setup(self.GetRepositories())
     
     def build(self):
+        logging.info("Building project")
+
         CMakeCommand =  'cmake'
         # Dont complain about unused -D parameters, they are not mandatory
         CMakeCommand += ' --no-warn-unused-cli'
@@ -141,6 +146,9 @@ def UserChooseProject():
         except Exception as Ex:
             # Not an Index, assume URL
             RemoteRepoUrl = UserInput
+            import sys
+            print(f"{__file__}")
+            sys.exit(0)
             break
 
     return RemoteRepoUrl
@@ -160,3 +168,7 @@ def CleanAll():
 
 def DeleteProject():
     LaunchVerboseProcess("rm -rf " + Settings["paths"]["project main"])
+
+def CleanPBCache():
+    global Project
+    logging.error(Project.cache_path)
