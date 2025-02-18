@@ -2,11 +2,11 @@ import os
 import sys
 import logging
 import traceback
-from data.common import Assert
 from enum import Enum
+from data.common import Assert, GetText, GetHost, GetTime
 from processes.auto_completer import CustomCompleter
 from data.settings import Settings
-from data.common import RemoveNonAlfanumeric
+from data.common import RemoveNonAlfanumeric, ResetTerminal
 from data.paths import JoinPaths
 
 class EntryType(Enum):
@@ -81,27 +81,14 @@ class Menu():
     """
     def add_dynamic_entries(self, entry_generator, fallback=None):
         self.entries.append([entry_generator, EntryType.DYNAMIC, fallback])
-    
-    """
-    If obj is string, returns it
-    Otherwise assumes it is a function that returns a string, calls that function and returns the result 
-    """
-    def get_text(self, obj):
-        if obj == None:
-            return ""
-        # Only accept strings or functions
-        if type(obj) == type(""):
-            return obj
 
-        # Non-function is ok to fail here
-        return obj()
-    
     """
     Return string with menu data
     """
     def get_menu(self, depth):
         index = 1
-        menu = self.get_text(self.prologue)
+        menu = GetText(self.prologue)
+        menu += f"({GetTime()})({GetHost()})\n"
 
         for entry in self.entries:
             if entry[1] == EntryType.DYNAMIC:
@@ -110,7 +97,7 @@ class Menu():
                     del entry[3]
                 entries = entry[0]()
                 if len(entries) == 0:
-                    entry.append(self.get_text(entry[2]))
+                    entry.append(GetText(entry[2]))
                 else:
                     for new_entry in entries:
                         menu  += ("| " * depth) + str(index)+" ) " + new_entry[0] + "\n"
@@ -119,12 +106,12 @@ class Menu():
                 entry.append(entries)
             else:
                 if entry[1] == EntryType.MENU:
-                    menu  += ("| " * depth) + str(index)+">) " + self.get_text(entry[0]) + "\n"
+                    menu  += ("| " * depth) + str(index)+">) " + GetText(entry[0]) + "\n"
                 elif entry[1] == EntryType.CALLBACK:
-                    menu  += ("| " * depth) + str(index)+" ) " + self.get_text(entry[0]) + "\n"
+                    menu  += ("| " * depth) + str(index)+" ) " + GetText(entry[0]) + "\n"
                 index += 1
 
-        menu += self.get_text(self.epilogue)
+        menu += GetText(self.epilogue)
 
         return menu
     """
@@ -168,8 +155,11 @@ class Menu():
         current_dir = os.getcwd()
         previous_command = None
         previous_invalid = False
+        exceptions_allowed = 5
         while True:
             try:
+                ResetTerminal()
+
                 # Show menu
                 print(self.get_menu(depth))
                 if previous_command != None:
@@ -198,14 +188,28 @@ class Menu():
                 # Activate selected entry
                 self.select_entry(next_input, depth)
 
+                # Reset exceptions allowed
+                exceptions_allowed = 5
+
             except KeyboardInterrupt:
                 print("\nCtrl+C exits running operations. Press Ctrl+D to back out of ProjectBase")
                 continue
             except EOFError:
+                # Ctrl+D
                 break
+            except SystemExit as sys_ex:
+                print("sys.exit() called, exiting")
+                raise sys_ex
             except Exception as Ex:
-                logging.error("Uncaught exception: "+str(Ex))
-                logging.error(traceback.format_stack())
+
+                logging.error(f"Uncaught exception {exceptions_allowed}: {type(Ex)} {Ex}")
+                logging.error(traceback.format_exc())
+
+                if exceptions_allowed <= 0:
+                    logging.critical("Too many exceptions in a row, halting")
+                    sys.exit(1)
+                exceptions_allowed -= 1
+
             # Always reset directory after running an operation
             os.chdir(current_dir)
             if self.stay_in_menu == False:
