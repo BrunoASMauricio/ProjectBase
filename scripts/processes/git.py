@@ -134,7 +134,10 @@ def SetupBareData(repo_url):
         bare_tree_name = GetRepoBareTreePath(repo_url)
         clone_command = 'git clone "' + repo_url + '" "' + JoinPaths(bare_gits, bare_tree_name) + '" --bare'
         logging.debug("Cloning bare git with: " + clone_command)
-        LaunchProcess(clone_command)
+        try:
+            LaunchProcess(clone_command)
+        except ProcessError as ex:
+            ex.RaiseIfNotInOutput("already exists")
         bare_git = JoinPaths(bare_gits, bare_tree_name)
 
         if False == os.path.isdir(bare_git):
