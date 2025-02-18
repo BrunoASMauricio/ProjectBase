@@ -34,5 +34,4 @@ Settings.load_persistent_settings()
 
 MainMenu.handle_input()
 
-print("\nBye :)")
 sys.exit(0)

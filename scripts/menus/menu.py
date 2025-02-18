@@ -25,7 +25,7 @@ def GetNextOption(prompt="[<] "):
     else:
         # Called with --exit and no command, just exit
         if Settings["exit"] == True:
-            sys.exit(0)
+            raise EOFError
         next_input = input(prompt)
 
         # Check if we received multiple commands
@@ -38,7 +38,8 @@ def GetNextOption(prompt="[<] "):
 
 def MenuExit(input):
     # If "exit" is entered, ProjectBase exits ()
-    if Settings["exit"] == True or input == "out":
+    # if Settings["exit"] == True or input == "out":??
+    if input == "out":
         return True
     if input == "exit":
         Settings["action"].append(input)
@@ -198,9 +199,9 @@ class Menu():
                 continue
             except EOFError:
                 # Ctrl+D
-                break
+                print("\nBye :)")
+                sys.exit(0)
             except SystemExit as sys_ex:
-                print("sys.exit() called, exiting")
                 raise sys_ex
             except Exception as Ex:
 
