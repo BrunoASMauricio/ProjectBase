@@ -98,8 +98,8 @@ def GenAutoCommitMessage():
 """
 Stages all changes, within the current directory and its subdirectories.
 """
-def RepoSaveChanges(path = None, commit_message=""):
-    if len(commit_message) == 0:
+def RepoSaveChanges(path = None, commit_message=None):
+    if commit_message == None:
         commit_message = GenAutoCommitMessage()
 
     try:
