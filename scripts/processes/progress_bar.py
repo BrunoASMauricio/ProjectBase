@@ -15,6 +15,11 @@ def PrintProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
         fill        - Optional  : bar fill character (Str)
         autosize    - Optional  : automatically resize the length of the progress bar to the terminal window (Bool)
     """
+
+    if total == 0:
+        print('\rNothing to progress on', end = '\r')
+        return
+
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
     styling = '%s |%s| %s%% %s' % (prefix, fill, percent, suffix)
     if autosize:
