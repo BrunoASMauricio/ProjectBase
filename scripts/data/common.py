@@ -4,6 +4,12 @@ import sys
 import shutil
 import difflib
 import unicodedata
+import curses
+
+from datetime import datetime
+import socket # for gethostname
+import getpass # for getuser
+
 from data.paths import GetBasePaths
 from data.colors import ColorFormat, Colors
 from data.paths import CreateParentPath
@@ -179,3 +185,32 @@ def SetupTemplateScript(script_name, target_file, variable_substitutions={}):
     CreateParentPath(target_file)
     with open(target_file, 'w') as f:
         f.write(whole_script)
+
+"""
+If obj is string, returns it
+Otherwise assumes it is a function that returns a string, calls that function and returns the result
+"""
+def GetText(obj):
+    if obj == None:
+        return ""
+    # Only accept strings or functions
+    if type(obj) == type(""):
+        return obj
+
+    # Non-function is ok to fail here
+    return obj()
+
+def GetTime():
+    current_datetime = datetime.now()
+    return str(current_datetime.strftime("%m/%d/%Y %H:%M:%S"))
+
+def GetHost():
+    return f"{getpass.getuser()}@{socket.gethostname()}"
+
+def ResetTerminal():
+    # Initialize curses
+    stdscr = curses.initscr()
+
+    # Set terminal back to normal mode
+    curses.endwin()
+    del stdscr
