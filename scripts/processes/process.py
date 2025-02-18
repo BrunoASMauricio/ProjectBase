@@ -2,6 +2,7 @@ import os
 import pty
 import logging
 import traceback
+import threading
 import subprocess
 
 from time import sleep
@@ -13,30 +14,61 @@ from data.common import Abort, AppendToEnvVariable, RemoveControlCharacters, Rem
 
 #                           PROCESS OPERATIONS
 
-def PrintProgressWhileWaitOnThreads(Threads, PrintFunction=None, PrintArguments=None):
-    if PrintArguments == None:
-        PrintArguments = {}
+import threading
+thread_log = ""
+thread_log_lock = threading.Lock()
+
+def GetThreadId():
+    return threading.get_ident()
+
+def AddTothreadLog(message):
+    global thread_log
+    global thread_log_lock
+
+    with thread_log_lock:
+        thread_log += f"({GetThreadId()}) {message}"
+
+def ClearThreadLog():
+    global thread_log
+    global thread_log_lock
+    with thread_log_lock:
+        thread_log = ""
+
+def Flushthread_log():
+    global thread_log
+    global thread_log_lock
+    with thread_log_lock:
+        print(thread_log,end="")
+        thread_log = ""
+
+def PrintProgressWhileWaitOnThreads(threads, print_function=None, print_arguments=None):
+    if print_arguments == None:
+        print_arguments = {}
 
     def PrintProgress():
-        if PrintFunction != None:
-            PrintFunction(**PrintArguments)
+        if print_function != None:
+            print_function(**print_arguments)
         else:
-            Progress = len(Threads) - ThreadsAlive
-            PrintProgressBar(Progress, len(Threads), prefix = 'Running:', suffix = 'Threads finished ' + str(Progress) + '/' + str(len(Threads)))
+            Progress = len(threads) - threads_alive
+            PrintProgressBar(Progress, len(threads), prefix = 'Running:', suffix = 'Threads finished ' + str(Progress) + '/' + str(len(threads)))
 
     # Wait for all threads
-    ThreadsAlive = len(Threads)
+    threads_alive = len(threads)
     Progress = 0
-    prev_alive = ThreadsAlive
-    while ThreadsAlive != Progress:
-        ThreadsAlive = len(Threads)
-        for thread in Threads:
+    prev_alive = threads_alive
+    while threads_alive != Progress:
+        threads_alive = len(threads)
+        for thread in threads:
             if thread.is_alive():
                 continue
-            ThreadsAlive -= 1
-        if prev_alive != ThreadsAlive:
+            threads_alive -= 1
+        if prev_alive != threads_alive:
             PrintProgress()
+
+        # Keep flushing log
+        Flushthread_log()
         sleep(0.05)
+
     PrintProgress()
 
 operation_status = {}
@@ -50,13 +82,22 @@ def __PrintRunOnFoldersProgress(paths):
     else:
         PrintProgressBar(current_progress, total_repos, prefix = 'Running:', suffix = "Done on " + str(current_progress) + "/" + str(total_repos) + " folders")
 
+# Wrapper for threads
+def ThreadWrapper(run_callback, run_arg):
+    try:
+        run_callback(*run_arg)
+    except Exception as ex:
+        # Store exception in log, but don't print it just yet
+        # Ctrl+C will create exceptions on all threads, so those logs must be cleared and not printed
+        AddTothreadLog(str(ex))
+
 """
 Run run_callback in a separate thread for each argument in run_args (which is also passed to that thread)
 """
 def RunInThreads(run_callback, run_args):
     threads = []
     for run_arg in run_args:
-        thread = Thread(target=run_callback, args=run_arg)
+        thread = Thread(target=ThreadWrapper, args=[run_callback,run_arg])
         threads.append(thread)
         thread.start()
     return threads
@@ -67,7 +108,11 @@ sequentially if "single thread" mode is on
 If print_callback is present, it will be called to register the operation progress
 """
 def RunInThreadsWithProgress(run_callback, run_args, print_callback=None, print_args=None):
+    if len(run_args) == 0:
+        return
+
     PrintProgressBar(0, len(run_args), prefix = 'Starting...', suffix = '0/' + str(len(run_args)))
+    ClearThreadLog()
     if Settings["single thread"]:
         for run_arg_ind in run_args:
             run_arg = run_args[run_arg_ind]
@@ -82,7 +127,11 @@ def RunInThreadsWithProgress(run_callback, run_args, print_callback=None, print_
                     PrintProgressBar(run_arg_ind, len(run_args), prefix = 'Running:', suffix = 'Work finished ' + str(run_arg_ind) + '/' + str(len(run_args)))
             except KeyboardInterrupt:
                 print("Keyboard Interrupt, stopping")
+                ClearThreadLog()
                 return
+            except Exception as ex:
+                AddTothreadLog(str(ex))
+
     else:
         try:
             threads = RunInThreads(run_callback, run_args)
@@ -91,7 +140,11 @@ def RunInThreadsWithProgress(run_callback, run_args, print_callback=None, print_
             print("Keyboard Interrupt, stopping threads")
             for thread in threads:
                 if thread.is_alive():
+                    # thread.raise_exception()
                     thread._stop()
+            ClearThreadLog()
+
+    Flushthread_log()
 
 def __RunOnFoldersThreadWrapper(callback, path, arguments={}):
     global operation_lock
@@ -134,8 +187,12 @@ def RunExecutable(CommandString):
 class ProcessError(Exception):
     def __init__(self, Message, Returned):
         # Call the base class constructor with the parameters it needs
-        super().__init__(Message)
+        super().__init__(f"Message:{Message}\nReturned: {Returned}")
         self.Returned = Returned
+    def RaiseIfNotInOutput(self, Data):
+        if Data in self.Returned["stdout"] or Data in self.Returned["stderr"]:
+            return
+        raise self
 
 def LaunchProcess(Command, to_print=False):
     """
@@ -191,8 +248,10 @@ def LaunchProcess(Command, to_print=False):
         Message += ColorFormat(Colors.Cyan, Command+"\n")
         Message += ColorFormat(Colors.Blue, "stdout: " + Returned["stdout"]+"\n")
         Message += ColorFormat(Colors.Red,  "stderr: " + Returned["stderr"]+"\n")
-        Message += "Stack Trace:\n"
-        for Line in traceback.format_stack():
+        Message += "Current stack:\n"
+
+        trace = traceback.format_stack()[:-1]
+        for Line in trace:
             Pieces = Line.strip().split("\n")
             if len(Pieces) == 2:
                 file, callback = Pieces
