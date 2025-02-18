@@ -85,42 +85,47 @@ ProjectBase is licensed under GNU General Public License Version 3
 ### General
 - [X] Add abstraction similar to menu, but for multiple choice stuff (i.e. executable/test/project/single repo to manage operations)
 - [ ] Add some statistics (i.e. baregit vs direct clone sizes and time delta between first and second project setups)
-- [ ] Allow config customization when creating a new project with new.py
-  - [ ] Initial directory
-  - [ ] Initial dependencies
-  - [ ] Default README?
-  - [ ] Default example?
-  - [ ] Use options (y/n/a yes/no/all)
+- [ ] Revamp old "new repository" creation script
+  - [ ] Automatically set as dependent of existing repos, and auto commit that change in them
+  - [ ] Allow config customization when creating a new project with new.py
+    - [ ] Initial directory
+    - [ ] Initial dependencies
+    - [ ] Default README?
+    - [ ] Default example?
+    - [ ] Use options (y/n/a yes/no/all)
 - [ ] Add support for some documentation system (i.e. doxygen)
 - [ ] Project metadata visualization (dependency tree, test amount and percentage of failures, ...)
-- [ ] Add time (with seconds) to banner. Helps in knowing when we ran the last commands
+- [X] Add time (with seconds) to banner. Helps in knowing when we ran the last commands
 - [ ] Detect when ProjectBase was copy pasted into a different repository (messed up worktrees) and fix it
 - [ ] Inserting commands during other commands does not work, but it should be possible to chain commands using a separator like ';'
-- [ ] Reset terminal after recovering control from external programs
+- [X] Reset terminal after recovering control from external programs
 - [ ] ?Organize the binaries by either date or name (maybe hash and say last time changed?)?
 - [ ] Mass run valgrind
   - [ ],Collect how many bytes are lost and how many different errors, per each test
 - [ ] Fix completion
   - [ ] Current input counts for completion. i.e. '3 3 ' and then TAB would show the possible completions of menu 3.3 and not current menu
-- [ ] Divide testresults into their respective modules
+- [ ] Divide test results into their respective modules
 - [ ] Give warning if the same link (repository) has been checked out in different places
 - [ ] Deal with projects that have no code (simple message stating nothing to do)
+- [ ] Modify how processes are called. Multiple attempts should not be necessary and are very error prone
 
 ### Setup
 
 - [X] Figure out why loading takes so much time
-- [ ] Allow tp clean configuration
+- [ ] Allow to clean configuration
 - [X] Separate loading from setup (loading loads the repos internally, setup forces a load and runs setup commands)
+- [ ] Improve detection of configuration change
+- [ ] Improve ability to change configs on the fly (without committing, pushing, deleting and recreating the project)
 
 ### Configurability
-- [ ] Add support for a configuration system (i.e. Kconfig)
-- [ ] Investigate necessity/feasibility of sending strings into code
-- [ ] Add option for custom command to run on all repos
-- [ ] Allow public, private and test headers to be defined by each project. Or simply allow public and private, and tests have access to both?
 - [ ] Allow extra cflags per
   - [ ] object
   - [ ] module
   - [ ] globally
+- [ ] Add support for a configuration system (i.e. Kconfig)
+- [ ] Investigate necessity/feasibility of sending strings into code
+- [ ] Add option for custom command to run on all repos
+- [ ] Allow public, private and test headers to be defined by each project. Or simply allow public and private, and tests have access to both?
 
 ### Versioning
 - [ ] Add information on sync status in getting repo status
