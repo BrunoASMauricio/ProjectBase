@@ -169,13 +169,13 @@ def LoadRepositories(root_configs, cache_path):
         for repo_id in repositories:
             repositories[repo_id]["reloaded"] = False
 
-    unloaded = True
+    unloaded = 1
     loaded_amount = 0
     dependencies.clear()
-    while unloaded == True:
+    while unloaded > 0:
         loaded_amount = 0
 
-        print("\nUnloaded dependencies found")
+        print(f"\n{unloaded} unloaded dependencies found")
         # For each unloaded repository, load it
         repo_args = []
         for repo_id in repositories:
@@ -188,7 +188,7 @@ def LoadRepositories(root_configs, cache_path):
         RunInThreadsWithProgress(LoadRepository, repo_args, __PrintLoadProgress)
 
         # Merge dependencies with existing repositories
-        unloaded = False
+        unloaded = 0
         for dependency in dependencies:
             dep_configs = dependencies[dependency]
             repo_id = GetRepoId(dep_configs)
@@ -196,7 +196,7 @@ def LoadRepositories(root_configs, cache_path):
                 repositories[repo_id] = dep_configs
                 repositories[repo_id]["reloaded"] = False
                 set_detected_state_change()
-                unloaded = True
+                unloaded += 1
         dependencies.clear()
         PrintProgressBar(len(repositories), len(repositories), prefix = 'Loading Repositories:', suffix = "Loaded " + str(len(repositories)) + "/" + str(len(repositories)) + " Repositories")
         print("\nFinished dependency round")
