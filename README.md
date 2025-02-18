@@ -95,6 +95,7 @@ ProjectBase is licensed under GNU General Public License Version 3
     - [ ] Use options (y/n/a yes/no/all)
 - [ ] Add support for some documentation system (i.e. doxygen)
 - [ ] Project metadata visualization (dependency tree, test amount and percentage of failures, ...)
+- [ ] Add "There have been errors, please check the logs at PATH" message for logged exceptions
 - [X] Add time (with seconds) to banner. Helps in knowing when we ran the last commands
 - [ ] Detect when ProjectBase was copy pasted into a different repository (messed up worktrees) and fix it
 - [ ] Inserting commands during other commands does not work, but it should be possible to chain commands using a separator like ';'
@@ -108,6 +109,9 @@ ProjectBase is licensed under GNU General Public License Version 3
 - [ ] Give warning if the same link (repository) has been checked out in different places
 - [ ] Deal with projects that have no code (simple message stating nothing to do)
 - [ ] Modify how processes are called. Multiple attempts should not be necessary and are very error prone
+- [ ] Check config file on all config checks, dont cache
+  - [ ] Special care with inherited configs
+- [ ] Overhaul handling of repositories by name/url/path. Use unique internal ID that can link to those three attributes
 
 ### Setup
 
@@ -128,6 +132,7 @@ ProjectBase is licensed under GNU General Public License Version 3
 - [ ] Allow public, private and test headers to be defined by each project. Or simply allow public and private, and tests have access to both?
 
 ### Versioning
+- [ ] In status, warn if there are dirty repos that will not be commited (have the no commit flag set)
 - [ ] Add information on sync status in getting repo status
 - [ ] Find a way to identify repositories without using URLs (different URLs can point to the same repo)
       Use the X commit of the default branch?
