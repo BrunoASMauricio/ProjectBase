@@ -1,5 +1,5 @@
 import os
-from processes.process import MultipleCDLaunch
+from processes.process import MultipleCDLaunch, ProcessError
 from data.common import IsEmpty
 
 def ParseGitResult(git_command, path):
@@ -101,7 +101,11 @@ Stages all changes, within the current directory and its subdirectories.
 def RepoSaveChanges(path = None, commit_message=""):
     if len(commit_message) == 0:
         commit_message = GenAutoCommitMessage()
-    ParseGitResult('git add .; git commit -m "' + commit_message + '"', path)
+
+    try:
+        ParseGitResult('git add .; git commit -m "' + commit_message + '"', path)
+    except ProcessError as ex:
+        ex.RaiseIfNotInOutput("nothing to commit, working tree clean")
 
 def RepoResetToLatestSync(path=None):
     url = GetRepositoryUrl(path)
