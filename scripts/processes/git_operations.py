@@ -104,6 +104,7 @@ def RepoSaveChanges(path = None, commit_message=None):
 
     try:
         ParseGitResult('git add .; git commit -m "' + commit_message + '"', path)
+        print(f"Saved changes for {path}")
     except ProcessError as ex:
         ex.RaiseIfNotInOutput("nothing to commit, working tree clean")
 
