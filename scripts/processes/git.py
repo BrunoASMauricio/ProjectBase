@@ -234,6 +234,15 @@ def MoveWorkTree(bare_path, repo_url, repo_commitish, from_path, to_path):
 def CheckIfStatusIsClean(status):
     return "nothing to commit, working tree clean" in status
 
+def CheckIfStatusIsDiverged(status):
+    return "have diverged" in status
+
+def CheckIfStatusIsAhead(status):
+    return "branch is ahead" in status
+
+def CheckIfStatusIsBehind(status):
+    return "branch is behind" in status
+
 def RepoIsClean(path):
     return CheckIfStatusIsClean(GetRepoStatus(path))
 
