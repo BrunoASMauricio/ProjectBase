@@ -1,14 +1,17 @@
+import re
+
 from data.settings     import Settings
 from data.colors       import ColorFormat, Colors
-from data.common import RemoveEmpty, CLICenterString, RemoveSequentialDuplicates
+from data.common import RemoveEmpty, CLICenterString, RemoveSequentialDuplicates, GetNow
 from data.git import GetRepoNameFromURL, FlipUrl
 from processes.project import Project, GetRelevantPath
-from processes.git     import GetAllGitRepos, GetRepoNameFromPath, RepoIsClean
-from processes.git     import CheckIfStatusIsClean, CheckIfStatusIsDiverged, CheckIfStatusIsAhead, CheckIfStatusIsBehind
 from processes.process import OpenBashOnDirectoryAndWait, RunOnFolders
 from processes.git_operations import RepoPull, RepoPush, RepoFetch, GetRepoStatus, GetRepositoryUrl, RepoCleanUntracked, RepoSaveChanges, RepoResetToLatestSync, RepoHardReset
 from menus.menu import GetNextOption
 from processes.repository import __RepoHasFlagSet
+from processes.git     import GetAllGitRepos, GetRepoNameFromPath, RepoIsClean
+from processes.git     import CheckIfStatusIsClean, CheckIfStatusIsDiverged, CheckIfStatusIsAhead, CheckIfStatusIsBehind
+from processes.git     import GetAllCommits
 
 def GetKnownAndUnknownGitRepos():
     repos = Project.GetRepositories()
@@ -185,6 +188,31 @@ def PullAll():
 def PushAll():
     RunOnAllManagedRepos(RepoPush)
 
+TempCommitMessage = "==== Temporary ProjectBase save commit (to be squashed into a fixed commit) ===="
+def GlobalTemporaryCommit():
+    global TempCommitMessage
+    commit_message = f"{TempCommitMessage}"
+    RunOnAllManagedRepos(RepoSaveChanges, {"commit_message":commit_message})
+
+def GlobalFixedCommit():
+    global TempCommitMessage
+    # Get all commits: 
+    all_commits = RunOnAllManagedRepos(GetAllCommits)
+
+    # Get initial commits in sequence that match temporary commit message
+    for path in all_commits.keys():
+        matching_commits = []
+        for hash_, msg in all_commits[path]:
+            if not re.search(f"^{TempCommitMessage}$", msg):
+                break
+            matching_commits.append((hash_, msg))
+
+    print(matching_commits)
+    # RunOnAllManagedRepos(RepoSaveChanges, {"commit_message":commit_message})
+
+    # commit_message = GetNextOption("[ commit message: ] ")
+    
+
 def GlobalSave():
     commit_message = GetNextOption("[commit message <] ")
 
@@ -195,6 +223,8 @@ def GlobalSave():
             RunOnAllManagedRepos(RepoSaveChanges, {"commit_message":commit_message})
         except Exception as ex:
             print("Unacceptable commit message: "+str(ex))
+            import sys
+            sys.exit(0)
 
 def ResetToLatestSync():
     RunOnAllRepos(RepoResetToLatestSync)
