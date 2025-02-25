@@ -49,14 +49,14 @@ def PrintProgressWhileWaitOnThreads(threads, print_function=None, print_argument
         if print_function != None:
             print_function(**print_arguments)
         else:
-            Progress = len(threads) - threads_alive
-            PrintProgressBar(Progress, len(threads), prefix = 'Running:', suffix = 'Threads finished ' + str(Progress) + '/' + str(len(threads)))
+            progress = len(threads) - threads_alive
+            PrintProgressBar(progress, len(threads), prefix = 'Running:', suffix = 'Threads finished ' + str(progress) + '/' + str(len(threads)))
 
     # Wait for all threads
     threads_alive = len(threads)
-    Progress = 0
+    progress = 0
     prev_alive = threads_alive
-    while threads_alive != Progress:
+    while threads_alive != progress:
         threads_alive = len(threads)
         for thread in threads:
             if thread.is_alive():
