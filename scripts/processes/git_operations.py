@@ -98,15 +98,15 @@ def GenAutoCommitMessage():
 """
 Stages all changes, within the current directory and its subdirectories.
 """
-def RepoSaveChanges(path = None, commit_message=None):
-    if commit_message == None:
-        commit_message = GenAutoCommitMessage()
-
+def RepoSaveChanges(path, commit_message=None):
     try:
-        ParseGitResult('git add .; git commit -m "' + commit_message + '"', path)
+        ParseGitResult('git add -A; git commit -m "' + commit_message + '"', path)
         print(f"Saved changes for {path}")
     except ProcessError as ex:
         ex.RaiseIfNotInOutput("nothing to commit, working tree clean")
+
+def GetAllCommits(path):
+    return ParseGitResult("git", "log", "--pretty=format:%H %s", path)
 
 def RepoResetToLatestSync(path=None):
     url = GetRepositoryUrl(path)
