@@ -7,7 +7,8 @@ from data.git      import GetRepoNameFromURL, url_HTTPS_to_SSH, url_SSH_to_HTTPS
 from data.common   import LoadFromFile, DumpToFile
 
 from processes.repository     import LoadRepositories, Setup, Build
-from processes.process        import LaunchProcess,LaunchProcessAt
+from processes.process        import LaunchProcess, LaunchProcessAt, LaunchVerboseProcess
+from data.colors              import ColorFormat, Colors
 from processes.git_operations import GetRepositoryUrl
 from processes.filesystem     import CreateDirectory
 from processes.run_linter     import CleanLinterFiles
