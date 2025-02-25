@@ -116,7 +116,7 @@ ProjectBase is licensed under GNU General Public License Version 3
 ### Setup
 
 - [X] Figure out why loading takes so much time
-- [ ] Allow to clean configuration
+- [X] Allow to clean configuration
 - [X] Separate loading from setup (loading loads the repos internally, setup forces a load and runs setup commands)
 - [ ] Improve detection of configuration change
 - [ ] Improve ability to change configs on the fly (without committing, pushing, deleting and recreating the project)
@@ -132,23 +132,21 @@ ProjectBase is licensed under GNU General Public License Version 3
 - [ ] Allow public, private and test headers to be defined by each project. Or simply allow public and private, and tests have access to both?
 
 ### Versioning
-- [ ] In status, warn if there are dirty repos that will not be commited (have the no commit flag set)
-- [ ] Add information on sync status in getting repo status
+- [X] In status, warn if there are dirty repos that will not be commited (have the no commit flag set)
+- [X] Add information on sync status in getting repo status
 - [ ] Find a way to identify repositories without using URLs (different URLs can point to the same repo)
       Use the X commit of the default branch?
 - [ ] Allow the review of code when add/commiting ?
       On push, allow per repo fix on conflict
+- [X] Warn exactly which repos are being comitted
 - [ ] Try and setup git so normal pushes via single repo manipulation work as expected
-
 - [ ] Failed clones should automatically be cleaned up
         Current bug, failed pulls somehow obtain the projectbase URL and subsequent `setup` clones projectbase instead of the respective repository
-- [ ] Do not perform `cd` for every git operation
-- [ ] Periodically fetch new data from repos
+- [ ] Do not perform `cd` for every git operation (why?)
+- [ ] Periodically fetch new data from repos. No automatic merge
 - [ ] Periodically remove non-existing worktrees
-- [X] Add single repo manipulation by providing a semi-independent console,
-already in the relevant directory
-- [ ] Improve detection of desync between baregit and upstream so push doesn't
-need to work on clean repos
+- [X] Add single repo manipulation by providing a semi-independent already in the relevant directory
+- [X] Improve detection of desync between baregit and upstream so push doesn't need to work on clean repos
 - [ ] Allow two types of commits
   - [ ] "fixed" commits (other word isencouraged) are normal commits
   - [ ] "save" commits are temporary, and will be squashed into the next "fixed" commit
