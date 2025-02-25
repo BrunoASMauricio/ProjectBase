@@ -33,7 +33,7 @@ def main_description():
 """ ) + BuildBanner + "\n(" + Settings["url"]  + " - " + CloneType + ")\n("  + Settings["paths"]["project main"] + ")\n"
 
 def generate_project_description():
-    return "Generate project (" + str(len(Project.repositories)) + " loaded repositories)"
+    return "Load project (" + str(len(Project.repositories)) + " loaded repositories)"
 
 MainMenu = Menu("Main Menu", True)
 MainMenu.prologue = main_description
