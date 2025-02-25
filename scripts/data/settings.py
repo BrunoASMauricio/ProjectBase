@@ -57,6 +57,7 @@ class SETTINGS(dict):
         self["branch"]        = project_args.branch
         self["exit"]          = project_args.exit
         self["single thread"] = project_args.single_thread
+        # Trailing unknown arguments
         self["action"] = action_args
 
     def save_persisted_settings(self):
