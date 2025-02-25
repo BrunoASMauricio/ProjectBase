@@ -200,6 +200,9 @@ def GetText(obj):
     # Non-function is ok to fail here
     return obj()
 
+def GetNow():
+    return str(datetime.now())
+
 def GetTime():
     current_datetime = datetime.now()
     return str(current_datetime.strftime("%m/%d/%Y %H:%M:%S"))
