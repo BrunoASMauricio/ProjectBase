@@ -1,7 +1,7 @@
-import datetime
+from data.common import GetNow
 
 def generate_local_branch(branch):
-    now = str(datetime.datetime.now()).replace(" ", "_").replace(":","_").replace(".","_").replace("-","_")
+    now = GetNow().replace(" ", "_").replace(":","_").replace(".","_").replace("-","_")
     return branch + "_ProjectBase_" + now
 """
 From: https://<git repo>/<path el 1>/<path el 2>/<path el 3>/<path el 4>
