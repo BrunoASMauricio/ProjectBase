@@ -2,8 +2,9 @@ from data.settings     import Settings
 from data.colors       import ColorFormat, Colors
 from data.common import RemoveEmpty, CLICenterString, RemoveSequentialDuplicates
 from data.git import GetRepoNameFromURL
-from processes.project import Project
-from processes.git     import GetAllGitRepos, GetRepoNameFromPath, RepoIsClean, CheckIfStatusIsClean
+from processes.project import Project, GetRelevantPath
+from processes.git     import GetAllGitRepos, GetRepoNameFromPath, RepoIsClean
+from processes.git     import CheckIfStatusIsClean, CheckIfStatusIsDiverged, CheckIfStatusIsAhead, CheckIfStatusIsBehind
 from processes.process import OpenBashOnDirectoryAndWait, RunOnFolders
 from processes.git_operations import RepoPull, RepoPush, RepoFetch, GetRepoStatus, GetRepositoryUrl, RepoCleanUntracked, RepoSaveChanges, RepoResetToLatestSync, RepoHardReset
 from menus.menu import GetNextOption
@@ -62,43 +63,97 @@ def DirectlyManageSingleRepository():
 def __AssembleReposStatusMessage(statuses):
     status_message = ""
     dirty = []
+    unsynced = []
     for path in statuses:
         status    = statuses[path]
         repo_url  = GetRepositoryUrl(path)
-        repo_name = GetRepoNameFromURL(repo_url)
+        relevant_path = ColorFormat(Colors.Grey, f"(at {GetRelevantPath(path)})")
+        repo_name = f"{GetRepoNameFromURL(repo_url)} {relevant_path}"
 
-        if CheckIfStatusIsClean(status):
-            status_message += ColorFormat(Colors.Green, repo_name + " is clean") + "\n"
+        status_message += "---"
+        status_message += repo_name + " is "
+
+        if CheckIfStatusIsDiverged(status):
+            status_message += ColorFormat(Colors.Magenta, "diverged (fix manually)")
+            unsynced.append(repo_name)
+        elif CheckIfStatusIsAhead(status):
+            status_message += ColorFormat(Colors.Blue, "ahead (fix with sync push)")
+            unsynced.append(repo_name)
+        elif CheckIfStatusIsBehind(status):
+            status_message += ColorFormat(Colors.Yellow, "behind (fix with sync pull)")
+            unsynced.append(repo_name)
         else:
-            status_message += "\n" + CLICenterString(" " + ColorFormat(Colors.Red, repo_name + " is dirty "), "=")
+            status_message += ColorFormat(Colors.Green, "synced")
+
+        status_message += " and "
+        if CheckIfStatusIsClean(status):
+            status_message += ColorFormat(Colors.Green, "clean")
+        else:
+            status_message += ColorFormat(Colors.Red, " dirty ")
+            status_message += "\n" + CLICenterString(" " + ColorFormat(Colors.Red, repo_name), ColorFormat(Colors.Red, "="))
             status_message += "\n\t" + path
             status_message += "\n\t" + ColorFormat(Colors.Yellow, status).replace("\n", "\n\t") + "\n\n"
-            status_message += "\n" + CLICenterString("", "=")
+            status_message += "\n" + CLICenterString("", ColorFormat(Colors.Red, "="))
             dirty.append(repo_name)
-    return dirty, status_message
+
+
+        status_message +=  "\n"
+
+    return dirty, unsynced, status_message
 
 def PrintProjectStatus():
     _, known_paths, unknown_paths = GetKnownAndUnknownGitRepos()
 
-    # print("\nManaged repositories:")
+    # Obtain status for known and unknown repos
     known_repo_status = RunOnFolders(known_paths, GetRepoStatus)
     known_repo_status = RemoveEmpty(known_repo_status)
 
-    # print("\nUnmanaged repositories:")
     unknown_repo_status = RunOnFolders(unknown_paths, GetRepoStatus)
     unknown_repo_status = RemoveEmpty(unknown_repo_status)
 
-    known_dirty,   known_repos_message   = __AssembleReposStatusMessage(known_repo_status)
-    unknown_dirty, unknown_repos_message = __AssembleReposStatusMessage(unknown_repo_status)
+    # Create and print status messages
+    known_dirty,   known_unsynced_repos, known_repos_message   = __AssembleReposStatusMessage(known_repo_status)
+    unknown_dirty, unknown_unsynced_repos, unknown_repos_message = __AssembleReposStatusMessage(unknown_repo_status)
 
+    print(CLICenterString(" Known Repos ", ColorFormat(Colors.Yellow, "=")))
+    print(f"\n{known_repos_message}")
+    print(CLICenterString("", ColorFormat(Colors.Yellow, "=")))
+
+    print()
+    print(CLICenterString(" Unknown Repos ", ColorFormat(Colors.Yellow, "=")))
+    print(f"\n{unknown_repos_message}")
+    print(CLICenterString("", ColorFormat(Colors.Yellow, "=")))
+
+    # Print project status
+    print()
+    print(CLICenterString(ColorFormat(Colors.Cyan, "Project Status"), "="))
+
+    def PrintDirty(message, repos):
+        if len(repos) == 0:
+            print(ColorFormat(Colors.Green, f"There are no {message} repos"))
+        elif len(repos) == 1:
+            print(ColorFormat(Colors.Red, f"There is 1 {message} repo: " + repos[0]))
+        else:
+            print(ColorFormat(Colors.Red, f"There are {len(repos)} {message} repos:" + '\n--'.join(repos)))
+
+    final_message =  "\nProject is "
     if len(known_dirty) == 0 and len(unknown_dirty) == 0:
-        print("\nProject is " + ColorFormat(Colors.Green, "clean"))
+        final_message += ColorFormat(Colors.Green, "clean")
     else:
-        print(f"\n{known_repos_message}")
-        print(f"\n{unknown_repos_message}")
-        print(ColorFormat(Colors.Red, f"there are {len(known_dirty)} dirty managed repos: {', '.join(known_dirty)}"))
-        if len(unknown_dirty) == 0:
-            print(CLICenterString(f" There are {len(unknown_dirty)} dirty unknown git repositories: {', '.join(unknown_dirty)}"))
+        final_message += ColorFormat(Colors.Red, "dirty")
+
+    final_message += " and "
+    if len(known_unsynced_repos) == 0 and len(unknown_unsynced_repos) == 0:
+        final_message += ColorFormat(Colors.Blue, "synced")
+    else:
+        final_message += ColorFormat(Colors.Yellow, "unsynced")
+    print(final_message)
+
+    PrintDirty("dirty managed", known_dirty)
+    PrintDirty("dirty unknown", unknown_dirty)
+    PrintDirty("unsynced managed", known_unsynced_repos)
+    PrintDirty("unsynced unknown", unknown_unsynced_repos)
+
 
 """
 Remove all uncommited (unsaved) files and folders
