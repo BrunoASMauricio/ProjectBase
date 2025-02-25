@@ -8,6 +8,7 @@ class Colors(Enum):
     Green = 4
     Cyan = 5
     Magenta = 6
+    Grey = 7
 
 color_dict = {
     Colors.Red: Fore.RED,
@@ -15,7 +16,8 @@ color_dict = {
     Colors.Yellow: Fore.YELLOW,
     Colors.Green: Fore.GREEN,
     Colors.Cyan: Fore.CYAN,
-    Colors.Magenta: Fore.MAGENTA
+    Colors.Magenta: Fore.MAGENTA,
+    Colors.Grey: Fore.LIGHTBLACK_EX
 }
 
 def ColorFormat(color, message):
