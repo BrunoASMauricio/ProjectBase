@@ -1,15 +1,16 @@
+import os
+import logging
+
 from data.settings import Settings, CLONE_TYPE
 from data.paths    import GetProjectPaths, JoinPaths
-from data.git      import GetRepoNameFromURL
+from data.git      import GetRepoNameFromURL, url_HTTPS_to_SSH, url_SSH_to_HTTPS
 from data.common   import LoadFromFile, DumpToFile
 
 from processes.repository     import LoadRepositories, Setup, Build
-from processes.process        import LaunchProcess
+from processes.process        import LaunchProcess,LaunchProcessAt
 from processes.git_operations import GetRepositoryUrl
 from processes.filesystem     import CreateDirectory
 from processes.run_linter     import CleanLinterFiles
-
-import logging
 
 """
 Performs operations on a project
@@ -97,6 +98,9 @@ class PROJECT(dict):
         return self.repositories
 
 Project = PROJECT()
+
+def GetRelevantPath(path):
+    return path.replace(Project.paths["project code"], "")
 
 def UserChooseProject():
     """
