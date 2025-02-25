@@ -1,7 +1,7 @@
 from data.settings     import Settings
 from data.colors       import ColorFormat, Colors
 from data.common import RemoveEmpty, CLICenterString, RemoveSequentialDuplicates
-from data.git import GetRepoNameFromURL
+from data.git import GetRepoNameFromURL, FlipUrl
 from processes.project import Project, GetRelevantPath
 from processes.git     import GetAllGitRepos, GetRepoNameFromPath, RepoIsClean
 from processes.git     import CheckIfStatusIsClean, CheckIfStatusIsDiverged, CheckIfStatusIsAhead, CheckIfStatusIsBehind
@@ -64,6 +64,7 @@ def __AssembleReposStatusMessage(statuses):
     status_message = ""
     dirty = []
     unsynced = []
+    repos = Project.GetRepositories()
     for path in statuses:
         status    = statuses[path]
         repo_url  = GetRepositoryUrl(path)
@@ -89,7 +90,16 @@ def __AssembleReposStatusMessage(statuses):
         if CheckIfStatusIsClean(status):
             status_message += ColorFormat(Colors.Green, "clean")
         else:
-            status_message += ColorFormat(Colors.Red, " dirty ")
+            # Symptom of not having standardized way to identify repos
+            # TODO: Remove this if after a proper ID is created/found
+            if FlipUrl(repo_url) in repos.keys():
+                repo_url = FlipUrl(repo_url)
+
+            if repo_url in repos.keys() and __RepoHasFlagSet(repos[repo_url], "no commit"):
+                    status_message += ColorFormat(Colors.Red, "dirty (with `no commit` flag set) ")
+            else:
+                status_message += ColorFormat(Colors.Red, "dirty ")
+
             status_message += "\n" + CLICenterString(" " + ColorFormat(Colors.Red, repo_name), ColorFormat(Colors.Red, "="))
             status_message += "\n\t" + path
             status_message += "\n\t" + ColorFormat(Colors.Yellow, status).replace("\n", "\n\t") + "\n\n"
@@ -115,14 +125,16 @@ def PrintProjectStatus():
     known_dirty,   known_unsynced_repos, known_repos_message   = __AssembleReposStatusMessage(known_repo_status)
     unknown_dirty, unknown_unsynced_repos, unknown_repos_message = __AssembleReposStatusMessage(unknown_repo_status)
 
-    print(CLICenterString(" Known Repos ", ColorFormat(Colors.Yellow, "=")))
-    print(f"\n{known_repos_message}")
-    print(CLICenterString("", ColorFormat(Colors.Yellow, "=")))
+    if len(known_repos_message) > 0:
+        print(CLICenterString(" Known Repos ", ColorFormat(Colors.Yellow, "=")))
+        print(f"\n{known_repos_message}")
+        print(CLICenterString("", ColorFormat(Colors.Yellow, "=")))
 
-    print()
-    print(CLICenterString(" Unknown Repos ", ColorFormat(Colors.Yellow, "=")))
-    print(f"\n{unknown_repos_message}")
-    print(CLICenterString("", ColorFormat(Colors.Yellow, "=")))
+    if len(unknown_repos_message) > 0:
+        print()
+        print(CLICenterString(" Unknown Repos ", ColorFormat(Colors.Yellow, "=")))
+        print(f"\n{unknown_repos_message}")
+        print(CLICenterString("", ColorFormat(Colors.Yellow, "=")))
 
     # Print project status
     print()
@@ -134,7 +146,7 @@ def PrintProjectStatus():
         elif len(repos) == 1:
             print(ColorFormat(Colors.Red, f"There is 1 {message} repo: " + repos[0]))
         else:
-            print(ColorFormat(Colors.Red, f"There are {len(repos)} {message} repos:" + '\n--'.join(repos)))
+            print(ColorFormat(Colors.Red, f"There are {len(repos)} {message} repos:") + "\n--" + '\n--'.join(repos))
 
     final_message =  "\nProject is "
     if len(known_dirty) == 0 and len(unknown_dirty) == 0:
