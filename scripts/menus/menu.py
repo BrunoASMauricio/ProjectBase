@@ -3,6 +3,8 @@ import sys
 import logging
 import traceback
 from enum import Enum
+
+from data.colors import ColorFormat, Colors
 from data.common import Assert, GetText, GetHost, GetTime
 from processes.auto_completer import CustomCompleter
 from data.settings import Settings
@@ -89,7 +91,7 @@ class Menu():
     def get_menu(self, depth):
         index = 1
         menu = GetText(self.prologue)
-        menu += f"({GetTime()})({GetHost()})\n"
+        menu += ColorFormat(Colors.Yellow, f"({GetTime()})({GetHost()})\n")
 
         for entry in self.entries:
             if entry[1] == EntryType.DYNAMIC:
