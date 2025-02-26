@@ -82,8 +82,14 @@ ProjectBase is licensed under GNU General Public License Version 3
 
 ## TODO
 
+Ordered by priority
+
 ### General
 - [X] Add abstraction similar to menu, but for multiple choice stuff (i.e. executable/test/project/single repo to manage operations)
+- [ ] Add "There have been errors, please check the logs at PATH" message for logged exceptions
+- [ ] Divide test results into their respective modules
+- [ ] Give warning if the same link (repository) has been checked out in different places
+- [ ] Add support for some documentation system (i.e. doxygen)
 - [ ] Add some statistics (i.e. baregit vs direct clone sizes and time delta between first and second project setups)
 - [ ] Revamp old "new repository" creation script
   - [ ] Automatically set as dependent of existing repos, and auto commit that change in them
@@ -93,30 +99,25 @@ ProjectBase is licensed under GNU General Public License Version 3
     - [ ] Default README?
     - [ ] Default example?
     - [ ] Use options (y/n/a yes/no/all)
-- [ ] Add support for some documentation system (i.e. doxygen)
 - [ ] Project metadata visualization (dependency tree, test amount and percentage of failures, ...)
-- [ ] Add "There have been errors, please check the logs at PATH" message for logged exceptions
 - [X] Add time (with seconds) to banner. Helps in knowing when we ran the last commands
 - [ ] Detect when ProjectBase was copy pasted into a different repository (messed up worktrees) and fix it
-- [ ] Inserting commands during other commands does not work, but it should be possible to chain commands using a separator like ';'
+- [ ] Inserting commands during other commands does not work, but it should be possible to chain commands using a separator like ';'. (unclear now on what todo here)
 - [X] Reset terminal after recovering control from external programs
 - [ ] ?Organize the binaries by either date or name (maybe hash and say last time changed?)?
 - [ ] Mass run valgrind
-  - [ ],Collect how many bytes are lost and how many different errors, per each test
+  - [ ] Collect how many bytes are lost and how many different errors, per each test
 - [ ] Fix completion
   - [ ] Current input counts for completion. i.e. '3 3 ' and then TAB would show the possible completions of menu 3.3 and not current menu
-- [ ] Divide test results into their respective modules
-- [ ] Give warning if the same link (repository) has been checked out in different places
 - [ ] Deal with projects that have no code (simple message stating nothing to do)
 - [ ] Modify how processes are called. Multiple attempts should not be necessary and are very error prone
 - [ ] Check config file on all config checks, dont cache
   - [ ] Special care with inherited configs
-- [ ] Overhaul handling of repositories by name/url/path. Use unique internal ID that can link to those three attributes
 
 ### Setup
 
-- [X] Figure out why loading takes so much time
-- [X] Allow to clean configuration
+- [X] Fix long loading times
+- [X] Allow to clean Project Base cache
 - [X] Separate loading from setup (loading loads the repos internally, setup forces a load and runs setup commands)
 - [ ] Improve detection of configuration change
 - [ ] Improve ability to change configs on the fly (without committing, pushing, deleting and recreating the project)
@@ -127,6 +128,7 @@ ProjectBase is licensed under GNU General Public License Version 3
   - [ ] module
   - [ ] globally
 - [ ] Add support for a configuration system (i.e. Kconfig)
+- [ ] Add support for a hardware description language (i.e. devicetree)
 - [ ] Investigate necessity/feasibility of sending strings into code
 - [ ] Add option for custom command to run on all repos
 - [ ] Allow public, private and test headers to be defined by each project. Or simply allow public and private, and tests have access to both?
@@ -134,8 +136,13 @@ ProjectBase is licensed under GNU General Public License Version 3
 ### Versioning
 - [X] In status, warn if there are dirty repos that will not be commited (have the no commit flag set)
 - [X] Add information on sync status in getting repo status
+- [ ] Toggle between project wide and specific repository operations
+- [ ] Allow two types of commits
+  - [ ] "fixed" commits (other word isencouraged) are normal commits
+  - [ ] "save" commits are temporary, and will be squashed into the next "fixed" commit
 - [ ] Find a way to identify repositories without using URLs (different URLs can point to the same repo)
       Use the X commit of the default branch?
+- [ ] Overhaul handling of repositories by name/url/path. Use unique internal ID that can link to those three attributes
 - [ ] Allow the review of code when add/commiting ?
       On push, allow per repo fix on conflict
 - [X] Warn exactly which repos are being comitted
@@ -147,9 +154,6 @@ ProjectBase is licensed under GNU General Public License Version 3
 - [ ] Periodically remove non-existing worktrees
 - [X] Add single repo manipulation by providing a semi-independent already in the relevant directory
 - [X] Improve detection of desync between baregit and upstream so push doesn't need to work on clean repos
-- [ ] Allow two types of commits
-  - [ ] "fixed" commits (other word isencouraged) are normal commits
-  - [ ] "save" commits are temporary, and will be squashed into the next "fixed" commit
 
 
 Configs that CAN NOT have variables
