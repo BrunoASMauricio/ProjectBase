@@ -105,7 +105,6 @@ Stages all changes, within the current directory and its subdirectories.
 def RepoSaveChanges(path, commit_message=None):
     try:
         ParseGitResult('git add -A; git commit -m "' + commit_message + '"', path)
-        print(f"Saved changes for {path}")
     except ProcessError as ex:
         ex.RaiseIfNotInOutput("nothing to commit, working tree clean")
 
