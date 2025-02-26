@@ -1,3 +1,5 @@
+import logging
+
 from processes.process import *
 from data.settings import Settings, CLONE_TYPE
 from data.common import RemoveSequentialDuplicates
