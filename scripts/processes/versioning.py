@@ -156,28 +156,25 @@ def PrintProjectStatus():
         if len(repos) == 0:
             print(ColorFormat(Colors.Green, f"There are no {message} repos"))
         elif len(repos) == 1:
-            print(ColorFormat(Colors.Red, f"There is 1 {message} repo: " + repos[0]))
+            print(ColorFormat(Colors.Red, f"There is 1 {message} repo: ") + repos[0])
         else:
             print(ColorFormat(Colors.Red, f"There are {len(repos)} {message} repos:") + "\n--" + '\n--'.join(repos))
 
-    final_message =  "\nProject is "
+    print("\n\tProject is ", end="")
     if len(known_dirty) == 0 and len(unknown_dirty) == 0:
-        final_message += ColorFormat(Colors.Green, "clean")
+        print(ColorFormat(Colors.Green, "clean"))
     else:
-        final_message += ColorFormat(Colors.Red, "dirty")
+        print(ColorFormat(Colors.Red, "dirty"))
+        PrintDirty("dirty managed", known_dirty)
+        PrintDirty("dirty unknown", unknown_dirty)
 
-    final_message += " and "
+    print("\n\tProject is ", end="")
     if len(known_desynced_repos) == 0 and len(unknown_desynced_repos) == 0:
-        final_message += ColorFormat(Colors.Blue, "synced")
+        print(ColorFormat(Colors.Blue, "synced"))
     else:
-        final_message += ColorFormat(Colors.Yellow, "desynced")
-    print(final_message)
-
-    PrintDirty("dirty managed", known_dirty)
-    PrintDirty("dirty unknown", unknown_dirty)
-    PrintDirty("desynced managed", known_desynced_repos)
-    PrintDirty("desynced unknown", unknown_desynced_repos)
-
+        print(ColorFormat(Colors.Yellow, "desynced"))
+        PrintDirty("desynced managed", known_desynced_repos)
+        PrintDirty("desynced unknown", unknown_desynced_repos)
 
 """
 Remove all uncommited (unsaved) files and folders
@@ -238,6 +235,7 @@ def GlobalFixedCommit():
         arguments.append({"path": path, "commit_message": commit_message, "oldest_commit": matching_commits[path][-1]})
 
     RunOnFolders(paths, SquashUntilSpecifiedCommit, arguments)
+
 
 def GlobalSave():
     commit_message = GetNextOption("[commit message <] ")
