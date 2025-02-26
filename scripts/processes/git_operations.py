@@ -117,10 +117,8 @@ def GetAllCommits(path):
     return ParseGitResult("git log --pretty='format:%H %s'", path)
 
 def RepoResetToLatestSync(path=None):
-    url = GetRepositoryUrl(path)
-    branch = GetRepoLocalBranch(path)
-    ParseGitResult("git reset --hard origin/" + branch, path)
+    branch = GetCurrentBranchsUpstream(path)
+    ParseGitResult(f"git reset --hard {branch}", path)
     if path == None:
         path = os.getcwd()
-    print("ON "+url+" resetting to origin/" + branch + " in "+path)
 
