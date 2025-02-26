@@ -151,7 +151,6 @@ def __RunOnFoldersThreadWrapper(callback, path, arguments = None):
     global operation_status
 
     try:
-        # print(arguments)
         if arguments == None:
             raise Exception("Arguments must not be None")
 
