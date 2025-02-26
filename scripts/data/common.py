@@ -2,9 +2,11 @@ import re
 import os
 import sys
 import shutil
+import curses
+import logging
+import traceback
 import difflib
 import unicodedata
-import curses
 
 from datetime import datetime
 import socket # for gethostname
@@ -13,6 +15,11 @@ import getpass # for getuser
 from data.paths import GetBasePaths
 from data.colors import ColorFormat, Colors
 from data.paths import CreateParentPath
+
+def ErrorCheckLogs(exception):
+    print("ERROR: Check logs at /tmp/project_base.log for more information")
+    logging.error(f"Uncaught exception: {type(exception)} {exception}")
+    logging.error(traceback.format_exc())
 
 def RemoveDuplicates(lst):
     return list(set(lst))

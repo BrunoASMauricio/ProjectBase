@@ -5,6 +5,7 @@ import traceback
 from enum import Enum
 
 from data.colors import ColorFormat, Colors
+from data.common import ErrorCheckLogs
 from data.common import Assert, GetText, GetHost, GetTime
 from processes.auto_completer import CustomCompleter
 from data.settings import Settings
@@ -207,11 +208,8 @@ class Menu():
                 sys.exit(0)
             except SystemExit as sys_ex:
                 raise sys_ex
-            except Exception as Ex:
-
-                print("ERROR: Check logs at /tmp/project_base.log for more information")
-                logging.error(f"Uncaught exception {exceptions_allowed}: {type(Ex)} {Ex}")
-                logging.error(traceback.format_exc())
+            except Exception as exception:
+                ErrorCheckLogs(exception)
 
                 if exceptions_allowed <= 0:
                     logging.critical("Too many exceptions in a row, halting")
