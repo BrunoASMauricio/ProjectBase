@@ -42,7 +42,7 @@ VersioningMenu.add_callback_entry("Project Status", PrintProjectStatus)
 # Print the merged commit history of the managed repositories in the project in a pager program, via a temporary file (maybe a pipe to ProjectBase?)
 # VersioningMenu.add_callback_entry("Get project commit history", None)
 # Normal add + commit
-VersioningMenu.add_callback_entry("Save changes", SaveMenu)
+VersioningMenu.add_submenu_entry("Save changes", SaveMenu)
 # Save all changes and auto commit them
 # VersioningMenu.add_callback_entry("Temporary save (automatic commit)", None)
 # Squash current changes with previous automatic commits, and commit with a message
