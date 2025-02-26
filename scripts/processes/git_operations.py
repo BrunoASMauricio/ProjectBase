@@ -95,9 +95,9 @@ def RepoPush(path = None):
 def GenAutoCommitMessage():
     return ""
 
-def SquashUntilSpecifiedCommit(commit_message, oldest_commit):
-    ParseGitResult(f"git reset --soft {oldest_commit}")
-    ParseGitResult(f"git commit -m {commit_message}")
+def SquashUntilSpecifiedCommit(path, commit_message, oldest_commit):
+    ParseGitResult(f"git reset --soft {oldest_commit}~1", path)
+    ParseGitResult(f"git commit -m '{commit_message}'", path)
 
 """
 Stages all changes, within the current directory and its subdirectories.
