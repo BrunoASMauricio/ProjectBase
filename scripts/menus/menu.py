@@ -16,9 +16,9 @@ class EntryType(Enum):
     MENU     = 2
     DYNAMIC  = 3
 
-def GetNextOption(prompt="[<] "):
+def GetNextOption(prompt = "[<] ", single_string = False):
     global ProjectArgs
-    
+
     if len(Settings["action"]) != 0:
         # Next automated action
         next_input = Settings["action"][0]
@@ -30,11 +30,13 @@ def GetNextOption(prompt="[<] "):
             raise EOFError
         next_input = input(prompt)
 
-        # Check if we received multiple commands
-        SplitInput = next_input.split(" ")
-        if len(SplitInput) > 1:
-            Settings["action"] += SplitInput[1:]
-            next_input = SplitInput[0]
+        # No request to keep input as single string (non split)
+        if not single_string:
+            # Check if we received multiple commands
+            SplitInput = next_input.split(" ")
+            if len(SplitInput) > 1:
+                Settings["action"] += SplitInput[1:]
+                next_input = SplitInput[0]
 
     return next_input
 
