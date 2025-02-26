@@ -1,12 +1,12 @@
-import re
-
 from data.settings     import Settings
 from data.colors       import ColorFormat, Colors
-from data.common import RemoveEmpty, CLICenterString, RemoveSequentialDuplicates, GetNow
+from data.common import RemoveEmpty, CLICenterString, RemoveSequentialDuplicates
 from data.git import GetRepoNameFromURL, FlipUrl
 from processes.project import Project, GetRelevantPath
 from processes.process import OpenBashOnDirectoryAndWait, RunOnFolders
-from processes.git_operations import RepoPull, RepoPush, RepoFetch, GetRepoStatus, GetRepositoryUrl, RepoCleanUntracked, RepoSaveChanges, RepoResetToLatestSync, RepoHardReset
+from processes.git_operations import RepoPull, RepoPush, RepoFetch, GetRepoStatus, GetRepositoryUrl
+from processes.git_operations import RepoCleanUntracked, RepoSaveChanges, RepoResetToLatestSync, RepoHardReset
+from processes.git_operations import SquashUntilSpecifiedCommit
 from menus.menu import GetNextOption
 from processes.repository import __RepoHasFlagSet
 from processes.git     import GetAllGitRepos, GetRepoNameFromPath, RepoIsClean
@@ -40,13 +40,21 @@ def DirectlyManageSingleRepository():
         new_entry = []
         path = all_paths[path_ind]
         path = RemoveSequentialDuplicates(path, "/")
-        message =  " ("
+
+        message = "\t"
+        if RepoIsClean(path):
+            message += ColorFormat(Colors.Green, "(clean)")
+        else:
+            message += ColorFormat(Colors.Red, "(dirty)")
+
+        message += "\t"
 
         if RepoIsClean(path):
-            message += ColorFormat(Colors.Green, "clean")
+            message = ColorFormat(Colors.Blue, "(synced)")
         else:
-            message += ColorFormat(Colors.Red, "dirty")
-        message += ") "
+            message = ColorFormat(Colors.Red, "(desynced)")
+
+        message += "\t"
 
         # Managed or Unmanaged
         if path in known_paths:
@@ -200,18 +208,35 @@ def GlobalFixedCommit():
     all_commits = RunOnAllManagedRepos(GetAllCommits)
 
     # Get initial commits in sequence that match temporary commit message
+    matching_commits = {}
     for path in all_commits.keys():
-        matching_commits = []
-        for hash_, msg in all_commits[path]:
-            if not re.search(f"^{TempCommitMessage}$", msg):
+        matching_commits[path] = []
+        # We get the commits in a single multi line string
+        all_commits[path] = all_commits[path].split('\n')
+
+        for commit in all_commits[path]:
+            hash, msg = commit.split(" ", 1)
+            if TempCommitMessage != msg:
                 break
-            matching_commits.append((hash_, msg))
+            matching_commits[path].append(hash)
 
-    print(matching_commits)
+        if len(matching_commits[path]) == 0:
+            del matching_commits[path]
+
+    paths = matching_commits.keys()
+    status_message = f"\nMerging in {len(paths)} repositories"
+    for path in paths:
+        status_message += f"\n\t* {len(matching_commits[path])} commits from {path.split("/")[-1]}"
+
+    print(status_message)
+    commit_message = GetNextOption("[ fixed commit message ][<] ")
+
+    arguments = []
+    for path in paths:
+        arguments.append({"commit_message": commit_message, "oldest_commit": matching_commits[path][-1]})
+
+    RunOnFolders(paths, SquashUntilSpecifiedCommit, arguments)
     # RunOnAllManagedRepos(RepoSaveChanges, {"commit_message":commit_message})
-
-    # commit_message = GetNextOption("[ commit message: ] ")
-    
 
 def GlobalSave():
     commit_message = GetNextOption("[commit message <] ")
