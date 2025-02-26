@@ -49,6 +49,9 @@ def GetRepoStatus(path = None):
 def GetRepoRemote(path = None):
     return ParseGitResult("git remote show", path)
 
+def GetCurrentBranchsUpstream(path = None):
+    return ParseGitResult("git for-each-ref --format='%(upstream:short)' $(git symbolic-ref -q HEAD)", path)
+
 def GetRepoDefaultBranch(path = None):
     remote = GetRepoRemote(path)
     default_branch = ParseGitResult("git remote show " + remote + " 2>/dev/null | sed -n '/HEAD branch/s/.*: //p'", path)
@@ -89,8 +92,10 @@ def RepoPull(path = None):
 def RepoPush(path = None):
     # Push to bare git
     ParseGitResult("git push", path)
-    # Push to remote server
-    ParseGitResult("git push origin HEAD:$(git for-each-ref --format='%(upstream:short)' $(git symbolic-ref -q HEAD))", path)
+
+    # Get remote branch name and push to it
+    upstream_branch_name = GetCurrentBranchsUpstream(path)
+    ParseGitResult(f"git push origin HEAD:$({upstream_branch_name})", path)
 
 def GenAutoCommitMessage():
     return ""
