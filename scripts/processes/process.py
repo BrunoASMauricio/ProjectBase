@@ -1,6 +1,5 @@
 import os
 import pty
-import logging
 import traceback
 import threading
 import subprocess
@@ -11,6 +10,7 @@ from data.settings import Settings
 from data.colors import ColorFormat, Colors
 from processes.progress_bar import PrintProgressBar
 from data.common import Abort, AppendToEnvVariable, RemoveControlCharacters, RemoveAnsiEscapeCharacters
+from data.common import ErrorCheckLogs
 
 #                           PROCESS OPERATIONS
 
@@ -150,12 +150,15 @@ def __RunOnFoldersThreadWrapper(callback, path, arguments={}):
     global operation_lock
     global operation_status
 
-    arguments["path"] = path
-    Result = callback(**arguments)
+    try:
+        arguments["path"] = path
+        Result = callback(**arguments)
 
-    operation_lock.acquire()
-    operation_status[path] = Result
-    operation_lock.release()
+        operation_lock.acquire()
+        operation_status[path] = Result
+        operation_lock.release()
+    except Exception as exception:
+        ErrorCheckLogs(exception)
 
 """
 For each path, change directory to it, execute the provided function with the
