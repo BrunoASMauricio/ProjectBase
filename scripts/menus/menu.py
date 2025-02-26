@@ -209,6 +209,7 @@ class Menu():
                 raise sys_ex
             except Exception as Ex:
 
+                print("ERROR: Check logs at /tmp/project_base.log for more information")
                 logging.error(f"Uncaught exception {exceptions_allowed}: {type(Ex)} {Ex}")
                 logging.error(traceback.format_exc())
 
