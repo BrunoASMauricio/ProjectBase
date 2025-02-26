@@ -3,7 +3,7 @@ import logging
 from time import sleep
 from data.git import GetRepoNameFromURL
 from processes.git import *
-from data.common import RemoveSequentialDuplicates, SetupTemplateScript
+from data.common import SetupTemplateScript
 from data.settings import Settings
 from data.json import dump_json_file, load_json_file
 from processes.repository_configs import LoadConfigs, MergeConfigs, ParseConfigs
@@ -23,7 +23,7 @@ def save_repos_to_cache(_repositories, path):
     repositories = _repositories
     dump_json_file(_repositories, path)
 
-def load_repos_from_cache(path):
+def LoadReposFromCache(path):
     global repositories
     repositories = load_json_file(path, {})
     return repositories
@@ -32,7 +32,7 @@ def set_detected_state_change():
     global StateChangedDetected
     StateChangedDetected = True
 
-def reset_detected_state_change():
+def ResetDetectedStateChange():
     global StateChangedDetected
     StateChangedDetected = False
 
@@ -159,8 +159,8 @@ def LoadRepositories(root_configs, cache_path):
     global dependencies
 
     root_repo_id = GetRepoId(root_configs)
-    reset_detected_state_change()
-    repositories = load_repos_from_cache(cache_path)
+    ResetDetectedStateChange()
+    repositories = LoadReposFromCache(cache_path)
 
     if len(repositories) == 0:
         repositories[root_repo_id] = root_configs
@@ -294,36 +294,36 @@ def __SetupCMake(repositories):
                 IncludeEntry = 'include("' + JoinPaths(repository["build path"], "CMakeLists.txt") + '")'
             ReposToBuild.append(IncludeEntry)
 
-            RepoCmakeLists = JoinPaths(repository["build path"], "CMakeLists.txt")
+            repo_cmake_lists = JoinPaths(repository["build path"], "CMakeLists.txt")
 
             if len(repository["private headers"]) > 0:
                 header_folders += [JoinPaths(repository["repo path"], x) for x in repository["public headers"]]
                 header_folders += [JoinPaths(repository["repo path"], x) for x in repository["private headers"]]
 
             # Check if there is already a CMakeLists and it isn't ours
-            if os.path.isfile(RepoCmakeLists):
-                CanDelete = False
-                with open(RepoCmakeLists) as f:
-                    Content = f.readlines()
+            if os.path.isfile(repo_cmake_lists):
+                can_delete = False
+                with open(repo_cmake_lists) as f:
+                    content = f.readlines()
 
-                if len(Content) > 0 and "# PROJECTBASE" in Content[0]:
-                    CanDelete = True
+                if len(content) > 0 and "# PROJECTBASE" in content[0]:
+                    can_delete = True
 
-                if CanDelete:
-                    os.unlink(RepoCmakeLists)
+                if can_delete:
+                    os.unlink(repo_cmake_lists)
 
-            TempObjectsToLink = [x for x in ObjectsToLink if x != repository["name"]+'_lib']
-            TestHeaders = [JoinPaths(repository["repo path"], Header) for Header in repository["test_headers"]]
-            if len(TestHeaders) > 0:
-                print("TestHeaders")
-                print(TestHeaders)
-            if not os.path.isfile(RepoCmakeLists):
-                SetupTemplateScript("repository/CMakeLists.txt", RepoCmakeLists, {
+            temp_objects_to_link = [x for x in ObjectsToLink if x != repository["name"]+'_lib']
+            test_headers = [JoinPaths(repository["repo path"], Header) for Header in repository["test_headers"]]
+            if len(test_headers) > 0:
+                print("test_headers")
+                print(test_headers)
+            if not os.path.isfile(repo_cmake_lists):
+                SetupTemplateScript("repository/CMakeLists.txt", repo_cmake_lists, {
                     "ADD_LIBRARY_TYPE": "",
                     "TARGET_INCLUDE_TYPE": "PUBLIC",
                     "INCLUDE_REPOSITORY_DIRECTORIES": '\n'.join(header_folders),
-                    "LINK_DEPENDENCIES": '\n'.join(TempObjectsToLink),
-                    "TEST_HEADER_INCLUDES": '\n'.join(TestHeaders),
+                    "LINK_DEPENDENCIES": '\n'.join(temp_objects_to_link),
+                    "TEST_HEADER_INCLUDES": '\n'.join(test_headers),
                     "REPO_SOURCES": repository["repo path"],
                     "REPO_NAME": repository["repo name"]
                 })
