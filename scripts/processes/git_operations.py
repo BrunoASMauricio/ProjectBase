@@ -106,7 +106,7 @@ def RepoSaveChanges(path, commit_message=None):
         ex.RaiseIfNotInOutput("nothing to commit, working tree clean")
 
 def GetAllCommits(path):
-    return ParseGitResult("git", "log", "--pretty=format:%H %s", path)
+    return ParseGitResult("git log --pretty='format:%H %s'", path)
 
 def RepoResetToLatestSync(path=None):
     url = GetRepositoryUrl(path)
