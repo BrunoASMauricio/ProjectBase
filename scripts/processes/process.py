@@ -146,12 +146,25 @@ def RunInThreadsWithProgress(run_callback, run_args, print_callback=None, print_
 
     Flushthread_log()
 
-def __RunOnFoldersThreadWrapper(callback, path, arguments={}):
+def __RunOnFoldersThreadWrapper(callback, path, arguments = None):
     global operation_lock
     global operation_status
 
     try:
+        # print(arguments)
+        if arguments == None:
+            raise Exception("Arguments must not be None")
+
+        # Different arguments per call?
+        if type(arguments) == type([]):
+            separate_arguments = arguments[0]
+            assert path == separate_arguments["path"]
+            del arguments[0]
+            arguments = separate_arguments
+            print(arguments)
+
         arguments["path"] = path
+
         Result = callback(**arguments)
 
         operation_lock.acquire()
