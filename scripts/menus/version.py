@@ -1,7 +1,7 @@
 from menus.menu import Menu
 from processes.versioning import DirectlyManageSingleRepository, PrintProjectStatus, CleanAllUnsaved, ResetToLatestSync, UndoChanges
 from processes.versioning import FetchAll, PullAll, PushAll
-from processes.versioning import GlobalFixedCommit, GlobalTemporaryCommit
+from processes.versioning import GlobalFixedCommit, GlobalTemporaryCommit, GetCurrentTemporaryCommits
 from processes.project import DeleteProject
 from data.colors import ColorFormat, Colors
 
@@ -9,6 +9,7 @@ from data.colors import ColorFormat, Colors
 SaveMenu = Menu("Save Menu")
 SaveMenu.add_callback_entry("Create global commit (squashes previous temporary commits)", GlobalFixedCommit)
 SaveMenu.add_callback_entry("Create global temporary commit", GlobalTemporaryCommit)
+SaveMenu.add_callback_entry("View current temporary commits", GetCurrentTemporaryCommits)
 # GlobalSave
 # SaveMenu.add_callback_entry("Stash global state", None)
 # SaveMenu.add_callback_entry("See global stash", None)
