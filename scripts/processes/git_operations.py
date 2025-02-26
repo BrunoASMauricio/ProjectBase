@@ -1,11 +1,11 @@
 import os
-from processes.process import MultipleCDLaunch, ProcessError
+from processes.process import ProcessError, ParseProcessResponse, LaunchProcessAt
 from data.common import IsEmpty
 
 def ParseGitResult(git_command, path):
     if path == None:
         path = os.getcwd()
-    return MultipleCDLaunch(git_command, path, False, 1)
+    return ParseProcessResponse(LaunchProcessAt(git_command, path, False))
 
 # ================= GET operations =================
 
