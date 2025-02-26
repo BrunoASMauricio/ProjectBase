@@ -320,31 +320,6 @@ def LaunchProcessAt(Command, Path="", to_print=False):
 
     return ReturnValue
 
-"""
-Changes to the given directory, launches the Command in a forked process and
-returns the parsed stdout.
-While the "stdout" Returned is empty, tries again
-"""
-def MultipleCDLaunch(Command, Path, to_print, Attempts=3):
-    i = 0
-    Output = None
-    ThrownException = None
-    while (Output == None or Output == "") and i < Attempts:
-        try:
-            Output = ParseProcessResponse(LaunchProcessAt(Command, Path, to_print))
-        except Exception as ex:
-            Output = None
-            ThrownException = ex
-        i += 1
-
-    if Output == None:
-        if ThrownException != None:
-            # logging.error("MultipleCDLaunch(" + Command + ") exception with: " + str(ThrownException))
-            # logging.error(traceback.format_exc())
-            raise ThrownException
-
-    return Output
-
 def PrepareExecEnvironment():
     AppendToEnvVariable("PYTHONPATH",       Settings["paths"]["scripts"])
     AppendToEnvVariable("PB_ROOT_NAME",     Settings["name"])
