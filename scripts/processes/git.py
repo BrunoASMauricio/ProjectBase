@@ -243,6 +243,9 @@ def CheckIfStatusIsAhead(status):
 def CheckIfStatusIsBehind(status):
     return "branch is behind" in status
 
+def CheckIfStatusIsUpToDate(status):
+    return "up to date" in status
+
 def RepoIsClean(path):
     return CheckIfStatusIsClean(GetRepoStatus(path))
 
