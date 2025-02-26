@@ -195,20 +195,16 @@ def PushAll():
     RunOnAllManagedRepos(RepoPush)
 
 TempCommitMessage = "==== Temporary ProjectBase save commit (to be squashed into a fixed commit) ===="
-def GlobalTemporaryCommit():
-    global TempCommitMessage
-    commit_message = f"{TempCommitMessage}"
-    RunOnAllManagedRepos(RepoSaveChanges, {"commit_message":commit_message})
 
-def GlobalFixedCommit():
+def __GetCurrentTemporaryCommits():
     global TempCommitMessage
     # Get all commits: 
     all_commits = RunOnAllManagedRepos(GetAllCommits)
 
     # Get initial commits in sequence that match temporary commit message
-    matching_commits = {}
+    temporary_commmits = {}
     for path in all_commits.keys():
-        matching_commits[path] = []
+        temporary_commmits[path] = []
         # We get the commits in a single multi line string
         all_commits[path] = all_commits[path].split('\n')
 
@@ -216,15 +212,38 @@ def GlobalFixedCommit():
             hash, msg = commit.split(" ", 1)
             if TempCommitMessage != msg:
                 break
-            matching_commits[path].append(hash)
+            temporary_commmits[path].append(hash)
 
-        if len(matching_commits[path]) == 0:
-            del matching_commits[path]
+        if len(temporary_commmits[path]) == 0:
+            del temporary_commmits[path]
 
-    paths = matching_commits.keys()
+    return temporary_commmits
+
+def GlobalTemporaryCommit():
+    global TempCommitMessage
+
+    def CountTemporaryCommits(temporary_commmits):
+        total = 0
+        for path in temporary_commmits.keys():
+            total += len(temporary_commmits[path])
+        return total
+
+    temporary_commmits = __GetCurrentTemporaryCommits()
+    print(f"\nCurrent amount of temporary commits: {CountTemporaryCommits(temporary_commmits)}")
+
+    commit_message = f"{TempCommitMessage}"
+    RunOnAllManagedRepos(RepoSaveChanges, {"commit_message":commit_message})
+
+    temporary_commmits = __GetCurrentTemporaryCommits()
+    print(f"\nNew amount of temporary commits: {CountTemporaryCommits(temporary_commmits)}")
+
+def GlobalFixedCommit():
+    temporary_commmits = __GetCurrentTemporaryCommits()
+    paths = temporary_commmits.keys()
     status_message = f"\nMerging in {len(paths)} repositories"
+
     for path in paths:
-        status_message += f"\n\t* {len(matching_commits[path])} commits from {path.split("/")[-1]}"
+        status_message += f"\n\t* {len(temporary_commmits[path])} commits from {path.split("/")[-1]}"
 
     print(status_message)
     commit_message = GetNextOption("[ fixed commit message ][<] ", True)
@@ -232,10 +251,21 @@ def GlobalFixedCommit():
 
     arguments = []
     for path in paths:
-        arguments.append({"path": path, "commit_message": commit_message, "oldest_commit": matching_commits[path][-1]})
+        arguments.append({"path": path, "commit_message": commit_message, "oldest_commit": temporary_commmits[path][-1]})
 
     RunOnFolders(paths, SquashUntilSpecifiedCommit, arguments)
 
+def GetCurrentTemporaryCommits():
+    temporary_commmits = __GetCurrentTemporaryCommits()
+    paths = temporary_commmits.keys()
+
+    if len(paths) > 0:
+        status_message = f"\nTemporary commits found in {len(paths)} repositories"
+        for path in paths:
+            status_message += f"\n\t* {len(temporary_commmits[path])} commits from {path.split("/")[-1]}"
+        print(status_message)
+    else:
+        print("\nNo temporary commits found")
 
 def GlobalSave():
     commit_message = GetNextOption("[commit message <] ")
