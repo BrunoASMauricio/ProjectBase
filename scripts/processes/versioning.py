@@ -74,7 +74,7 @@ def DirectlyManageSingleRepository():
 def __AssembleReposStatusMessage(statuses):
     status_message = ""
     dirty = []
-    unsynced = []
+    desynced = []
     repos = Project.GetRepositories()
     for path in statuses:
         status    = statuses[path]
@@ -87,13 +87,13 @@ def __AssembleReposStatusMessage(statuses):
 
         if CheckIfStatusIsDiverged(status):
             status_message += ColorFormat(Colors.Magenta, "diverged (fix manually)")
-            unsynced.append(repo_name)
+            desynced.append(repo_name)
         elif CheckIfStatusIsAhead(status):
             status_message += ColorFormat(Colors.Blue, "ahead (fix with sync push)")
-            unsynced.append(repo_name)
+            desynced.append(repo_name)
         elif CheckIfStatusIsBehind(status):
             status_message += ColorFormat(Colors.Yellow, "behind (fix with sync pull)")
-            unsynced.append(repo_name)
+            desynced.append(repo_name)
         else:
             status_message += ColorFormat(Colors.Green, "synced")
 
@@ -120,7 +120,7 @@ def __AssembleReposStatusMessage(statuses):
 
         status_message +=  "\n"
 
-    return dirty, unsynced, status_message
+    return dirty, desynced, status_message
 
 def PrintProjectStatus():
     _, known_paths, unknown_paths = GetKnownAndUnknownGitRepos()
@@ -133,8 +133,8 @@ def PrintProjectStatus():
     unknown_repo_status = RemoveEmpty(unknown_repo_status)
 
     # Create and print status messages
-    known_dirty,   known_unsynced_repos, known_repos_message   = __AssembleReposStatusMessage(known_repo_status)
-    unknown_dirty, unknown_unsynced_repos, unknown_repos_message = __AssembleReposStatusMessage(unknown_repo_status)
+    known_dirty,   known_desynced_repos, known_repos_message   = __AssembleReposStatusMessage(known_repo_status)
+    unknown_dirty, unknown_desynced_repos, unknown_repos_message = __AssembleReposStatusMessage(unknown_repo_status)
 
     if len(known_repos_message) > 0:
         print(CLICenterString(" Known Repos ", ColorFormat(Colors.Yellow, "=")))
@@ -166,16 +166,16 @@ def PrintProjectStatus():
         final_message += ColorFormat(Colors.Red, "dirty")
 
     final_message += " and "
-    if len(known_unsynced_repos) == 0 and len(unknown_unsynced_repos) == 0:
+    if len(known_desynced_repos) == 0 and len(unknown_desynced_repos) == 0:
         final_message += ColorFormat(Colors.Blue, "synced")
     else:
-        final_message += ColorFormat(Colors.Yellow, "unsynced")
+        final_message += ColorFormat(Colors.Yellow, "desynced")
     print(final_message)
 
     PrintDirty("dirty managed", known_dirty)
     PrintDirty("dirty unknown", unknown_dirty)
-    PrintDirty("unsynced managed", known_unsynced_repos)
-    PrintDirty("unsynced unknown", unknown_unsynced_repos)
+    PrintDirty("desynced managed", known_desynced_repos)
+    PrintDirty("desynced unknown", unknown_desynced_repos)
 
 
 """
