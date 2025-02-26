@@ -9,8 +9,8 @@ from processes.git_operations import RepoCleanUntracked, RepoSaveChanges, RepoRe
 from processes.git_operations import SquashUntilSpecifiedCommit
 from menus.menu import GetNextOption
 from processes.repository import __RepoHasFlagSet
-from processes.git     import GetAllGitRepos, GetRepoNameFromPath, RepoIsClean
-from processes.git     import CheckIfStatusIsClean, CheckIfStatusIsDiverged, CheckIfStatusIsAhead, CheckIfStatusIsBehind
+from processes.git     import GetAllGitRepos, GetRepoNameFromPath
+from processes.git     import CheckIfStatusIsClean, CheckIfStatusIsDiverged, CheckIfStatusIsAhead, CheckIfStatusIsBehind, CheckIfStatusIsUpToDate
 from processes.git     import GetAllCommits
 
 def GetKnownAndUnknownGitRepos():
@@ -41,18 +41,19 @@ def DirectlyManageSingleRepository():
         path = all_paths[path_ind]
         path = RemoveSequentialDuplicates(path, "/")
 
+        status = GetRepoStatus(path)
         message = "\t"
-        if RepoIsClean(path):
+        if CheckIfStatusIsClean(status):
             message += ColorFormat(Colors.Green, "(clean)")
         else:
             message += ColorFormat(Colors.Red, "(dirty)")
 
         message += "\t"
 
-        if RepoIsClean(path):
-            message = ColorFormat(Colors.Blue, "(synced)")
+        if CheckIfStatusIsUpToDate(status):
+            message += ColorFormat(Colors.Blue, "(synced)")
         else:
-            message = ColorFormat(Colors.Red, "(desynced)")
+            message += ColorFormat(Colors.Red, "(desynced)")
 
         message += "\t"
 
@@ -229,14 +230,14 @@ def GlobalFixedCommit():
         status_message += f"\n\t* {len(matching_commits[path])} commits from {path.split("/")[-1]}"
 
     print(status_message)
-    commit_message = GetNextOption("[ fixed commit message ][<] ")
+    commit_message = GetNextOption("[ fixed commit message ][<] ", True)
+    print(commit_message)
 
     arguments = []
     for path in paths:
-        arguments.append({"commit_message": commit_message, "oldest_commit": matching_commits[path][-1]})
+        arguments.append({"path": path, "commit_message": commit_message, "oldest_commit": matching_commits[path][-1]})
 
     RunOnFolders(paths, SquashUntilSpecifiedCommit, arguments)
-    # RunOnAllManagedRepos(RepoSaveChanges, {"commit_message":commit_message})
 
 def GlobalSave():
     commit_message = GetNextOption("[commit message <] ")
