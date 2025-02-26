@@ -86,7 +86,7 @@ Ordered by priority
 
 ### General
 - [X] Add abstraction similar to menu, but for multiple choice stuff (i.e. executable/test/project/single repo to manage operations)
-- [ ] Add "There have been errors, please check the logs at PATH" message for logged exceptions
+- [X] Add "There have been errors, please check the logs at PATH" message for logged exceptions
 - [ ] Divide test results into their respective modules
 - [ ] Give warning if the same link (repository) has been checked out in different places
 - [ ] Add support for some documentation system (i.e. doxygen)
@@ -110,7 +110,7 @@ Ordered by priority
 - [ ] Fix completion
   - [ ] Current input counts for completion. i.e. '3 3 ' and then TAB would show the possible completions of menu 3.3 and not current menu
 - [ ] Deal with projects that have no code (simple message stating nothing to do)
-- [ ] Modify how processes are called. Multiple attempts should not be necessary and are very error prone
+- [X] Modify how processes are called. Multiple attempts should not be necessary and are very error prone
 - [ ] Check config file on all config checks, dont cache
   - [ ] Special care with inherited configs
 
@@ -137,12 +137,12 @@ Ordered by priority
 - [X] In status, warn if there are dirty repos that will not be commited (have the no commit flag set)
 - [X] Add information on sync status in getting repo status
 - [ ] Toggle between project wide and specific repository operations
-- [ ] Allow two types of commits
-  - [ ] "fixed" commits (other word isencouraged) are normal commits
-  - [ ] "save" commits are temporary, and will be squashed into the next "fixed" commit
+- [X] Allow two types of commits
+  - [X] "fixed" commits (other word isencouraged) are normal commits
+  - [X] "save" commits are temporary, and will be squashed into the next "fixed" commit
 - [ ] Find a way to identify repositories without using URLs (different URLs can point to the same repo)
       Use the X commit of the default branch?
-- [ ] Overhaul handling of repositories by name/url/path. Use unique internal ID that can link to those three attributes
+  - [ ] Overhaul handling of repositories by name/url/path. Use unique internal ID that can link to those three attributes
 - [ ] Allow the review of code when add/commiting ?
       On push, allow per repo fix on conflict
 - [X] Warn exactly which repos are being comitted
