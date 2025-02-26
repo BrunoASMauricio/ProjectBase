@@ -200,7 +200,7 @@ class Menu():
                 exceptions_allowed = 5
 
             except KeyboardInterrupt:
-                print("\nCtrl+C exits running operations. Press Ctrl+D to back out of ProjectBase")
+                print("\nCtrl+C interrupts running operations and enter goes to the previous menu. Press Ctrl+D to back out of ProjectBase")
                 continue
             except EOFError:
                 # Ctrl+D
