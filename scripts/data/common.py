@@ -104,6 +104,10 @@ Default is returned if it does not exist
 """
 def GetValueOrDefault(dict, name, default = None):
     if name in dict.keys():
+        # If there is a default value, enforce the type is the same to the
+        # existing value
+        if default != None and type(default) != type(dict[name]):
+            raise Exception(f"Incorrect type \"{type(dict[name])}\" for value named {name}. Should be {type(default)}")
         return dict[name]
     return default
 
