@@ -18,7 +18,9 @@ unset(src_path)
 unset(header_path)
 unset(REPO_CODE_PATH)
 unset(REPO_PATH)
-unset(DEPENDENCY_HEADER_INCLUDES)
+unset(PUBLIC_HEADERS)
+unset(PRIVATE_HEADERS)
+unset(TEST_HEADERS)
 unset(DEPENDENCY_LIBS)
 unset(EXECUTABLES)
 unset(REP_C_FLAGS)
@@ -26,15 +28,23 @@ unset(CUSTOM_C_FLAGS)
 unset(REP_DEBUG_C_FLAGS)
 unset(REP_RELEASE_C_FLAGS)
 
-###Setup useful variables
+### Setup useful variables
 SET(src_path $$REPO_SOURCES$$/code/source)
 SET(header_path $$REPO_SOURCES$$/code/headers)
 SET(REPO_CODE_PATH $$REPO_SOURCES$$/code)
 SET(REPO_PATH $$REPO_SOURCES$$)
 SET(REPO_NAME $$REPO_NAME$$)
 
-SET(DEPENDENCY_HEADER_INCLUDES
-$$INCLUDE_REPOSITORY_DIRECTORIES$$
+SET(PUBLIC_HEADERS
+$$PUBLIC_INCLUDES$$
+)
+
+SET(PRIVATE_HEADERS
+$$PRIVATE_INCLUDES$$
+)
+
+SET(TEST_HEADERS
+$$TESTS_INCLUDES$$
 )
 
 SET(DEPENDENCY_LIBS
@@ -89,7 +99,8 @@ if(EXISTS $$REPO_SOURCES$$/configs/CMakeLists.txt)
 		### Include dependency repository directories 
 		target_include_directories(${EXECUTABLE}
 			PUBLIC
-			${DEPENDENCY_HEADER_INCLUDES}
+			${PUBLIC_HEADERS}
+			${PRIVATE_HEADERS}
 		)
 
 		### Link executable to dependency repositories
@@ -116,8 +127,9 @@ if(EXISTS $$REPO_SOURCES$$/configs/CMakeLists.txt)
 		### Include dependency repository directories 
 		target_include_directories(${TEST}
 			PUBLIC
-			${DEPENDENCY_HEADER_INCLUDES}
-			$$TEST_HEADER_INCLUDES$$
+			${PUBLIC_HEADERS}
+			${PRIVATE_HEADERS}
+			${TEST_HEADERS}
 		)
 
 		### Link executable to dependency repositories

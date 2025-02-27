@@ -282,7 +282,6 @@ def __SetupCMake(repositories):
     # sys.exit(0)
     for repo_id in repositories:
         try:
-            header_folders = public_header_folders.copy()
             repository = repositories[repo_id]
             if __RepoHasFlagSet(repository, "no auto build"):
                 continue
@@ -296,9 +295,20 @@ def __SetupCMake(repositories):
 
             repo_cmake_lists = JoinPaths(repository["build path"], "CMakeLists.txt")
 
+            public_headers  = public_header_folders.copy()
+            if len(repository["public headers"]) > 0:
+                public_headers += [JoinPaths(repository["repo path"], x) for x in repository["public headers"]]
+
+            private_headers = []
             if len(repository["private headers"]) > 0:
-                header_folders += [JoinPaths(repository["repo path"], x) for x in repository["public headers"]]
-                header_folders += [JoinPaths(repository["repo path"], x) for x in repository["private headers"]]
+                private_headers += [JoinPaths(repository["repo path"], x) for x in repository["private headers"]]
+
+            test_headers = []
+            if len(repository["test headers"]) > 0:
+                if "network" in repo_id:
+                    logging.error(repo_id)
+                    logging.error("YEEEYAH2 " + str(repository["test headers"]))
+                test_headers += [JoinPaths(repository["repo path"], x) for x in repository["test headers"]]
 
             # Check if there is already a CMakeLists and it isn't ours
             if os.path.isfile(repo_cmake_lists):
@@ -313,17 +323,14 @@ def __SetupCMake(repositories):
                     os.unlink(repo_cmake_lists)
 
             temp_objects_to_link = [x for x in ObjectsToLink if x != repository["name"]+'_lib']
-            test_headers = [JoinPaths(repository["repo path"], Header) for Header in repository["test_headers"]]
-            if len(test_headers) > 0:
-                print("test_headers")
-                print(test_headers)
             if not os.path.isfile(repo_cmake_lists):
                 SetupTemplateScript("repository/CMakeLists.txt", repo_cmake_lists, {
                     "ADD_LIBRARY_TYPE": "",
                     "TARGET_INCLUDE_TYPE": "PUBLIC",
-                    "INCLUDE_REPOSITORY_DIRECTORIES": '\n'.join(header_folders),
+                    "PUBLIC_INCLUDES":  '\n'.join(public_headers),
+                    "PRIVATE_INCLUDES": '\n'.join(private_headers),
+                    "TESTS_INCLUDES":   '\n'.join(test_headers),
                     "LINK_DEPENDENCIES": '\n'.join(temp_objects_to_link),
-                    "TEST_HEADER_INCLUDES": '\n'.join(test_headers),
                     "REPO_SOURCES": repository["repo path"],
                     "REPO_NAME": repository["repo name"]
                 })

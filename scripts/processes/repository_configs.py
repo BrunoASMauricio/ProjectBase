@@ -126,22 +126,46 @@ def LoadConfigs(current_repo_path):
 
     basic_headers = ["headers", "inc", "include"]
 
-    # Headers to include when linking against this repository (or compiling as part of it)
-    public_headers = []
-    for header in basic_headers:
-        public_headers.append("code/" + header)
-        public_headers.append(header)
-    __FindRepoFolders(current_repo_path, configs, "public headers", public_headers)
-
     # Headers to include when compiling as part of this repository
-    private_headers = []
-    private_headers.append("code/")
-    private_headers.append("code/source")
-    for header in basic_headers:
-        private_headers.append("tests/" + header)
-        private_headers.append("execs/" + header)
-        private_headers.append("execs/tests/" + header)
-    __FindRepoFolders(current_repo_path, configs, "private headers", private_headers)
+    private_headers = GetValueOrDefault(configs, "private headers", [])
+    public_headers  = GetValueOrDefault(configs, "public headers", [])
+    test_headers    = GetValueOrDefault(configs, "test headers", [])
+
+    # logging.error(current_repo_path)
+    if "SubSystems/Network" in current_repo_path:
+        logging.error("configs")
+        logging.error(current_repo_path)
+        logging.error(configs)
+        logging.error(test_headers)
+    # Headers to include when linking against this repository (or compiling as part of it)
+
+    if len(public_headers) == 0:
+        for header in basic_headers:
+            public_headers.append("code/" + header)
+            public_headers.append(header)
+        __FindRepoFolders(current_repo_path, configs, "public headers", public_headers)
+
+    if len(private_headers) == 0:
+        private_headers.append("code/")
+        private_headers.append("code/source")
+        for header in basic_headers:
+            private_headers.append("execs/" + header)
+        __FindRepoFolders(current_repo_path, configs, "private headers", private_headers)
+
+    if len(test_headers) == 0:
+        test_headers.append("tests/")
+        test_headers.append("tests/source")
+        for header in basic_headers:
+            test_headers.append("tests/" + header)
+            test_headers.append("execs/tests/" + header)
+        __FindRepoFolders(current_repo_path, configs, "test headers", test_headers)
+    else:
+        logging.error("YEEEYAH " + str(test_headers))
+
+    configs["private headers"] = private_headers
+    configs["public headers"]  = public_headers
+    configs["test headers"]    = test_headers
+
 
     configs["local path"] = GetValueOrDefault(configs, "local path", Settings["paths"]["default local path"])
     # configs["local path"] = GetValueOrDefault(configs, "local path", Settings["paths"]["general repository"])
