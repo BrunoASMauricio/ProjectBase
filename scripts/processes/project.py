@@ -22,10 +22,13 @@ Is represented by a simple dictionary
 """
 class PROJECT(dict):
     # Load constant and known variables
+    def ResetRepositories(self):
+        self.repositories = {}
+
     def init(self):
+        self.ResetRepositories()
 
         self.name = GetRepoNameFromURL(Settings["url"])
-        self.repositories = {}
         self.paths = GetProjectPaths(self.name)
 
         # Check and generate project structure if necessary
@@ -71,7 +74,7 @@ class PROJECT(dict):
         Setup(self.GetRepositories())
         logging.info("Finished setting up project")
         print("Finished setting up project")
-    
+
     def build(self):
         logging.info("Building project")
 
@@ -88,7 +91,7 @@ class PROJECT(dict):
         CMakeCommand += ' -- -j $(nproc)'
 
         Build(self.GetRepositories(), CMakeCommand)
-    
+
     def SetCloneType(self, clone_type):
         repos = self.GetRepositories()
         for url_id in repos:
@@ -194,4 +197,5 @@ def DeleteProject():
 
 def CleanPBCache():
     global Project
-    logging.error(Project.cache_path)
+    LaunchVerboseProcess("rm -rf " + Project.cache_path)
+    Project.ResetRepositories()
