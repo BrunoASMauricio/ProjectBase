@@ -18,7 +18,7 @@ dependencies = {}
 repositories = None
 StateChangedDetected = False
 
-def save_repos_to_cache(_repositories, path):
+def SaveReposToCache(_repositories, path):
     global repositories
     repositories = _repositories
     dump_json_file(_repositories, path)
@@ -28,7 +28,7 @@ def LoadReposFromCache(path):
     repositories = load_json_file(path, {})
     return repositories
 
-def set_detected_state_change():
+def SetDetectedStateChange():
     global StateChangedDetected
     StateChangedDetected = True
 
@@ -36,7 +36,7 @@ def ResetDetectedStateChange():
     global StateChangedDetected
     StateChangedDetected = False
 
-def detected_state_changed():
+def DetectedStateChanged():
     global StateChangedDetected
     return StateChangedDetected
 
@@ -63,11 +63,11 @@ def __LoadRepositoryFolder(imposed_configs):
         current_local_path  = FindGitRepo(repository["full worktree path"], imposed_configs["url"], imposed_configs["commitish"], depth=1)
         if current_local_path == None:
             logging.warning("Repo " + imposed_configs["name"] + " is not in the expected path of: " + repository["full worktree path"])
-            set_detected_state_change()
+            SetDetectedStateChange()
             # Delete previous data. Cant trust it
             del repositories[repo_id]
     else:
-        set_detected_state_change()
+        SetDetectedStateChange()
 
     # Repo path unknown, or not where expected. Find repository
     if current_local_path == None:
@@ -85,7 +85,7 @@ def __LoadRepositoryFolder(imposed_configs):
         CreateDirectory(expected_local_path)
         MoveWorkTree(repository["bare path"], repository["url"], repository["commitish"], helper_path, expected_local_path)
         current_local_path = expected_local_path
-        set_detected_state_change()
+        SetDetectedStateChange()
 
     else: # Repository present at current_local_path
         # logging.debug("Repo " + imposed_configs["name"] + " found at " + current_local_path)
@@ -99,7 +99,7 @@ def __LoadRepositoryFolder(imposed_configs):
             logging.warning("Repository not in expected place (at \"" + current_local_path + "\" instead of \"" + repo_path + "\"). Moving it")
             MoveWorkTree(repository["bare path"], repository["url"], repository["commitish"], current_local_path, repo_path)
             current_local_path = repo_path
-            set_detected_state_change()
+            SetDetectedStateChange()
         current_local_path = expected_local_path
 
     # repository dict exists containing configs, repo is at current_local_path and congruent with the path requested in configs
@@ -196,15 +196,15 @@ def LoadRepositories(root_configs, cache_path):
             if repo_id not in repositories:
                 repositories[repo_id] = dep_configs
                 repositories[repo_id]["reloaded"] = False
-                set_detected_state_change()
+                SetDetectedStateChange()
                 unloaded += 1
         dependencies.clear()
         PrintProgressBar(len(repositories), len(repositories), prefix = 'Loading Repositories:', suffix = "Loaded " + str(len(repositories)) + "/" + str(len(repositories)) + " Repositories")
         print("\nFinished dependency round")
 
-    if detected_state_changed():
+    if DetectedStateChanged():
         logging.debug("SAVING "+str(len(repositories))+" repositories in cache")
-        save_repos_to_cache(repositories, cache_path)
+        SaveReposToCache(repositories, cache_path)
     return repositories
 
 
