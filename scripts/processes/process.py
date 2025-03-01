@@ -26,7 +26,7 @@ def AddTothreadLog(message):
     global thread_log_lock
 
     with thread_log_lock:
-        thread_log += f"({GetThreadId()}) {message}"
+        thread_log += f"({GetThreadId()}) {message}\n"
 
 def ClearThreadLog():
     global thread_log
@@ -89,7 +89,7 @@ def ThreadWrapper(run_callback, run_arg):
     except Exception as ex:
         # Store exception in log, but don't print it just yet
         # Ctrl+C will create exceptions on all threads, so those logs must be cleared and not printed
-        AddTothreadLog(str(ex))
+        AddTothreadLog(f"{ex}\n{"="*30}\nStack trace:\n\n{traceback.format_exc()}{"="*30}\n")
 
 """
 Run run_callback in a separate thread for each argument in run_args (which is also passed to that thread)
