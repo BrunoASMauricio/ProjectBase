@@ -33,7 +33,6 @@ def __FindRepoFolders(current_repo_path, configs, name, default_folders):
         # If present as string, change to list
         configs[name] = [configs[name]]
 
-
 # Replace known variables (surrounded with '$$') by the known values
 def __ParseVariables(data, variable_data):
     for name, value in variable_data.items():
@@ -201,33 +200,36 @@ def LoadConfigs(current_repo_path):
     configs["configs path"] = configs_path
 
     # TODO: Remove this after all repos have _ replaced with spaces
-    # print(configs)
     configs = TEMP_fix_configs(configs)
-    # print(configs)
 
     basic_headers = ["headers", "inc", "include"]
 
-    # Headers to include when compiling as part of this repository
+    # TODO: Generalize 3 cases below into a single function
     private_headers = GetValueOrDefault(configs, "private headers", [])
     public_headers  = GetValueOrDefault(configs, "public headers", [])
     test_headers    = GetValueOrDefault(configs, "test headers", [])
 
-    # logging.error(current_repo_path)
-    # Headers to include when linking against this repository (or compiling as part of it)
-
+    # If no headers specified, attempt to auto detect
     if len(public_headers) == 0:
         for header in basic_headers:
             public_headers.append("code/" + header)
             public_headers.append(header)
         __FindRepoFolders(current_repo_path, configs, "public headers", public_headers)
+    else:
+        configs["public headers"]  = public_headers
 
+
+    # If no headers specified, attempt to auto detect
     if len(private_headers) == 0:
         private_headers.append("code/")
         private_headers.append("code/source")
         for header in basic_headers:
             private_headers.append("execs/" + header)
         __FindRepoFolders(current_repo_path, configs, "private headers", private_headers)
+    else:
+        configs["private headers"] = private_headers
 
+    # If no headers specified, attempt to auto detect
     if len(test_headers) == 0:
         test_headers.append("tests/")
         test_headers.append("tests/source")
@@ -236,15 +238,10 @@ def LoadConfigs(current_repo_path):
             test_headers.append("execs/tests/" + header)
         __FindRepoFolders(current_repo_path, configs, "test headers", test_headers)
     else:
+        configs["test headers"]    = test_headers
         logging.error("YEEEYAH " + str(test_headers))
 
-    configs["private headers"] = private_headers
-    configs["public headers"]  = public_headers
-    configs["test headers"]    = test_headers
-
-
     configs["local path"] = GetValueOrDefault(configs, "local path", Settings["paths"]["default local path"])
-    # configs["local path"] = GetValueOrDefault(configs, "local path", Settings["paths"]["general repository"])
     configs["flags"] = GetValueOrDefault(configs, "flags", [])
     configs["dependencies"] = GetValueOrDefault(configs, "dependencies", {})
     # Repository commands
@@ -253,15 +250,5 @@ def LoadConfigs(current_repo_path):
     configs["after build"]  = GetValueOrDefault(configs, "after build", {})
     configs["test_headers"] = GetValueOrDefault(configs, "test_headers", [])
     configs["executables"] = GetValueOrDefault(configs, "executables", [])
-    # print(configs)
-
-    #     if "commit" not in configs["dependencies"][Dependency]:
-    #         configs["dependencies"][Dependency]["commit"] = None
-
-    #     if "branch" not in configs["dependencies"][Dependency]:
-    #         configs["dependencies"][Dependency]["branch"] = None
-
-    #     if "configs" not in configs["dependencies"][Dependency]:
-    #         configs["dependencies"][Dependency]["configs"] = None
 
     return configs
