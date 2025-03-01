@@ -114,13 +114,17 @@ Ordered by priority
 - [ ] Check config file on all config checks, dont cache
   - [ ] Special care with inherited configs
 
+### CMake
+
+- [ ] Only add headers that exist
+
 ### Setup
 
 - [X] Fix long loading times
 - [X] Allow to clean Project Base cache
 - [X] Separate loading from setup (loading loads the repos internally, setup forces a load and runs setup commands)
-- [ ] Improve detection of configuration change
-- [ ] Improve ability to change configs on the fly (without committing, pushing, deleting and recreating the project)
+- [X] Improve detection of configuration change
+- [?] Improve ability to change configs on the fly (without committing, pushing, deleting and recreating the project)
 
 ### Configurability
 - [ ] Allow extra cflags per
