@@ -109,16 +109,97 @@ def TEMP_fix_configs(configs):
 
     return gen_config
 
+def __GetConfigsFolderState(folder_path):
+    current_state = {}
+
+    if not os.path.exists(folder_path):
+        raise FileNotFoundError(f"Folder '{folder_path}' does not exist.")
+
+    for root, _, files in os.walk(folder_path):
+        for name in files:
+            file_path = os.path.join(root, name)
+            current_state[file_path] = os.path.getmtime(file_path)
+
+    # Save the folder's own modified time
+    current_state[folder_path] = os.path.getmtime(folder_path)
+    return current_state
+
+global_configs_state = {}
+
+def UpdateState(folder_path, current_state=None):
+    global global_configs_state
+
+    if current_state == None:
+        current_state = __GetConfigsFolderState(folder_path)
+
+    global_configs_state[folder_path] = current_state
+
+"""
+Check if configs changed
+"""
+def ConfigsChanged(folder_path):
+    global global_configs_state
+
+    # Configs dont exist
+    if not os.path.isdir(folder_path):
+        # Did they exist before?
+        if folder_path in global_configs_state.keys():
+            # Delete and return confirmation of change
+            return True
+        return False
+
+    current_state = __GetConfigsFolderState(folder_path)
+
+    # Configs exist, are they already loaded?
+    if folder_path not in global_configs_state.keys():
+        return True
+
+    # Configs existed, load current and previous state
+    previous_state = global_configs_state[folder_path]
+
+    current_state_paths  = current_state.keys()
+    previous_state_paths = previous_state.keys()
+
+    # Different amounts of timestamps
+    if len(current_state_paths) != len(previous_state_paths):
+        return True
+
+    for path in current_state_paths:
+        # Check if all paths exist in both lists
+        if path not in previous_state_paths:
+            return True
+
+        current_timestamp  = current_state[path]
+        previous_timestamp = previous_state[path]
+        # Validate last modification time
+        if current_timestamp != previous_timestamp:
+            return True
+
+    return False
+
+def ResetConfigsState():
+    global global_configs_state
+    del global_configs_state
+    global_configs_state = {}
+
 """
 Load configurations from a repository at `repo_path`
 """
 def LoadConfigs(current_repo_path):
+    global global_configs_state
+
     configs_path = current_repo_path + "/configs"
-    if not os.path.isdir(configs_path):
-        configs = {}
-    else:
+
+    if os.path.isdir(configs_path):
+        # if current_repo_path not in current_state.keys():
+        global_configs_state[current_repo_path] = __GetConfigsFolderState(current_repo_path)
         configs = load_json_file(configs_path + "/configs.json", {})
-    
+    else:
+        configs = {}
+
+    configs["current repo path"] = current_repo_path
+    configs["configs path"] = configs_path
+
     # TODO: Remove this after all repos have _ replaced with spaces
     # print(configs)
     configs = TEMP_fix_configs(configs)
@@ -132,11 +213,6 @@ def LoadConfigs(current_repo_path):
     test_headers    = GetValueOrDefault(configs, "test headers", [])
 
     # logging.error(current_repo_path)
-    if "SubSystems/Network" in current_repo_path:
-        logging.error("configs")
-        logging.error(current_repo_path)
-        logging.error(configs)
-        logging.error(test_headers)
     # Headers to include when linking against this repository (or compiling as part of it)
 
     if len(public_headers) == 0:
