@@ -6,7 +6,7 @@ from processes.git import *
 from data.common import SetupTemplateScript
 from data.settings import Settings
 from data.json import dump_json_file, load_json_file
-from processes.repository_configs import LoadConfigs, MergeConfigs, ParseConfigs
+from processes.repository_configs import LoadConfigs, MergeConfigs, ParseConfigs, UpdateState
 from data.common import GetValueOrDefault
 from processes.filesystem import CreateDirectory
 from processes.progress_bar import PrintProgressBar
@@ -107,6 +107,7 @@ def __LoadRepositoryFolder(imposed_configs):
     repository["repo path"]  = JoinPaths(current_local_path, repository["name"])
     repository["repo name"]  = GetRepositoryName(repository["repo path"])
     repository["build path"] = repository["repo path"].replace(Settings["paths"]["project code"], Settings["paths"]["build env"])
+    UpdateState(repository["configs path"])
 
     return repository
 

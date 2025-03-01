@@ -6,6 +6,8 @@ from data.paths    import GetProjectPaths, JoinPaths
 from data.git      import GetRepoNameFromURL, url_HTTPS_to_SSH, url_SSH_to_HTTPS
 from data.common   import LoadFromFile, DumpToFile
 
+from processes.repository_configs     import ConfigsChanged, ResetConfigsState
+
 from processes.repository     import LoadRepositories, Setup, Build
 from processes.process        import LaunchProcess, LaunchProcessAt, LaunchVerboseProcess
 from data.colors              import ColorFormat, Colors
@@ -42,6 +44,9 @@ class PROJECT(dict):
         CreateDirectory(self.repo_cache_path)
 
     def load(self):
+        # Reset configs state
+        ResetConfigsState()
+
         # Build root repo configs from CLI
         self.root_repo_base_config = {"url": Settings["url"]}
 
@@ -57,11 +62,15 @@ class PROJECT(dict):
             self.root_repo_base_config["commitish"] = None
 
         self.repositories = LoadRepositories(self.root_repo_base_config, self.cache_path)
+        print("Project loaded")
 
     def setup(self):
         logging.info("Setting up project")
+        print("Setting up project")
 
         Setup(self.GetRepositories())
+        logging.info("Finished setting up project")
+        print("Finished setting up project")
     
     def build(self):
         logging.info("Building project")
@@ -93,9 +102,18 @@ class PROJECT(dict):
             LaunchProcessAt("git remote rm origin; git remote add origin " + url, repository["full worktree path"])
 
     def GetRepositories(self):
-        # Not loaded, load before returning
+        # Not loaded, load and return``
         if len(self.repositories) == 0:
             self.load()
+            return self.repositories
+
+        # Single change in configs must trigger full reloading of configs
+        for repository in self.repositories:
+            if ConfigsChanged(self.repositories[repository]["configs path"]):
+                print("Config change detected, reloading")
+                self.load()
+                break
+
         return self.repositories
 
 Project = PROJECT()
