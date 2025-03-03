@@ -306,9 +306,6 @@ def __SetupCMake(repositories):
 
             test_headers = []
             if len(repository["test headers"]) > 0:
-                if "network" in repo_id:
-                    logging.error(repo_id)
-                    logging.error("YEEEYAH2 " + str(repository["test headers"]))
                 test_headers += [JoinPaths(repository["repo path"], x) for x in repository["test headers"]]
 
             # Check if there is already a CMakeLists and it isn't ours
