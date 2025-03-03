@@ -10,7 +10,7 @@ from data.settings import Settings
 from data.colors import ColorFormat, Colors
 from processes.progress_bar import PrintProgressBar
 from data.common import Abort, AppendToEnvVariable, RemoveControlCharacters, RemoveAnsiEscapeCharacters
-from data.common import ErrorCheckLogs
+from data.common import ErrorCheckLogs, SlimError, GetNow
 
 #                           PROCESS OPERATIONS
 
@@ -82,14 +82,27 @@ def __PrintRunOnFoldersProgress(paths):
     else:
         PrintProgressBar(current_progress, total_repos, prefix = 'Running:', suffix = "Done on " + str(current_progress) + "/" + str(total_repos) + " folders")
 
+thread_return = {}
+
 # Wrapper for threads
 def ThreadWrapper(run_callback, run_arg):
+    global thread_return
     try:
         run_callback(*run_arg)
+        return_val = True
+    except KeyboardInterrupt as ex:
+        print("Keyboard Interrupt, stopping")
+        raise ex
+    except ProcessError as ex:
+        return_val = False
+        AddTothreadLog(str(ex))
+
     except Exception as ex:
         # Store exception in log, but don't print it just yet
         # Ctrl+C will create exceptions on all threads, so those logs must be cleared and not printed
         AddTothreadLog(f"{ex}\n{"="*30}\nStack trace:\n\n{traceback.format_exc()}{"="*30}\n")
+        return_val = False
+    thread_return[GetThreadId()] = return_val
 
 """
 Run run_callback in a separate thread for each argument in run_args (which is also passed to that thread)
@@ -108,6 +121,9 @@ sequentially if "single thread" mode is on
 If print_callback is present, it will be called to register the operation progress
 """
 def RunInThreadsWithProgress(run_callback, run_args, print_callback=None, print_args=None):
+    global thread_return
+
+    thread_return.clear()
     if len(run_args) == 0:
         return
 
@@ -125,13 +141,14 @@ def RunInThreadsWithProgress(run_callback, run_args, print_callback=None, print_
                         print_callback()
                 else:
                     PrintProgressBar(run_arg_ind, len(run_args), prefix = 'Running:', suffix = 'Work finished ' + str(run_arg_ind) + '/' + str(len(run_args)))
+                thread_return[run_arg_ind] = True
             except KeyboardInterrupt:
                 print("Keyboard Interrupt, stopping")
                 ClearThreadLog()
                 return
             except Exception as ex:
                 AddTothreadLog(str(ex))
-
+                thread_return[run_arg_ind] = False
     else:
         try:
             threads = RunInThreads(run_callback, run_args)
@@ -145,6 +162,10 @@ def RunInThreadsWithProgress(run_callback, run_args, print_callback=None, print_
             ClearThreadLog()
 
     Flushthread_log()
+
+    for val in thread_return.values():
+        if val == False:
+            raise SlimError("One of the threads errored out")
 
 def __RunOnFoldersThreadWrapper(callback, path, arguments = None):
     global operation_lock
@@ -259,7 +280,7 @@ def LaunchProcess(Command, to_print=False):
         Returned["code"]    = int(Result.returncode)
 
     if Returned["code"] != 0:
-        Message  = "\n\t========================= Process failed (start) =========================\n"
+        Message  = f"\n\t========================= Process failed (start) ({GetNow()}) =========================\n"
         Message += "\t\tProcess returned failure (" + ColorFormat(Colors.Yellow, str(Returned["code"])) + "):\n"
         Message += ColorFormat(Colors.Cyan, Command+"\n")
         Message += ColorFormat(Colors.Blue, "stdout: " + Returned["stdout"]+"\n")
