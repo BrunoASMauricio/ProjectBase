@@ -253,9 +253,10 @@ def LaunchProcess(Command, to_print=False):
         Result = subprocess.run(['bash', '-c', Command],
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
-        Returned["stdout"] = Result.stdout.decode('utf-8')
-        Returned["stderr"] = Result.stderr.decode('utf-8')
-        Returned["code"] = int(Result.returncode)
+        Returned["command"] = Command
+        Returned["stdout"]  = Result.stdout.decode('utf-8')
+        Returned["stderr"]  = Result.stderr.decode('utf-8')
+        Returned["code"]    = int(Result.returncode)
 
     if Returned["code"] != 0:
         Message  = "\n\t========================= Process failed (start) =========================\n"
@@ -272,7 +273,7 @@ def LaunchProcess(Command, to_print=False):
                 file, callback = Pieces
                 function  = file.split(" in ")[-1]
                 # Line NUMBER, .. # Get NUMBER, .. # Remove .. # Remove ,
-                file_Line = file.split(" Line ")[-1].split(" ")[0][:-1]
+                file_Line = file.lower().split(" line ")[-1].split(" ")[0][:-1]
                 Message += function + "() Line " + str(file_Line) + "\n" +ColorFormat(Colors.Green, callback) + "\n"
             else:
                 Message += Line
