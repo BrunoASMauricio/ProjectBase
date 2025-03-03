@@ -87,6 +87,8 @@ Ordered by priority
 ### General
 - [X] Add abstraction similar to menu, but for multiple choice stuff (i.e. executable/test/project/single repo to manage operations)
 - [X] Add "There have been errors, please check the logs at PATH" message for logged exceptions
+- [ ] Create abstraction to allow different build systems
+  - [ ] Put CMake commands into separate specialization of said abstraction
 - [ ] Divide test results into their respective modules
 - [ ] Give warning if the same link (repository) has been checked out in different places
 - [ ] Add support for some documentation system (i.e. doxygen)
