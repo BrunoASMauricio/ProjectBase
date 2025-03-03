@@ -193,7 +193,7 @@ def run_all_tests():
         return
 
     print(ColorFormat(Colors.Red, ("="*40)+"\n          " + str(Errors) + " Errors reported\n"+("="*40)))
-    print(ColorFormat(Colors.Green, "Successes: ["+str(len(AllOutputs) - len(Errors))+"]"))
+    print(ColorFormat(Colors.Green, "Successes: ["+str(len(AllOutputs) - Errors)+"]"))
 
 def run_all_tests_on_valgrind():
     Errors = 0
