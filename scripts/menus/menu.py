@@ -1,11 +1,11 @@
 import os
 import sys
 import logging
-import traceback
 from enum import Enum
 
+from processes.process import ProcessError
 from data.colors import ColorFormat, Colors
-from data.common import ErrorCheckLogs
+from data.common import ErrorCheckLogs, SlimError
 from data.common import Assert, GetText, GetHost, GetTime
 from processes.auto_completer import CustomCompleter
 from data.settings import Settings
@@ -202,6 +202,10 @@ class Menu():
             except KeyboardInterrupt:
                 print("\nCtrl+C interrupts running operations and enter goes to the previous menu. Press Ctrl+D to back out of ProjectBase")
                 continue
+            except SlimError:
+                # An error has already been printed, stop here
+                logging.error("A thread errored out, canceling operation")
+                print("\nThere was an error, operation canceled")
             except EOFError:
                 # Ctrl+D
                 print("\nBye :)")
