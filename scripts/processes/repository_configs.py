@@ -112,7 +112,7 @@ def __GetConfigsFolderState(folder_path):
     current_state = {}
 
     if not os.path.exists(folder_path):
-        raise FileNotFoundError(f"Folder '{folder_path}' does not exist.")
+        return None
 
     for root, _, files in os.walk(folder_path):
         for name in files:
