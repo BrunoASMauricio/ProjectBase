@@ -153,7 +153,7 @@ def LaunchGitCommandAt(command, path=None, message=None):
         logging.debug(message)
         logging.debug(command + " at " + str(path))
 
-    result_code = LaunchProcessAt(command, path)
+    result_code = LaunchProcess(command, path)
     if result_code["code"] != 0:
         raise Exception("Could not run " + command)
 
@@ -177,7 +177,7 @@ def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
 
     # In case we stopped before, remove existing temporary
     # LaunchProcessAt("git worktree remove " + new_repo_path, bare_path)
-    LaunchProcessAt("rm -rf " + new_repo_path)
+    LaunchProcess("rm -rf " + new_repo_path)
     LaunchGitCommandAt('git worktree prune', bare_path)
     # If commit is defined, set it detached (it wont be updated)
     if repo_commitish != None and repo_commitish["type"] == "commit":
@@ -223,7 +223,7 @@ def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
     return new_repo_path
 
 def RemoveWorkTree(bare_path, target_path):
-    LaunchProcessAt("git worktree remove --force " + target_path, bare_path)
+    LaunchProcess("git worktree remove --force " + target_path, bare_path)
 
 """
 Move worktree from from_path to to_path

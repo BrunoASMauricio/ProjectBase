@@ -9,7 +9,7 @@ from data.common   import LoadFromFile, DumpToFile
 from processes.repository_configs     import ConfigsChanged, ResetConfigsState
 
 from processes.repository     import LoadRepositories, Setup, Build
-from processes.process        import LaunchProcess, LaunchProcessAt, LaunchVerboseProcess
+from processes.process        import LaunchProcess, LaunchVerboseProcess
 from data.colors              import ColorFormat, Colors
 from processes.git_operations import GetRepositoryUrl
 from processes.filesystem     import CreateDirectory
@@ -102,7 +102,7 @@ class PROJECT(dict):
             else:
                 url = url_SSH_to_HTTPS(prev_url)
 
-            LaunchProcessAt("git remote rm origin; git remote add origin " + url, repository["full worktree path"])
+            LaunchProcess("git remote rm origin; git remote add origin " + url, repository["full worktree path"])
 
     def GetRepositories(self):
         # Not loaded, load and return
