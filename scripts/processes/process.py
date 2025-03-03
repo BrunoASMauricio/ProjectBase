@@ -244,47 +244,56 @@ def LaunchProcess(command, path=None, to_print=False):
         _type_: {"stdout":"<stdout>", "code": return code}
     """
 
-    if path != None:
-        command = f"cd {path}; {command}"
-
     returned = {"stdout": "", "stderr": "", "code": ""}
 
     if command == "":
         return {"stdout": "", "stderr": "", "code": ""}
 
-    if to_print == True:
-        print(ColorFormat(Colors.Blue, command))
-        output_bytes = []
-        def read(fd):
-            Data = os.read(fd, 1024)
-            output_bytes.append(Data)
-            return Data
+    if path != None:
+        if not os.path.isdir(path):
+            raise Exception(f"No such path ({path}) for executing command ({command}) ")
+        cwd = os.getcwd()
+        os.chdir(path)
+    
+    command = f"set -e; {command}"
 
-        # Remove all types of whitespace repetitions `echo  \t  a` -> `echo a`
-        command = " ".join(command.split())
-
-        returned["code"] = int(pty.spawn(['bash', '-c', command], read))
-
+    try:
         if to_print == True:
-            print(ColorFormat(Colors.Blue, "Returned " + str(returned["code"])))
+            print(ColorFormat(Colors.Blue, command))
+            output_bytes = []
+            def read(fd):
+                Data = os.read(fd, 1024)
+                output_bytes.append(Data)
+                return Data
 
-        if len(output_bytes) != 0:
-            output_bytes = b''.join(output_bytes)
-            output_utf8 = output_bytes.decode('utf-8')
-            no_escape_utf8 = RemoveAnsiEscapeCharacters(output_utf8)
-            clean_utf8 = RemoveControlCharacters(no_escape_utf8)
+            # Remove all types of whitespace repetitions `echo  \t  a` -> `echo a`
+            command = " ".join(command.split())
 
-            returned["stdout"] = clean_utf8
+            returned["code"] = int(pty.spawn(['bash', '-c', command], read))
+
+            if to_print == True:
+                print(ColorFormat(Colors.Blue, "Returned " + str(returned["code"])))
+
+            if len(output_bytes) != 0:
+                output_bytes = b''.join(output_bytes)
+                output_utf8 = output_bytes.decode('utf-8')
+                no_escape_utf8 = RemoveAnsiEscapeCharacters(output_utf8)
+                clean_utf8 = RemoveControlCharacters(no_escape_utf8)
+
+                returned["stdout"] = clean_utf8
+            else:
+                returned["stdout"] = ""
         else:
-            returned["stdout"] = ""
-    else:
-        result = subprocess.run(['bash', '-c', command],
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
-        returned["command"] = command
-        returned["stdout"]  = result.stdout.decode('utf-8')
-        returned["stderr"]  = result.stderr.decode('utf-8')
-        returned["code"]    = int(result.returncode)
+            result = subprocess.run(['bash', '-c', command],
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+            returned["command"] = command
+            returned["stdout"]  = result.stdout.decode('utf-8')
+            returned["stderr"]  = result.stderr.decode('utf-8')
+            returned["code"]    = int(result.returncode)
+    finally:
+        if path != None:
+            os.chdir(cwd)
 
     if returned["code"] != 0:
         message  = f"\n\t========================= Process failed (start) ({GetNow()}) =========================\n"
