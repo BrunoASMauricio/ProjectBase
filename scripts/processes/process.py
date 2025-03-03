@@ -230,7 +230,11 @@ class ProcessError(Exception):
             return
         raise self
 
-def LaunchProcess(Command, to_print=False):
+"""
+Changes to the given directory, launches the Command in a forked process and
+returns the { "stdout": "..." , "code": "..."  } dictionary
+"""
+def LaunchProcess(Command, path=None, to_print=False):
     """
     Launch new process
 
@@ -239,6 +243,9 @@ def LaunchProcess(Command, to_print=False):
     Returns:
         _type_: {"stdout":"<stdout>", "code": return code}
     """
+
+    if path != None:
+        Command = f"cd {path}; {Command}"
 
     Returned = {"stdout": "", "stderr": "", "code": ""}
 
@@ -282,9 +289,13 @@ def LaunchProcess(Command, to_print=False):
     if Returned["code"] != 0:
         Message  = f"\n\t========================= Process failed (start) ({GetNow()}) =========================\n"
         Message += "\t\tProcess returned failure (" + ColorFormat(Colors.Yellow, str(Returned["code"])) + "):\n"
-        Message += ColorFormat(Colors.Cyan, Command+"\n")
-        Message += ColorFormat(Colors.Blue, "stdout: " + Returned["stdout"]+"\n")
-        Message += ColorFormat(Colors.Red,  "stderr: " + Returned["stderr"]+"\n")
+        if path != None:
+            Message += ColorFormat(Colors.Yellow, f"at {path}\n")
+        else:
+            Message += ColorFormat(Colors.Yellow, f"at {os.getcwd()}\n")
+        Message += ColorFormat(Colors.Cyan,   f"{Command}\n")
+        Message += ColorFormat(Colors.Blue,   f"stdout: {Returned["stdout"]}\n")
+        Message += ColorFormat(Colors.Red,    f"stderr: {Returned["stderr"]}\n")
         Message += "Current stack:\n"
 
         trace = traceback.format_stack()[:-1]
@@ -317,11 +328,11 @@ def OpenBashOnDirectoryAndWait(working_directory):
 
 #                           PROCESS OUTPUT
 
-def LaunchSilentProcess(Command):
-    return LaunchProcess(Command, False)
+def LaunchSilentProcess(command, path=None):
+    return LaunchProcess(command, path, False)
 
-def LaunchVerboseProcess(Command):
-    return LaunchProcess(Command, True)
+def LaunchVerboseProcess(command, path=None):
+    return LaunchProcess(command, path, True)
 
 
 def AssertProcessRun(Process, ExpectedCode, ExpectedOutput):
@@ -341,21 +352,6 @@ def AssertProcessRun(Process, ExpectedCode, ExpectedOutput):
         Message += "\t\nGot (" + str(len(ExpectedOutput)) + " characters)"
         Message += "="*30 + "\n>"+ExpectedOutput+"<"
         Abort(Message)
-
-"""
-Changes to the given directory, launches the Command in a forked process and
-returns the { "stdout": "..." , "code": "..."  } dictionary
-"""
-def LaunchProcessAt(Command, Path="", to_print=False):
-    if Path != "":
-        # CurrentDirectory = os.getcwd()
-        # os.chdir(Path)
-        ReturnValue = LaunchProcess("set -e; cd " + Path + "; " +Command, to_print)
-        # os.chdir(CurrentDirectory)
-    else:
-        ReturnValue = LaunchProcess(Command, to_print)
-
-    return ReturnValue
 
 def PrepareExecEnvironment():
     AppendToEnvVariable("PYTHONPATH",       Settings["paths"]["scripts"])

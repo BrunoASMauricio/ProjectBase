@@ -1,11 +1,11 @@
 import os
-from processes.process import ProcessError, ParseProcessResponse, LaunchProcessAt
+from processes.process import ProcessError, ParseProcessResponse, LaunchProcess
 from data.common import IsEmpty
 
 def ParseGitResult(git_command, path):
     if path == None:
         path = os.getcwd()
-    return ParseProcessResponse(LaunchProcessAt(git_command, path, False))
+    return ParseProcessResponse(LaunchProcess(git_command, path, False))
 
 # ================= GET operations =================
 
