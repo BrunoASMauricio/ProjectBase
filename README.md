@@ -116,7 +116,9 @@ Ordered by priority
 
 ### CMake
 
-- [ ] Only add headers that exist
+- [X] Only add headers that exist
+- [ ] Prevent executables from having the same name as a generated object/executable/library (aka a target)
+- [ ] Only link directl against actual dependencies
 
 ### Setup
 
