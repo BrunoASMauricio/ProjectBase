@@ -185,10 +185,10 @@ def __RunOnFoldersThreadWrapper(callback, path, arguments = None):
 
         arguments["path"] = path
 
-        Result = callback(**arguments)
+        result = callback(**arguments)
 
         operation_lock.acquire()
-        operation_status[path] = Result
+        operation_status[path] = result
         operation_lock.release()
     except Exception as exception:
         ErrorCheckLogs(exception)
@@ -217,16 +217,16 @@ def RunOnFolders(paths, callback, arguments={}):
 
     return operation_status
 
-def RunExecutable(CommandString):
-    return subprocess.run(CommandString, shell=True)
+def RunExecutable(command_string):
+    return subprocess.run(command_string, shell=True)
 
 class ProcessError(Exception):
-    def __init__(self, Message, Returned):
+    def __init__(self, message, returned):
         # Call the base class constructor with the parameters it needs
-        super().__init__(f"Message:{Message}\nReturned: {Returned}")
-        self.Returned = Returned
-    def RaiseIfNotInOutput(self, Data):
-        if Data in self.Returned["stdout"] or Data in self.Returned["stderr"]:
+        super().__init__(f"Message:{message}\nReturned: {returned}")
+        self.returned = returned
+    def RaiseIfNotInOutput(self, data):
+        if data in self.returned["stdout"] or data in self.returned["stderr"]:
             return
         raise self
 
@@ -234,7 +234,7 @@ class ProcessError(Exception):
 Changes to the given directory, launches the Command in a forked process and
 returns the { "stdout": "..." , "code": "..."  } dictionary
 """
-def LaunchProcess(Command, path=None, to_print=False):
+def LaunchProcess(command, path=None, to_print=False):
     """
     Launch new process
 
@@ -245,58 +245,58 @@ def LaunchProcess(Command, path=None, to_print=False):
     """
 
     if path != None:
-        Command = f"cd {path}; {Command}"
+        command = f"cd {path}; {command}"
 
-    Returned = {"stdout": "", "stderr": "", "code": ""}
+    returned = {"stdout": "", "stderr": "", "code": ""}
 
-    if Command == "":
+    if command == "":
         return {"stdout": "", "stderr": "", "code": ""}
 
     if to_print == True:
-        print(ColorFormat(Colors.Blue, Command))
-        OutputBytes = []
+        print(ColorFormat(Colors.Blue, command))
+        output_bytes = []
         def read(fd):
             Data = os.read(fd, 1024)
-            OutputBytes.append(Data)
+            output_bytes.append(Data)
             return Data
 
         # Remove all types of whitespace repetitions `echo  \t  a` -> `echo a`
-        Command = " ".join(Command.split())
+        command = " ".join(command.split())
 
-        Returned["code"] = int(pty.spawn(['bash', '-c', Command], read))
+        returned["code"] = int(pty.spawn(['bash', '-c', command], read))
 
         if to_print == True:
-            print(ColorFormat(Colors.Blue, "Returned " + str(Returned["code"])))
+            print(ColorFormat(Colors.Blue, "Returned " + str(returned["code"])))
 
-        if len(OutputBytes) != 0:
-            OutputBytes = b''.join(OutputBytes)
-            OutputUTF8 = OutputBytes.decode('utf-8')
-            NoEscapeUTF8 = RemoveAnsiEscapeCharacters(OutputUTF8)
-            CleanUTF8 = RemoveControlCharacters(NoEscapeUTF8)
+        if len(output_bytes) != 0:
+            output_bytes = b''.join(output_bytes)
+            output_utf8 = output_bytes.decode('utf-8')
+            no_escape_utf8 = RemoveAnsiEscapeCharacters(output_utf8)
+            clean_utf8 = RemoveControlCharacters(no_escape_utf8)
 
-            Returned["stdout"] = CleanUTF8
+            returned["stdout"] = clean_utf8
         else:
-            Returned["stdout"] = ""
+            returned["stdout"] = ""
     else:
-        Result = subprocess.run(['bash', '-c', Command],
+        result = subprocess.run(['bash', '-c', command],
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
-        Returned["command"] = Command
-        Returned["stdout"]  = Result.stdout.decode('utf-8')
-        Returned["stderr"]  = Result.stderr.decode('utf-8')
-        Returned["code"]    = int(Result.returncode)
+        returned["command"] = command
+        returned["stdout"]  = result.stdout.decode('utf-8')
+        returned["stderr"]  = result.stderr.decode('utf-8')
+        returned["code"]    = int(result.returncode)
 
-    if Returned["code"] != 0:
-        Message  = f"\n\t========================= Process failed (start) ({GetNow()}) =========================\n"
-        Message += "\t\tProcess returned failure (" + ColorFormat(Colors.Yellow, str(Returned["code"])) + "):\n"
+    if returned["code"] != 0:
+        message  = f"\n\t========================= Process failed (start) ({GetNow()}) =========================\n"
+        message += "\t\tProcess returned failure (" + ColorFormat(Colors.Yellow, str(returned["code"])) + "):\n"
         if path != None:
-            Message += ColorFormat(Colors.Yellow, f"at {path}\n")
+            message += ColorFormat(Colors.Yellow, f"at {path}\n")
         else:
-            Message += ColorFormat(Colors.Yellow, f"at {os.getcwd()}\n")
-        Message += ColorFormat(Colors.Cyan,   f"{Command}\n")
-        Message += ColorFormat(Colors.Blue,   f"stdout: {Returned["stdout"]}\n")
-        Message += ColorFormat(Colors.Red,    f"stderr: {Returned["stderr"]}\n")
-        Message += "Current stack:\n"
+            message += ColorFormat(Colors.Yellow, f"at {os.getcwd()}\n")
+        message += ColorFormat(Colors.Cyan,   f"{command}\n")
+        message += ColorFormat(Colors.Blue,   f"stdout: {returned["stdout"]}\n")
+        message += ColorFormat(Colors.Red,    f"stderr: {returned["stderr"]}\n")
+        message += "Current stack:\n"
 
         trace = traceback.format_stack()[:-1]
         for Line in trace:
@@ -306,25 +306,25 @@ def LaunchProcess(Command, path=None, to_print=False):
                 function  = file.split(" in ")[-1]
                 # Line NUMBER, .. # Get NUMBER, .. # Remove .. # Remove ,
                 file_Line = file.lower().split(" line ")[-1].split(" ")[0][:-1]
-                Message += function + "() Line " + str(file_Line) + "\n" +ColorFormat(Colors.Green, callback) + "\n"
+                message += function + "() Line " + str(file_Line) + "\n" +ColorFormat(Colors.Green, callback) + "\n"
             else:
-                Message += Line
-        Message += "\n\t========================= Process failed (end) =========================\n"
-        raise ProcessError(Message, Returned)
+                message += Line
+        message += "\n\t========================= Process failed (end) =========================\n"
+        raise ProcessError(message, returned)
 
-    return Returned
+    return returned
 
-def ParseProcessResponse(Response):
-    return RemoveControlCharacters(Response["stdout"].rstrip())
+def ParseProcessResponse(response):
+    return RemoveControlCharacters(response["stdout"].rstrip())
 
 def OpenBashOnDirectoryAndWait(working_directory):
     print("Opening new slave terminal")
     print("Close when finished (hit Ctrl+D or type exit)")
     # Open a new Bash shell in the specified working directory
-    Process = subprocess.Popen(['bash'], cwd=working_directory)
+    process = subprocess.Popen(['bash'], cwd=working_directory)
 
     # Wait for the Bash shell to be closed by the user
-    Process.wait()
+    process.wait()
 
 #                           PROCESS OUTPUT
 
