@@ -43,7 +43,7 @@ class PROJECT(dict):
         Settings["ProjectName"] = self.name
         Settings["paths"]       = self.paths
         self.repo_cache_path = JoinPaths(Settings["paths"]["configs"], "project_cache", "repositories")
-        self.cache_path = JoinPaths(self.repo_cache_path, self.name)
+        Settings["paths"]["cache path"] = JoinPaths(self.repo_cache_path, self.name)
         CreateDirectory(self.repo_cache_path)
 
     def load(self):
@@ -64,7 +64,7 @@ class PROJECT(dict):
         else:
             self.root_repo_base_config["commitish"] = None
 
-        self.repositories = LoadRepositories(self.root_repo_base_config, self.cache_path)
+        self.repositories = LoadRepositories(self.root_repo_base_config, Settings["paths"]["cache path"])
         print("Project loaded")
 
     def setup(self):
@@ -180,22 +180,23 @@ def UserChooseProject():
     return RemoteRepoUrl
 
 def CleanRunnables():
-    LaunchVerboseProcess("rm -rf " + Settings["paths"]["executables"]+"/*")
-    LaunchVerboseProcess("rm -rf " + Settings["paths"]["tests"]+"/*")
+    LaunchVerboseProcess(f"rm -rf {Settings["paths"]["executables"]}/*")
+    LaunchVerboseProcess(f"rm -rf {Settings["paths"]["tests"]}/*")
 
 def CleanCompiled():
-    LaunchVerboseProcess("rm -rf " + Settings["paths"]["libraries"]+"/*")
+    LaunchVerboseProcess(f"rm -rf {Settings["paths"]["libraries"]}/*")
     CleanRunnables()
 
 def CleanAll():
-    LaunchVerboseProcess("rm -rf " + Settings["paths"]["build cache"]+"/*")
+    LaunchVerboseProcess(f"rm -rf {Settings["paths"]["build cache"]}/*")
     CleanCompiled()
     CleanLinterFiles()
 
 def DeleteProject():
-    LaunchVerboseProcess("rm -rf " + Settings["paths"]["project main"])
+    LaunchVerboseProcess(f"rm -rf {Settings["paths"]["project main"]}")
 
 def CleanPBCache():
     global Project
-    LaunchVerboseProcess("rm -rf " + Project.cache_path)
+    LaunchVerboseProcess(f"rm -rf {Settings["paths"]["cache path"]}")
+    LaunchVerboseProcess(f"rm -rf {Settings["paths"]["temporary"]}/*")
     Project.ResetRepositories()
