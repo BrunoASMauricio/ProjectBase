@@ -16,6 +16,13 @@ from data.paths import GetBasePaths
 from data.colors import ColorFormat, Colors
 from data.paths import CreateParentPath
 
+# Exception for stopping current operation without printing stack/operation information
+# Used when we know the error has been output (i.e. inside a thread) and we don't store it
+class SlimError(Exception):
+    def __init__(self, Message):
+        # Call the base class constructor with the parameters it needs
+        super().__init__(f"Message:{Message}")
+
 def ErrorCheckLogs(exception):
     print("ERROR: Check logs at /tmp/project_base.log for more information")
     logging.error(f"Uncaught exception: {type(exception)} {exception}")
