@@ -105,7 +105,7 @@ class PROJECT(dict):
             LaunchProcessAt("git remote rm origin; git remote add origin " + url, repository["full worktree path"])
 
     def GetRepositories(self):
-        # Not loaded, load and return``
+        # Not loaded, load and return
         if len(self.repositories) == 0:
             self.load()
             return self.repositories
