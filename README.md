@@ -85,6 +85,8 @@ ProjectBase is licensed under GNU General Public License Version 3
 Ordered by priority
 
 ### General
+- [ ] Provide "code only" view into a project
+  - [ ] Just like build folder is separate, use links to generate a view that only contains headers and source code
 - [X] Add abstraction similar to menu, but for multiple choice stuff (i.e. executable/test/project/single repo to manage operations)
 - [X] Add "There have been errors, please check the logs at PATH" message for logged exceptions
 - [ ] Find a way to identify repositories without using URLs (different URLs can point to the same repo)
@@ -118,6 +120,9 @@ Ordered by priority
 - [X] Modify how processes are called. Multiple attempts should not be necessary and are very error prone
 - [ ] Check config file on all config checks, dont cache
   - [ ] Special care with inherited configs
+- [ ] abstract stack printer from processes
+  - [ ] In logging
+  - [ ] In general stack printing (non process stack)
 
 ### CMake
 
