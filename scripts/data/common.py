@@ -3,9 +3,10 @@ import os
 import sys
 import shutil
 import curses
+import inspect
 import logging
-import traceback
 import difflib
+import traceback
 import unicodedata
 
 from datetime import datetime
@@ -22,6 +23,45 @@ class SlimError(Exception):
     def __init__(self, Message):
         # Call the base class constructor with the parameters it needs
         super().__init__(f"Message:{Message}")
+
+class INDENT_FORMATTER(logging.Formatter):
+    def __init__(self, style='%'):
+        super().__init__('%(asctime)s,%(msecs)d %(levelname)s %(message)s', '%H:%M:%S', style)
+        # , base_depth=None
+        self.base_depth = None
+
+    def setup(self):
+        self.base_depth = len(inspect.stack())  # Set base depth
+
+    def format(self, record):
+        try:
+            # Get current stack
+            stack = inspect.stack()
+
+            # For DEBUG logs after base_depth has been set, also print a light version of the stack
+            if self.base_depth == None or record.levelno != logging.DEBUG:
+                relevant_stack = ""
+            else:
+                relevant_stack = stack[10:-1*self.base_depth]
+                frame = relevant_stack[0].frame
+
+                relevant_stack = [ColorFormat(Colors.Green, level.function) for level in relevant_stack]
+                relevant_stack = relevant_stack[::-1]
+                relevant_stack = "->".join(relevant_stack)
+                # Print arguments of the last call
+                args, _, _, values = inspect.getargvalues(frame)
+                function_args = ", ".join(f"\n  {ColorFormat(Colors.Yellow, arg)} = {values[arg]!r}" for arg in args) if args else ""
+                relevant_stack = f"{relevant_stack}({function_args})\n"
+
+            # Apply indentation
+            record.msg = f"\n{relevant_stack}{record.msg}\n"
+        except Exception as ex:
+            print(f"Logger error: {ex}")
+            sys.exit(0)
+
+        return super().format(record)
+
+Formatter = INDENT_FORMATTER()
 
 def ErrorCheckLogs(exception):
     print("ERROR: Check logs at /tmp/project_base.log for more information")

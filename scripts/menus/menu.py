@@ -3,7 +3,7 @@ import sys
 import logging
 from enum import Enum
 
-from processes.process import ProcessError
+from data.common import Formatter
 from data.colors import ColorFormat, Colors
 from data.common import ErrorCheckLogs, SlimError
 from data.common import Assert, GetText, GetHost, GetTime
@@ -158,6 +158,8 @@ class Menu():
     Print menu and handle input from user
     """
     def handle_input(self, depth = 0):
+        if depth == 0:
+            Formatter.setup()
         current_dir = os.getcwd()
         previous_command = None
         previous_invalid = False
