@@ -103,7 +103,7 @@ def RepoPush(path = None):
 
     # Get remote branch name and push to it
     upstream_branch_name = GetCurrentBranchsUpstream(path)
-    ParseGitResult(f"git push origin HEAD:$({upstream_branch_name})", path)
+    ParseGitResult(f"git push origin HEAD:{upstream_branch_name}", path)
 
 def GenAutoCommitMessage():
     return ""
