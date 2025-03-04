@@ -85,6 +85,8 @@ ProjectBase is licensed under GNU General Public License Version 3
 Ordered by priority
 
 ### General
+
+- [ ] Add option to disable dense logging
 - [ ] Provide "code only" view into a project
   - [ ] Just like build folder is separate, use links to generate a view that only contains headers and source code
 - [X] Add abstraction similar to menu, but for multiple choice stuff (i.e. executable/test/project/single repo to manage operations)
