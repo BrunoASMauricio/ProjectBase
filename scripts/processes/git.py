@@ -4,8 +4,9 @@ from processes.process import *
 from data.settings import Settings, CLONE_TYPE
 from data.common import RemoveSequentialDuplicates
 from data.git import *
+from processes.filesystem import CreateDirectory, remove
 from processes.git_operations import *
-from data.paths import GetParentPath, GetCurrentFolderName, JoinPaths
+from data.paths import GetParentPath, GetCurrentFolderName, JoinPaths, GetNewTemporaryPath
 
 """
 Fix url so it is according to settings
@@ -228,12 +229,32 @@ def RemoveWorkTree(bare_path, target_path):
 """
 Move worktree from from_path to to_path
 TODO: dont just remove and add, also copy changes over
+`bare_path`: The bare path location of the repo
+`from_path`: Current parent
+`to_path`:   Target parent for the repository
 """
-def MoveWorkTree(bare_path, repo_url, repo_commitish, from_path, to_path):
-    GitStash(from_path)
-    AddWorkTree(bare_path, repo_url, repo_commitish, to_path)
-    RemoveWorkTree(bare_path, from_path)
-    GitStashPop(to_path)
+def MoveWorkTree(bare_path, from_path, to_path):
+    repo_name = GetRepoNameFromPath(bare_path)
+
+    logging.debug("")
+    temp_path = GetNewTemporaryPath(Settings["paths"])
+
+    CreateDirectory(temp_path)
+
+    LaunchProcess(f"git worktree move {from_path} {temp_path}", bare_path)
+
+    temp_path = JoinPaths(temp_path, repo_name)
+    CreateDirectory(to_path)
+
+    LaunchProcess(f"git worktree move {temp_path} {to_path}", bare_path)
+
+    remove(temp_path)
+
+    # GitStash(from_path)
+    # to_path = '/'.join(new_repo_path.split("/")[:-1])
+    # AddWorkTree(bare_path, repo_url, repo_commitish, to_path)
+    # RemoveWorkTree(bare_path, from_path)
+    # GitStashPop(new_repo_path)
 
 def CheckIfStatusIsClean(status):
     return "nothing to commit, working tree clean" in status
