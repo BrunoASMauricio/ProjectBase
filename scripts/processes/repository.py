@@ -8,9 +8,9 @@ from data.settings import Settings
 from data.json import dump_json_file, load_json_file
 from processes.repository_configs import LoadConfigs, MergeConfigs, ParseConfigs, UpdateState
 from data.common import GetValueOrDefault
-from processes.filesystem import CreateDirectory
+from processes.filesystem import CreateDirectory, FindInodeByPattern
 from processes.progress_bar import PrintProgressBar
-from threading import Thread, Lock
+from threading import Lock
 from data.paths import JoinPaths
 
 repositories_lock = Lock()
@@ -112,13 +112,17 @@ def __LoadRepositoryFolder(imposed_configs):
     # 2. Repo is at current_location
     # 3. expected_local_path contains the parent of the repo
     # 4. Path is consistent with the path requested in configs
-    repository["full worktree path"] = current_location
+    repository["full worktree path"] = expected_local_path
     repository["repo path"]  = current_location
     repository["repo name"]  = GetRepositoryName(repository["repo path"])
     repository["build path"] = repository["repo path"].replace(Settings["paths"]["project code"], Settings["paths"]["build env"])
     UpdateState(repository["configs path"])
 
     return repository
+
+def __RepoHasNoCode(repository):
+    files = FindInodeByPattern("CMakeLists.txt", repository["repo path"])
+    return len(files) > 0
 
 def __RepoHasFlagSet(repository, flag):
     return flag in repository["flags"]
@@ -293,7 +297,7 @@ def __SetupCMake(repositories):
     for repo_id in repositories:
         try:
             repository = repositories[repo_id]
-            if __RepoHasFlagSet(repository, "no auto build"):
+            if __RepoHasFlagSet(repository, "no auto build") or __RepoHasNoCode(repository):
                 continue
 
             if __RepoHasFlagSet(repository, "independent project"):
