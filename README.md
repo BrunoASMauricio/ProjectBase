@@ -87,6 +87,9 @@ Ordered by priority
 ### General
 - [X] Add abstraction similar to menu, but for multiple choice stuff (i.e. executable/test/project/single repo to manage operations)
 - [X] Add "There have been errors, please check the logs at PATH" message for logged exceptions
+- [ ] Find a way to identify repositories without using URLs (different URLs can point to the same repo)
+      Use the X commit of the default branch?
+  - [ ] Overhaul handling of repositories by name/url/path. Use unique internal ID that can link to those three attributes
 - [ ] Create abstraction to allow different build systems
   - [ ] Put CMake commands into separate specialization of said abstraction
 - [ ] Divide test results into their respective modules
@@ -148,21 +151,21 @@ Ordered by priority
 - [X] Allow two types of commits
   - [X] "fixed" commits (other word isencouraged) are normal commits
   - [X] "save" commits are temporary, and will be squashed into the next "fixed" commit
-- [ ] Find a way to identify repositories without using URLs (different URLs can point to the same repo)
-      Use the X commit of the default branch?
-  - [ ] Overhaul handling of repositories by name/url/path. Use unique internal ID that can link to those three attributes
+- [X] Before moving a worktree, make sure there are no RepoSaveChanges
+  - [X] Done by using worktree move and not add + remove
 - [ ] Allow the review of code when add/commiting ?
       On push, allow per repo fix on conflict
 - [X] Warn exactly which repos are being comitted
 - [ ] Try and setup git so normal pushes via single repo manipulation work as expected
 - [ ] Failed clones should automatically be cleaned up
         Current bug, failed pulls somehow obtain the projectbase URL and subsequent `setup` clones projectbase instead of the respective repository
-- [ ] Do not perform `cd` for every git operation (why?)
 - [ ] Periodically fetch new data from repos. No automatic merge
 - [ ] Periodically remove non-existing worktrees
 - [X] Add single repo manipulation by providing a semi-independent already in the relevant directory
 - [X] Improve detection of desync between baregit and upstream so push doesn't need to work on clean repos
-
+- [ ] Deal with repositories pulled into other repositories
+  - [ ] An example is when moving worktree, inner worktrees will be broken
+- [ ] Do not perform `cd` for every git operation (why?)
 
 Configs that CAN NOT have variables
   local path
