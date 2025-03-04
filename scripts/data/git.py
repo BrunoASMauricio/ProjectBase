@@ -20,7 +20,7 @@ def url_HTTPS_to_SSH(url):
 
     # split and remove repeated  '/'
     split_url = [ x for x in url.split("/") if len(x) != 0]
-    return f"git@{split_url[1]}:{'/'.join(split_url[2:])}.git".lower()
+    return f"git@{split_url[1]}:{'/'.join(split_url[2:])}.git"
 
 """
 From: git@<git repo>:<path el 1>/<path el 2>/<path el 3>/<path el 4>.git
@@ -32,7 +32,7 @@ def url_SSH_to_HTTPS(url):
             raise Exception("Cannot convert " + url)
         else:
             # Already in ssh format
-            return url.lower()
+            return url
 
     head, path = url.split(":")
     remote = head.split("@")[1]
@@ -40,7 +40,7 @@ def url_SSH_to_HTTPS(url):
     if path.endswith(".git"):
         path = path[:-4]
 
-    return f"https://{remote}/{path}".lower()
+    return f"https://{remote}/{path}"
 
 """
 Flip url. If ssh url, change to HTTP and vice-versa
@@ -65,7 +65,7 @@ def GetRepoNameFromURL(url):
     url = url.split('/')[-1].strip()
     if url.endswith(".git"):
         url = url[:-4]
-    return url.lower()
+    return url
 
 def GetRepoBareTreePath(url):
     url = url_SSH_to_HTTPS(url)
@@ -75,7 +75,7 @@ def GetRepoBareTreePath(url):
     url = url.replace("http://","")
     if not url.endswith(".git"):
         url = url+".git"
-    return url.lower()
+    return url
 
 def SameUrl(url1, url2):
     try:

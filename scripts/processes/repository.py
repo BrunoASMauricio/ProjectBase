@@ -42,7 +42,7 @@ def DetectedStateChanged():
 
 def GetRepoId(repo_configs):
     url = url_SSH_to_HTTPS(repo_configs["url"])
-    return url.lower()
+    return url
     # return str(repo_configs["url"]) + " " + str(repo_configs["branch"]) + " " + str(repo_configs["commit"])
 
 """
