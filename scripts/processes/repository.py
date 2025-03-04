@@ -54,15 +54,17 @@ def __LoadRepositoryFolder(imposed_configs):
     global repositories_lock
     repo_id = GetRepoId(imposed_configs)
     # imposed_configs["repo_id"] = repo_id
-    current_local_path = None
+
+    # Current full path to the repository
+    current_location = None
 
     # We already have cached metadata on this repo
     if repo_id in repositories.keys() and repositories[repo_id] != None and repositories[repo_id]["reloaded"] == True:
         repository = repositories[repo_id]
         # Is the repository where we expect it to be?
-        current_local_path  = FindGitRepo(repository["full worktree path"], imposed_configs["url"], imposed_configs["commitish"], depth=1)
-        if current_local_path == None:
-            logging.warning("Repo " + imposed_configs["name"] + " is not in the expected path of: " + repository["full worktree path"])
+        current_location  = FindGitRepo(repository["full worktree path"], imposed_configs["url"], imposed_configs["commitish"], depth=1)
+        if current_location == None:
+            logging.warning(f"Repo {imposed_configs["name"]} is not in the expected path of: {repository["full worktree path"]}")
             SetDetectedStateChange()
             # Delete previous data. Cant trust it
             del repositories[repo_id]
@@ -70,11 +72,12 @@ def __LoadRepositoryFolder(imposed_configs):
         SetDetectedStateChange()
 
     # Repo path unknown, or not where expected. Find repository
-    if current_local_path == None:
-        current_local_path = FindGitRepo(Settings["paths"]["project code"], imposed_configs["url"], imposed_configs["commitish"])
+    if current_location == None:
+        current_location = FindGitRepo(Settings["paths"]["project code"], imposed_configs["url"], imposed_configs["commitish"])
 
     # Repo nowhere to be found, add it
-    if current_local_path == None:
+    if current_location == None:
+        logging.info(f"Repository {imposed_configs} not found")
         # Setup helper worktree
         helper_path = AddWorkTree(imposed_configs["bare path"], imposed_configs["url"], imposed_configs["commitish"], Settings["paths"]["temporary"])
         repository  = MergeConfigs(imposed_configs, LoadConfigs(helper_path))
@@ -84,27 +87,33 @@ def __LoadRepositoryFolder(imposed_configs):
         # Move worktree to appropriate place
         CreateDirectory(expected_local_path)
         MoveWorkTree(repository["bare path"], helper_path, expected_local_path)
-        current_local_path = expected_local_path
+        # current_location = expected_local_path
+        current_location = JoinPaths(expected_local_path, repository["name"])
+
         SetDetectedStateChange()
 
-    else: # Repository present at current_local_path
-        # logging.debug("Repo " + imposed_configs["name"] + " found at " + current_local_path)
-        repository = MergeConfigs(imposed_configs, LoadConfigs(current_local_path))
+    else: # Repository present at current_location
+        # logging.debug("Repo " + imposed_configs["name"] + " found at " + current_location)
+        repository = MergeConfigs(imposed_configs, LoadConfigs(current_location))
 
         # Is that the expected path?
         expected_local_path = JoinPaths(Settings["paths"]["project code"], repository["local path"])
         repo_path = JoinPaths(expected_local_path, repository["name"])
 
-        if current_local_path != repo_path:
-            logging.warning("Repository not in expected place (at \"" + current_local_path + "\" instead of \"" + repo_path + "\"). Moving it")
-            MoveWorkTree(repository["bare path"], current_local_path, expected_local_path)
-            current_local_path = repo_path
+        if current_location != repo_path:
+            logging.warning(f"Repository not in expected place (at \"{current_location}\" instead of \"{repo_path}\"). Moving it")
+            MoveWorkTree(repository["bare path"], current_location, expected_local_path)
+            current_location = repo_path
             SetDetectedStateChange()
-        current_local_path = expected_local_path
+        current_location = repo_path
 
-    # repository dict exists containing configs, repo is at current_local_path and congruent with the path requested in configs
-    repository["full worktree path"] = current_local_path
-    repository["repo path"]  = JoinPaths(current_local_path, repository["name"])
+    # From this point on:
+    # 1. Repository dict exists containing configs
+    # 2. Repo is at current_location
+    # 3. expected_local_path contains the parent of the repo
+    # 4. Path is consistent with the path requested in configs
+    repository["full worktree path"] = current_location
+    repository["repo path"]  = current_location
     repository["repo name"]  = GetRepositoryName(repository["repo path"])
     repository["build path"] = repository["repo path"].replace(Settings["paths"]["project code"], Settings["paths"]["build env"])
     UpdateState(repository["configs path"])
