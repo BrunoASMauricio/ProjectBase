@@ -83,7 +83,7 @@ def __LoadRepositoryFolder(imposed_configs):
 
         # Move worktree to appropriate place
         CreateDirectory(expected_local_path)
-        MoveWorkTree(repository["bare path"], repository["url"], repository["commitish"], helper_path, expected_local_path)
+        MoveWorkTree(repository["bare path"], helper_path, expected_local_path)
         current_local_path = expected_local_path
         SetDetectedStateChange()
 
@@ -97,7 +97,7 @@ def __LoadRepositoryFolder(imposed_configs):
 
         if current_local_path != repo_path:
             logging.warning("Repository not in expected place (at \"" + current_local_path + "\" instead of \"" + repo_path + "\"). Moving it")
-            MoveWorkTree(repository["bare path"], repository["url"], repository["commitish"], current_local_path, repo_path)
+            MoveWorkTree(repository["bare path"], current_local_path, expected_local_path)
             current_local_path = repo_path
             SetDetectedStateChange()
         current_local_path = expected_local_path
