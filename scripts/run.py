@@ -33,6 +33,6 @@ from menus.main import MainMenu
 
 Settings.load_persistent_settings()
 
-MainMenu.handle_input()
+MainMenu.HandleInput()
 
 sys.exit(0)

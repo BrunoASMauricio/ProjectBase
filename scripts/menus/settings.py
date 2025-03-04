@@ -56,5 +56,5 @@ def settings_prologue():
 
 SettingsMenu = Menu("Settings Menu")
 SettingsMenu.prologue = settings_prologue
-SettingsMenu.add_callback_entry(current_mode_entry, toggle_mode)
-SettingsMenu.add_callback_entry(current_clone_type_entry, toggle_clone_type)
+SettingsMenu.AddCallbackEntry(current_mode_entry, toggle_mode)
+SettingsMenu.AddCallbackEntry(current_clone_type_entry, toggle_clone_type)
