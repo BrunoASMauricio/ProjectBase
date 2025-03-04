@@ -230,8 +230,10 @@ Move worktree from from_path to to_path
 TODO: dont just remove and add, also copy changes over
 """
 def MoveWorkTree(bare_path, repo_url, repo_commitish, from_path, to_path):
+    GitStash(from_path)
     AddWorkTree(bare_path, repo_url, repo_commitish, to_path)
     RemoveWorkTree(bare_path, from_path)
+    GitStashPop(to_path)
 
 def CheckIfStatusIsClean(status):
     return "nothing to commit, working tree clean" in status
