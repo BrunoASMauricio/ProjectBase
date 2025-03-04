@@ -6,16 +6,17 @@ import logging
 from data.common import Abort, GetNow
 from data.settings import Settings
 from processes.project import Project, UserChooseProject
-from data.common import ValueNotEmpty
+from data.common import ValueNotEmpty, Formatter
 
 if __name__ != "__main__":
     Abort("This script is not meant to be imported, please run directly")
 
 # Configure logging
 logging.basicConfig(filename="/tmp/project_base.log",
-                    filemode='a',
-                            format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
-                            datefmt='%H:%M:%S', level = logging.DEBUG)
+                    filemode='a', level = logging.DEBUG)
+
+for handler in logging.getLogger().handlers:
+    handler.setFormatter(Formatter)
 
 logging.info("\n\n\n=============== PROJECTBASE start ===============")
 logging.info("=============== at " + GetNow() + " ===============")
