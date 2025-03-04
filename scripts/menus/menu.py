@@ -73,10 +73,10 @@ class Menu():
             self.completer = CustomCompleter(self.history_file, [])
             all_menu_names.append(name)
 
-    def add_callback_entry(self, entry, Callback):
+    def AddCallbackEntry(self, entry, Callback):
         self.entries.append([entry, EntryType.CALLBACK, Callback])
     
-    def add_submenu_entry(self, entry, menu):
+    def AddSubmenuEntry(self, entry, menu):
         self.entries.append([entry, EntryType.MENU, menu])
 
     """
@@ -85,13 +85,13 @@ class Menu():
     [["entry 0 name", entry_0_callback, args_for_callback], ...]
     The callback will be called first with args_for_callback as named arguments
     """
-    def add_dynamic_entries(self, entry_generator, fallback=None):
+    def AddDynamicEntries(self, entry_generator, fallback=None):
         self.entries.append([entry_generator, EntryType.DYNAMIC, fallback])
 
     """
     Return string with menu data
     """
-    def get_menu(self, depth):
+    def GetMenu(self, depth):
         index = 1
         menu = GetText(self.prologue)
         menu += ColorFormat(Colors.Yellow, f"({GetTime()})({GetHost()})\n")
@@ -123,7 +123,7 @@ class Menu():
     """
     Activate the entry selected via its' index
     """
-    def select_entry(self, index, depth):
+    def SelectEntry(self, index, depth):
         picked_index = index - 1
         picked_entry = None
         current_index = 0
@@ -149,7 +149,7 @@ class Menu():
         if picked_entry[1] == EntryType.CALLBACK:
             picked_entry[2]()
         elif picked_entry[1] == EntryType.MENU:
-            picked_entry[2].handle_input(depth + 1)
+            picked_entry[2].HandleInput(depth + 1)
             self.completer.setup()
         else:
             dynamic_entry = picked_entry[3][picked_index]
@@ -157,7 +157,7 @@ class Menu():
     """
     Print menu and handle input from user
     """
-    def handle_input(self, depth = 0):
+    def HandleInput(self, depth = 0):
         if depth == 0:
             Formatter.setup()
         current_dir = os.getcwd()
@@ -171,7 +171,7 @@ class Menu():
                 # Newline is useful in general here
                 print()
                 # Show menu
-                print(self.get_menu(depth))
+                print(self.GetMenu(depth))
                 if previous_command != None:
                     print("Previous command: " +str(previous_command))
 
@@ -196,7 +196,7 @@ class Menu():
                 self.completer.update(next_input)
 
                 # Activate selected entry
-                self.select_entry(next_input, depth)
+                self.SelectEntry(next_input, depth)
 
                 # Reset exceptions allowed
                 exceptions_allowed = 5
