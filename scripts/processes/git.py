@@ -199,7 +199,7 @@ def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
 
         remote = GetRepoRemote(bare_path)
 
-        LaunchGitCommandAt("git worktree add " + new_repo_path, bare_path, "Adding git branch worktree")
+        LaunchGitCommandAt(f"git worktree add {new_repo_path}", bare_path, "Adding git branch worktree")
         # New branches track the remote of the current local branch
         LaunchGitCommandAt("git config branch.autoSetupMerge always", new_repo_path, "Configuring branch.autoSetupMerge to always")
         # 
@@ -210,21 +210,21 @@ def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
         # Auto stash before pull and apply afterwards
         LaunchGitCommandAt("git config rebase.autoStash true", new_repo_path, "Configuring pull.rebase to true")
 
-        LaunchGitCommandAt("git checkout -b " + local_branch_name, new_repo_path, "Following branch " + branch_to_follow)
-        LaunchGitCommandAt("git branch --set-upstream-to=" + branch_to_follow + " " + local_branch_name, new_repo_path)
+        LaunchGitCommandAt(f"git checkout -b {local_branch_name}", new_repo_path, f"Following branch {branch_to_follow}")
+        LaunchGitCommandAt(f"git branch --set-upstream-to={branch_to_follow} {local_branch_name}", new_repo_path)
 
     if not os.path.isdir(new_repo_path):
-        raise Exception("Could not add worktree for " + repo_url + " at " + target_path + " from bare git at " + bare_path)
+        raise Exception(f"Could not add worktree for {repo_url} at {target_path} from bare git at {bare_path}")
 
     # print("parent_path "+ parent_path)
     new_tree_path = FindGitRepo(new_repo_path, repo_url, repo_commitish, depth=1)
     if new_tree_path == None or new_tree_path != new_repo_path:
-        raise Exception("Could not add correct worktree for " + repo_url + " at " + target_path + " from bare git at " + bare_path + ".\nGot " + str(new_tree_path) + " instead of "+str(new_repo_path))
+        raise Exception(f"Could not add correct worktree for {repo_url} at {target_path} from bare git at {bare_path}.\nGot {new_tree_path} instead of {new_repo_path}")
 
     return new_repo_path
 
 def RemoveWorkTree(bare_path, target_path):
-    LaunchProcess("git worktree remove --force " + target_path, bare_path)
+    LaunchProcess(f"git worktree remove --force {target_path}", bare_path)
 
 """
 Move worktree from from_path to to_path
@@ -278,6 +278,6 @@ def RepoIsClean(path):
 def GetRepoNameFromPath(path):
     url = GetRepositoryUrl(path)
     if IsEmpty(url):
-        raise Exception("Could not retrieve Name from path \"" + path + "\"")
+        raise Exception(f"Could not retrieve Name from path \"{path}\"")
 
     return GetRepoNameFromURL(url)
