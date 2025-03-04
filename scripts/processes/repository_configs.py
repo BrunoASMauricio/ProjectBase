@@ -150,7 +150,7 @@ def ConfigsChanged(folder_path):
     current_state = __GetConfigsFolderState(folder_path)
 
     # Configs exist, are they already loaded?
-    if folder_path not in global_configs_state.keys():
+    if folder_path not in global_configs_state.keys() or global_configs_state[folder_path] == None:
         return True
 
     # Configs existed, load current and previous state
