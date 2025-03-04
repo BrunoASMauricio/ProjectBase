@@ -4,7 +4,7 @@ from processes.process import *
 from data.settings import Settings, CLONE_TYPE
 from data.common import RemoveSequentialDuplicates
 from data.git import *
-from processes.filesystem import CreateDirectory, remove
+from processes.filesystem import CreateDirectory, Remove
 from processes.git_operations import *
 from data.paths import GetParentPath, GetCurrentFolderName, JoinPaths, GetNewTemporaryPath
 
@@ -254,7 +254,7 @@ def MoveWorkTree(bare_path, from_path, to_path):
 
     LaunchProcess(f"git worktree move {temp_repo} {to_path}", bare_path)
 
-    remove(temp_path)
+    Remove(temp_path)
 
     # GitStash(from_path)
     # to_path = '/'.join(new_repo_path.split("/")[:-1])
