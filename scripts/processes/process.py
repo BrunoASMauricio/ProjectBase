@@ -1,5 +1,6 @@
 import os
 import pty
+import logging
 import traceback
 import threading
 import subprocess
@@ -38,7 +39,9 @@ def Flushthread_log():
     global thread_log
     global thread_log_lock
     with thread_log_lock:
-        print(thread_log,end="")
+        if len(thread_log) > 0:
+            print(thread_log,end="")
+            logging.info(thread_log)
         thread_log = ""
 
 def PrintProgressWhileWaitOnThreads(threads, print_function=None, print_arguments=None):
@@ -261,55 +264,49 @@ def LaunchProcess(command, path=None, to_print=False):
     if command == "":
         return returned
 
-    cwd = os.getcwd()
-    os.chdir(path)
+    # Need to cd for each git, because doing os.chdir changes the cwd for ALL threads
+    command = f"cd {path}; {command}"
     
     command = f"set -e; {command}"
 
-    try:
+    if to_print == True:
+        print(ColorFormat(Colors.Blue, command))
+        output_bytes = []
+        def read(fd):
+            Data = os.read(fd, 1024)
+            output_bytes.append(Data)
+            return Data
+
+        # Remove all types of whitespace repetitions `echo  \t  a` -> `echo a`
+        command = " ".join(command.split())
+
+        returned["code"] = int(pty.spawn(['bash', '-c', command], read))
+
         if to_print == True:
-            print(ColorFormat(Colors.Blue, command))
-            output_bytes = []
-            def read(fd):
-                Data = os.read(fd, 1024)
-                output_bytes.append(Data)
-                return Data
+            print(ColorFormat(Colors.Blue, "Returned " + str(returned["code"])))
 
-            # Remove all types of whitespace repetitions `echo  \t  a` -> `echo a`
-            command = " ".join(command.split())
+        if len(output_bytes) != 0:
+            output_bytes = b''.join(output_bytes)
+            output_utf8 = output_bytes.decode('utf-8')
+            no_escape_utf8 = RemoveAnsiEscapeCharacters(output_utf8)
+            clean_utf8 = RemoveControlCharacters(no_escape_utf8)
 
-            returned["code"] = int(pty.spawn(['bash', '-c', command], read))
-
-            if to_print == True:
-                print(ColorFormat(Colors.Blue, "Returned " + str(returned["code"])))
-
-            if len(output_bytes) != 0:
-                output_bytes = b''.join(output_bytes)
-                output_utf8 = output_bytes.decode('utf-8')
-                no_escape_utf8 = RemoveAnsiEscapeCharacters(output_utf8)
-                clean_utf8 = RemoveControlCharacters(no_escape_utf8)
-
-                returned["stdout"] = clean_utf8
-            else:
-                returned["stdout"] = ""
+            returned["stdout"] = clean_utf8
         else:
-            result = subprocess.run(['bash', '-c', command],
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
-            returned["command"] = command
-            returned["stdout"]  = result.stdout.decode('utf-8')
-            returned["stderr"]  = result.stderr.decode('utf-8')
-            returned["code"]    = int(result.returncode)
-    finally:
-        os.chdir(cwd)
+            returned["stdout"] = ""
+    else:
+        result = subprocess.run(['bash', '-c', command],
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
+        returned["command"] = command
+        returned["stdout"]  = result.stdout.decode('utf-8')
+        returned["stderr"]  = result.stderr.decode('utf-8')
+        returned["code"]    = int(result.returncode)
 
     if returned["code"] != 0:
         message  = f"\n\t========================= Process failed (start) ({GetNow()}) =========================\n"
         message += "\t\tProcess returned failure (" + ColorFormat(Colors.Yellow, str(returned["code"])) + "):\n"
-        if path != None:
-            message += ColorFormat(Colors.Yellow, f"at {path}\n")
-        else:
-            message += ColorFormat(Colors.Yellow, f"at {os.getcwd()}\n")
+        message += ColorFormat(Colors.Yellow, f"at {path}\n")
         message += ColorFormat(Colors.Cyan,   f"{command}\n")
         message += ColorFormat(Colors.Blue,   f"stdout: {returned["stdout"]}\n")
         message += ColorFormat(Colors.Red,    f"stderr: {returned["stderr"]}\n")
