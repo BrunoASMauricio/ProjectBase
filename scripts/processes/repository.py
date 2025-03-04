@@ -121,8 +121,9 @@ def __LoadRepositoryFolder(imposed_configs):
     return repository
 
 def __RepoHasNoCode(repository):
-    files = FindInodeByPattern("CMakeLists.txt", repository["repo path"])
-    return len(files) > 0
+    files = FindInodeByPattern(repository["repo path"], "CMakeLists.txt")
+    logging.error(f"Files from {repository}: {files}")
+    return len(files) == 0
 
 def __RepoHasFlagSet(repository, flag):
     return flag in repository["flags"]
@@ -286,7 +287,7 @@ def __SetupCMake(repositories):
                 public_header_folders += [JoinPaths(repository["repo path"], x) for x in repository["public headers"]]
 
             # Fetch all objects to link
-            if not __RepoHasFlagSet(repository, "independent project") and not __RepoHasFlagSet(repository, "no auto build"):
+            if not __RepoHasFlagSet(repository, "independent project") and not (__RepoHasFlagSet(repository, "no auto build") or __RepoHasNoCode(repository)):
                 ObjectsToLink.append(repository["name"]+'_lib')
         except Exception as ex:
             traceback.print_exc()
