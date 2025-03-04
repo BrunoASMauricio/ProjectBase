@@ -204,42 +204,22 @@ def LoadConfigs(current_repo_path):
 
     basic_headers = ["headers", "inc", "include"]
 
-    # TODO: Generalize 3 cases below into a single function
-    private_headers = GetValueOrDefault(configs, "private headers", [])
-    public_headers  = GetValueOrDefault(configs, "public headers", [])
-    test_headers    = GetValueOrDefault(configs, "test headers", [])
+    def __CheckHeaders(flag, configs, static_paths, dynamic_paths):
+        paths = GetValueOrDefault(configs, flag, [])
+        if len(paths) == 0:
+            for path in static_paths:
+                paths.append(path)
 
-    # If no headers specified, attempt to auto detect
-    if len(public_headers) == 0:
-        for header in basic_headers:
-            public_headers.append("code/" + header)
-            public_headers.append(header)
-        __FindRepoFolders(current_repo_path, configs, "public headers", public_headers)
-    else:
-        configs["public headers"]  = public_headers
+            for header in basic_headers:
+                for path in dynamic_paths:
+                    paths.append(path + header)
 
+            __FindRepoFolders(current_repo_path, configs, flag, paths)
+        configs[flag] = paths
 
-    # If no headers specified, attempt to auto detect
-    if len(private_headers) == 0:
-        private_headers.append("code/")
-        private_headers.append("code/source")
-        for header in basic_headers:
-            private_headers.append("execs/" + header)
-        __FindRepoFolders(current_repo_path, configs, "private headers", private_headers)
-    else:
-        configs["private headers"] = private_headers
-
-    # If no headers specified, attempt to auto detect
-    if len(test_headers) == 0:
-        test_headers.append("tests/")
-        test_headers.append("tests/source")
-        for header in basic_headers:
-            test_headers.append("tests/" + header)
-            test_headers.append("execs/tests/" + header)
-        __FindRepoFolders(current_repo_path, configs, "test headers", test_headers)
-    else:
-        configs["test headers"]    = test_headers
-        logging.error("YEEEYAH " + str(test_headers))
+    __CheckHeaders("public headers",  configs, [], ["code/", ""])
+    __CheckHeaders("private headers", configs, ["code/", "code/source"], ["execs/"])
+    __CheckHeaders("test headers", configs, ["tests/", "tests/source"], ["tests/", "execs/tests/"])
 
     configs["local path"] = GetValueOrDefault(configs, "local path", Settings["paths"]["default local path"])
     configs["flags"] = GetValueOrDefault(configs, "flags", [])
