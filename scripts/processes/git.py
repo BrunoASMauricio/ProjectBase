@@ -57,10 +57,12 @@ If commit is not None, will only match exact commit
 """
 def FindGitRepo(base_path, repo_url, repo_commitish = None, depth=-1):
     if depth == 0:
+        logging.debug("Not found in desired depth")
         return None
 
     # multiple threads mean base_path can be randomly deleted
     if not os.path.isdir(base_path):
+        logging.warning("Folder disappeared during operation")
         return None
 
     # TODO: Is this really the better option?? Just blindly assume the flipped url is valid
@@ -83,10 +85,12 @@ def FindGitRepo(base_path, repo_url, repo_commitish = None, depth=-1):
 
     # multiple threads mean base_path can be randomly deleted
     if not os.path.isdir(base_path):
+        logging.warning("Folder disappeared during operation")
         return None
 
     # Nothing can be found inside baregits
     if FolderIsBareGit(base_path):
+        logging.warning("Found bare git")
         return None
 
     # Now look at their files
@@ -104,6 +108,7 @@ def FindGitRepo(base_path, repo_url, repo_commitish = None, depth=-1):
         if Result != None:
             return Result
 
+    logging.warning(f"Nothing more to do for FindGitRepo at {base_path} in {repo_url}")
     return None
 
 def GetAllGitRepos(path_to_search, depth=-1):
@@ -244,10 +249,10 @@ def MoveWorkTree(bare_path, from_path, to_path):
 
     LaunchProcess(f"git worktree move {from_path} {temp_path}", bare_path)
 
-    temp_path = JoinPaths(temp_path, repo_name)
+    temp_repo = JoinPaths(temp_path, repo_name)
     CreateDirectory(to_path)
 
-    LaunchProcess(f"git worktree move {temp_path} {to_path}", bare_path)
+    LaunchProcess(f"git worktree move {temp_repo} {to_path}", bare_path)
 
     remove(temp_path)
 
