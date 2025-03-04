@@ -14,4 +14,7 @@ def CcreateParentDirectory(path_to_child):
     CreateDirectory(GetParentPath(path_to_child))
 
 def FindInodeByPattern(directory, pattern):
-    return glob.glob(os.path.join(directory, pattern))
+    if directory[-1] != "/":
+        directory = f"{directory}/"
+    directory = f"{directory}**"
+    return glob.glob(os.path.join(directory, f"*/{pattern}"), recursive=True, include_hidden=True)
