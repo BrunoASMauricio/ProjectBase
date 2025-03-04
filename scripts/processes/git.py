@@ -234,9 +234,10 @@ TODO: dont just remove and add, also copy changes over
 `to_path`:   Target parent for the repository
 """
 def MoveWorkTree(bare_path, from_path, to_path):
+    logging.debug("Moving worktree")
+
     repo_name = GetRepoNameFromPath(bare_path)
 
-    logging.debug("")
     temp_path = GetNewTemporaryPath(Settings["paths"])
 
     CreateDirectory(temp_path)
