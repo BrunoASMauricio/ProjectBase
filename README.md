@@ -86,6 +86,8 @@ Ordered by priority
 
 ### General
 
+- [ ] Add auto-test option that pulls each repository independently, loads and builds the project, runs all tests and checks if everything went ok
+- [ ] Consecutive failures should only make ProjectBase quit if they happen in quick succession
 - [ ] Add option to disable dense logging
 - [ ] Allow configs.json at root level
 - [ ] Provide "code only" view into a project
@@ -126,6 +128,8 @@ Ordered by priority
 - [ ] abstract stack printer from processes
   - [ ] In logging
   - [ ] In general stack printing (non process stack)
+- [ ] Sometimes input is blocked. A Ctrl+C fixes this, but it should still be fixed
+- [ ] Ponder idea of "virtual" dependencies that are just configuration layers for a project (i.e. they do not need an actual repository?)
 
 ### CMake
 
