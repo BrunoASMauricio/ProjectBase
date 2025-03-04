@@ -1,4 +1,6 @@
 import os
+import random
+import string
 from pathlib import Path
 
 def GetCurrentFolderName(path_to_child):
@@ -84,3 +86,10 @@ def JoinPaths(*paths):
     while "//" in final_path:
         final_path = final_path.replace("//", "/")
     return final_path
+
+def GetNewTemporaryPath(paths):
+    while True:
+        random_name = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+        path = JoinPaths(paths["temporary"], random_name)
+        if not os.path.exists(path):
+            return path
