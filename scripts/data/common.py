@@ -43,20 +43,22 @@ class INDENT_FORMATTER(logging.Formatter):
                 relevant_stack = ""
             else:
                 relevant_stack = stack[10:-1*self.base_depth]
-                frame = relevant_stack[0].frame
+                if len(relevant_stack) > 0:
+                    frame = relevant_stack[0].frame
 
-                relevant_stack = [ColorFormat(Colors.Green, f"{level.function}(#{level.lineno})") for level in relevant_stack]
-                relevant_stack = relevant_stack[::-1]
-                relevant_stack = "->".join(relevant_stack)
-                # Print arguments of the last call
-                args, _, _, values = inspect.getargvalues(frame)
-                function_args = ", ".join(f"\n  {ColorFormat(Colors.Yellow, arg)} = {values[arg]!r}" for arg in args) if args else ""
-                relevant_stack = f"{relevant_stack}({function_args})\n"
+                    relevant_stack = [ColorFormat(Colors.Green, f"{level.function}(#{level.lineno})") for level in relevant_stack]
+                    relevant_stack = relevant_stack[::-1]
+                    relevant_stack = "->".join(relevant_stack)
+                    # Print arguments of the last call
+                    args, _, _, values = inspect.getargvalues(frame)
+                    function_args = ", ".join(f"\n  {ColorFormat(Colors.Yellow, arg)} = {values[arg]!r}" for arg in args) if args else ""
+                    relevant_stack = f"{relevant_stack}({function_args})\n"
 
             # Apply indentation
             record.msg = f"\n{relevant_stack}{record.msg}\n"
         except Exception as ex:
             print(f"Logger error: {ex}")
+            traceback.print_exc()
             sys.exit(0)
 
         return super().format(record)
