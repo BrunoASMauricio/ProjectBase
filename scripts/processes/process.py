@@ -244,16 +244,25 @@ def LaunchProcess(command, path=None, to_print=False):
         _type_: {"stdout":"<stdout>", "code": return code}
     """
 
-    returned = {"stdout": "", "stderr": "", "code": ""}
-
-    if command == "":
-        return {"stdout": "", "stderr": "", "code": ""}
-
-    if path != None:
+    if path == None:
+        path = os.getcwd()
+    else:
         if not os.path.isdir(path):
             raise Exception(f"No such path ({path}) for executing command ({command}) ")
-        cwd = os.getcwd()
-        os.chdir(path)
+
+    returned = {
+        "stdout": "",
+        "stderr": "",
+        "code": "",
+        "path": path,
+        "command": command
+    }
+
+    if command == "":
+        return returned
+
+    cwd = os.getcwd()
+    os.chdir(path)
     
     command = f"set -e; {command}"
 
@@ -292,8 +301,7 @@ def LaunchProcess(command, path=None, to_print=False):
             returned["stderr"]  = result.stderr.decode('utf-8')
             returned["code"]    = int(result.returncode)
     finally:
-        if path != None:
-            os.chdir(cwd)
+        os.chdir(cwd)
 
     if returned["code"] != 0:
         message  = f"\n\t========================= Process failed (start) ({GetNow()}) =========================\n"
