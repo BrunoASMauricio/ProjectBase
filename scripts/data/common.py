@@ -39,13 +39,13 @@ class INDENT_FORMATTER(logging.Formatter):
             stack = inspect.stack()
 
             # For DEBUG logs after base_depth has been set, also print a light version of the stack
-            if self.base_depth == None or record.levelno != logging.DEBUG:
+            if self.base_depth == None or record.levelno == logging.INFO:
                 relevant_stack = ""
             else:
                 relevant_stack = stack[10:-1*self.base_depth]
                 frame = relevant_stack[0].frame
 
-                relevant_stack = [ColorFormat(Colors.Green, level.function) for level in relevant_stack]
+                relevant_stack = [ColorFormat(Colors.Green, f"{level.function}(#{level.lineno})") for level in relevant_stack]
                 relevant_stack = relevant_stack[::-1]
                 relevant_stack = "->".join(relevant_stack)
                 # Print arguments of the last call
