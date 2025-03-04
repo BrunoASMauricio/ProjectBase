@@ -14,8 +14,6 @@ MESSAGE("Generating ${RepositoryName}")
 
 ### Remove existing variables
 unset(repository_source_files)
-unset(src_path)
-unset(header_path)
 unset(REPO_CODE_PATH)
 unset(REPO_PATH)
 unset(PUBLIC_HEADERS)
@@ -29,8 +27,6 @@ unset(REP_DEBUG_C_FLAGS)
 unset(REP_RELEASE_C_FLAGS)
 
 ### Setup useful variables
-SET(src_path $$REPO_SOURCES$$/code/source)
-SET(header_path $$REPO_SOURCES$$/code/headers)
 SET(REPO_CODE_PATH $$REPO_SOURCES$$/code)
 SET(REPO_PATH $$REPO_SOURCES$$)
 SET(REPO_NAME $$REPO_NAME$$)
