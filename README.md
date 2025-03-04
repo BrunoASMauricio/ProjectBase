@@ -87,6 +87,7 @@ Ordered by priority
 ### General
 
 - [ ] Add option to disable dense logging
+- [ ] Allow configs.json at root level
 - [ ] Provide "code only" view into a project
   - [ ] Just like build folder is separate, use links to generate a view that only contains headers and source code
 - [X] Add abstraction similar to menu, but for multiple choice stuff (i.e. executable/test/project/single repo to manage operations)
@@ -129,8 +130,9 @@ Ordered by priority
 ### CMake
 
 - [X] Only add headers that exist
+- [ ] Allow all build configs via configs.json
 - [ ] Prevent executables from having the same name as a generated object/executable/library (aka a target)
-- [ ] Only link directl against actual dependencies
+- [ ] Only link directly against actual dependencies
 
 ### Setup
 
