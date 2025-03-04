@@ -7,12 +7,13 @@ from data.common import IsEmpty
 def ParseGitResult(git_command, path):
     if path == None:
         path = os.getcwd()
-    debug_message  = "Git Operation: "
-    debug_message += ColorFormat(Colors.Yellow, git_command)
-    debug_message += " at "
-    debug_message += ColorFormat(Colors.Blue, path)
-    logging.debug(debug_message)
-    return ParseProcessResponse(LaunchProcess(git_command, path, False))
+
+    response = "ERRORED OUT"
+    try:
+        response = ParseProcessResponse(LaunchProcess(git_command, path, False))
+    finally:
+        logging.debug(f"Git Operation return: {response}")
+    return response
 
 # ================= GET operations =================
 
