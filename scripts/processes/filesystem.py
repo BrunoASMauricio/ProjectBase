@@ -1,3 +1,6 @@
+import glob
+import os
+
 from processes.process import LaunchProcess
 from data.paths import GetParentPath
 
@@ -9,3 +12,6 @@ def CreateDirectory(path):
 
 def create_parent_directory(path_to_child):
     CreateDirectory(GetParentPath(path_to_child))
+
+def FindInodeByPattern(directory, pattern):
+    return glob.glob(os.path.join(directory, pattern))
