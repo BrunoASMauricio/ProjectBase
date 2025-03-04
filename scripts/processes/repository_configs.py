@@ -248,7 +248,6 @@ def LoadConfigs(current_repo_path):
     configs["setup"]        = GetValueOrDefault(configs, "setup", {})
     configs["before build"] = GetValueOrDefault(configs, "before build", {})
     configs["after build"]  = GetValueOrDefault(configs, "after build", {})
-    configs["test_headers"] = GetValueOrDefault(configs, "test_headers", [])
     configs["executables"] = GetValueOrDefault(configs, "executables", [])
 
     return configs
