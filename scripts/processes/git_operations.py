@@ -109,9 +109,18 @@ Stages all changes, within the current directory and its subdirectories.
 """
 def RepoSaveChanges(path, commit_message=None):
     try:
-        ParseGitResult('git add -A; git commit -m "' + commit_message + '"', path)
+        ParseGitResult(f'git add -A; git commit -m "{commit_message}"', path)
     except ProcessError as ex:
         ex.RaiseIfNotInOutput("nothing to commit, working tree clean")
+
+def GitStash(path):
+    return ParseGitResult("git stash", path)
+
+def GitStashPop(path):
+    try:
+        ParseGitResult("git stash pop", path)
+    except ProcessError as ex:
+        ex.RaiseIfNotInOutput("No stash entries found")
 
 def GetAllCommits(path):
     return ParseGitResult("git log --pretty='format:%H %s'", path)
