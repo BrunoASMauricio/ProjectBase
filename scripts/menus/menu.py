@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 import logging
 from enum import Enum
 
@@ -163,7 +164,39 @@ class Menu():
         current_dir = os.getcwd()
         previous_command = None
         previous_invalid = False
-        exceptions_allowed = 5
+        previous_time = None
+        current_tries = 5
+
+        def __ResetException():
+            nonlocal previous_time
+            nonlocal current_tries
+            current_tries = 5
+            previous_time = None
+
+        def __CheckException():
+            nonlocal previous_time
+            nonlocal current_tries
+
+            current_time = time.time()
+
+            # First try
+            if previous_time == None:
+                previous_time = current_time
+                current_tries -= 1
+                return
+
+            # Check if failure was too quick
+            if current_time - previous_time <= 1:
+                current_tries -= 1
+                if current_tries == 0:
+                    message = "Too many consecutive exceptions (maximum allowed is 5 with less than 1 second in between)"
+                    logging.critical(message)
+                    print(message)
+                    sys.exit(1)
+            else:
+                __ResetException()
+
+
         while True:
             try:
                 ResetTerminal()
@@ -198,8 +231,8 @@ class Menu():
                 # Activate selected entry
                 self.SelectEntry(next_input, depth)
 
-                # Reset exceptions allowed
-                exceptions_allowed = 5
+                # Reset allowed exceptions
+                __ResetException()
 
             except KeyboardInterrupt:
                 print("\nCtrl+C interrupts running operations and enter goes to the previous menu. Press Ctrl+D to back out of ProjectBase")
@@ -216,11 +249,7 @@ class Menu():
                 raise sys_ex
             except Exception as exception:
                 ErrorCheckLogs(exception)
-
-                if exceptions_allowed <= 0:
-                    logging.critical("Too many exceptions in a row, halting")
-                    sys.exit(1)
-                exceptions_allowed -= 1
+                __CheckException()
 
             # Always reset directory after running an operation
             os.chdir(current_dir)
