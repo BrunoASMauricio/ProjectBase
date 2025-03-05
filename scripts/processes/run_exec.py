@@ -10,7 +10,7 @@ from menus.menu import GetNextOption, MenuExit
 scan path_to_scan for appropriate executables
 Return a list with the executables
 """
-def __get_available_executables(path_to_scan):
+def __GetAvailableExecutables(path_to_scan):
     executables_available = []
     os.chdir(Settings["paths"]["project main"])
 
@@ -28,7 +28,7 @@ def __get_available_executables(path_to_scan):
 """
 Parse user input and extract prefix and the actual user input
 """
-def __parse_input(og_user_input):
+def __ParseInput(og_user_input):
     prefix = ""
     user_prefix = og_user_input[0:2]
     prefixes = {
@@ -50,7 +50,7 @@ def __parse_input(og_user_input):
 """
 Locate the actual executable used and return its' path
 """
-def __locate_executable(user_input, executables_available, path_to_scan):
+def __LocateExecutable(user_input, executables_available, path_to_scan):
     input_list = user_input.split(' ')
     executable = input_list[0]
     if StringIsNumber(executable):
@@ -71,12 +71,12 @@ def __locate_executable(user_input, executables_available, path_to_scan):
             return None, None
     return path_to_exec, input_list
 
-def execute_menu(path_to_scan):
+def ExecuteMenu(path_to_scan):
     # Allow python scripts to use ProjectBase scripts
     PrepareExecEnvironment()
 
     while True:
-        executables_available = __get_available_executables(path_to_scan)
+        executables_available = __GetAvailableExecutables(path_to_scan)
         if len(executables_available) == 0:
             print("No executables found")
             return
@@ -109,10 +109,10 @@ def execute_menu(path_to_scan):
             if MenuExit(og_user_input):
                 return
             # Check extra program prefix
-            prefix, user_input = __parse_input(og_user_input)
+            prefix, user_input = __ParseInput(og_user_input)
 
             # Locate executable
-            path_to_exec, input_list = __locate_executable(user_input, executables_available, path_to_scan)
+            path_to_exec, input_list = __LocateExecutable(user_input, executables_available, path_to_scan)
             if path_to_exec == None:
                 print("Executable not found")
                 continue
@@ -140,15 +140,15 @@ def execute_menu(path_to_scan):
         except EOFError:
             break
 
-def run_single_test():
-    execute_menu(Settings["paths"]["tests"])
+def RunSingleTest():
+    ExecuteMenu(Settings["paths"]["tests"])
 
-def run_single_executable():
-    execute_menu(Settings["paths"]["executables"])
+def RunSingleExecutable():
+    ExecuteMenu(Settings["paths"]["executables"])
 
 def _RunAllTests(Prefix=""):
     all_outputs = []
-    tests = __get_available_executables(Settings["paths"]["tests"])
+    tests = __GetAvailableExecutables(Settings["paths"]["tests"])
 
     print("Running " + str(len(tests)) + " tests in " + Settings["paths"]["tests"].replace(Settings["paths"]["project base"], ""))
     # Allow python scripts to use ProjectBase scripts
@@ -173,7 +173,7 @@ def _RunAllTests(Prefix=""):
 
     return all_outputs
 
-def run_all_tests():
+def RunAllTests():
     errors = 0
     all_outputs = _RunAllTests()
     for output in all_outputs:
@@ -194,7 +194,7 @@ def run_all_tests():
     print(ColorFormat(Colors.Red, ("="*40)+"\n          " + str(errors) + " Errors reported\n"+("="*40)))
     print(ColorFormat(Colors.Green, "Successes: ["+str(len(all_outputs) - errors)+"]"))
 
-def run_all_tests_on_valgrind():
+def RunAllTestsWithValgrind():
     errors = 0
     all_outputs = _RunAllTests("valgrind --fair-sched=yes -s --leak-check=full --track-origins=yes")
     for output in all_outputs:
