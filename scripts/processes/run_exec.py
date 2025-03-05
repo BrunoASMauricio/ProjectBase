@@ -5,17 +5,16 @@ from data.colors import *
 from processes.process import RunExecutable, PrepareExecEnvironment
 from processes.process import LaunchSilentProcess, ProcessError, RunInThreadsWithProgress
 from menus.menu import GetNextOption, MenuExit
-import traceback
 
 """
-scan PathToScan for appropriate executables
+scan path_to_scan for appropriate executables
 Return a list with the executables
 """
-def __get_available_executables(PathToScan):
+def __get_available_executables(path_to_scan):
     executables_available = []
     os.chdir(Settings["paths"]["project main"])
 
-    for entry in os.scandir(PathToScan):
+    for entry in os.scandir(path_to_scan):
         # Must be fully executable
         if entry.stat().st_mode & 0o111 != 0o111:
             continue
@@ -51,7 +50,7 @@ def __parse_input(og_user_input):
 """
 Locate the actual executable used and return its' path
 """
-def __locate_executable(user_input, executables_available, PathToScan):
+def __locate_executable(user_input, executables_available, path_to_scan):
     input_list = user_input.split(' ')
     executable = input_list[0]
     if StringIsNumber(executable):
@@ -59,11 +58,11 @@ def __locate_executable(user_input, executables_available, PathToScan):
         if exec_ind > len(executables_available):
             print("Out of bounds index: " + user_input)
             return None, None
-        path_to_exec = PathToScan + "/" + executables_available[exec_ind]
+        path_to_exec = path_to_scan + "/" + executables_available[exec_ind]
     else:
         # By name
-        if os.path.isfile(PathToScan + "/" + executable):
-            path_to_exec = PathToScan + "/" + executable
+        if os.path.isfile(path_to_scan + "/" + executable):
+            path_to_exec = path_to_scan + "/" + executable
         # By absolute path
         elif os.path.isfile(executable):
             path_to_exec = executable
@@ -72,27 +71,27 @@ def __locate_executable(user_input, executables_available, PathToScan):
             return None, None
     return path_to_exec, input_list
 
-def execute_menu(PathToScan):
+def execute_menu(path_to_scan):
     # Allow python scripts to use ProjectBase scripts
     PrepareExecEnvironment()
 
     while True:
-        executables_available = __get_available_executables(PathToScan)
+        executables_available = __get_available_executables(path_to_scan)
         if len(executables_available) == 0:
             print("No executables found")
             return
 
-        print("Executables available in "+PathToScan+":")
+        print("Executables available in "+path_to_scan+":")
         executables_available.sort()
-        PreviousRepoName = ""
-        for Index in range(len(executables_available)):
-            Exploded = executables_available[Index].split("_")
-            Repo = Exploded[0]
-            Name = '_'.join(Exploded[1:])
-            if PreviousRepoName != Repo:
-                print(ColorFormat(Colors.Yellow, "\t<" + Repo + ">"))
-                PreviousRepoName = Repo
-            print("["+str(Index)+"]" +ColorFormat(Colors.Blue, Name))
+        previous_repo_name = ""
+        for index in range(len(executables_available)):
+            exploded = executables_available[index].split("_")
+            repo = exploded[0]
+            name = '_'.join(exploded[1:])
+            if previous_repo_name != repo:
+                print(ColorFormat(Colors.Yellow, "\t<" + repo + ">"))
+                previous_repo_name = repo
+            print("["+str(index)+"]" +ColorFormat(Colors.Blue, name))
         print()
 
         
@@ -113,7 +112,7 @@ def execute_menu(PathToScan):
             prefix, user_input = __parse_input(og_user_input)
 
             # Locate executable
-            path_to_exec, input_list = __locate_executable(user_input, executables_available, PathToScan)
+            path_to_exec, input_list = __locate_executable(user_input, executables_available, path_to_scan)
             if path_to_exec == None:
                 print("Executable not found")
                 continue
@@ -126,11 +125,11 @@ def execute_menu(PathToScan):
             print("Running: \"" + full_command + "\"")
 
             try:
-                Result = RunExecutable(full_command)
-                if Result.returncode != 0:
-                    print(ColorFormat(Colors.Red, '"' + full_command + '" returned code = '+str(Result.returncode)))
+                result = RunExecutable(full_command)
+                if result.returncode != 0:
+                    print(ColorFormat(Colors.Red, '"' + full_command + '" returned code = '+str(result.returncode)))
                 else:
-                    print(ColorFormat(Colors.Green, '"' + full_command + '" returned code = '+str(Result.returncode)))
+                    print(ColorFormat(Colors.Green, '"' + full_command + '" returned code = '+str(result.returncode)))
                 return
             except KeyboardInterrupt:
                 print("Keyboard Interrupt")
@@ -148,10 +147,10 @@ def run_single_executable():
     execute_menu(Settings["paths"]["executables"])
 
 def _RunAllTests(Prefix=""):
-    AllOutputs = []
-    Tests = __get_available_executables(Settings["paths"]["tests"])
+    all_outputs = []
+    tests = __get_available_executables(Settings["paths"]["tests"])
 
-    print("Running " + str(len(Tests)) + " tests in " + Settings["paths"]["tests"].replace(Settings["paths"]["project base"], ""))
+    print("Running " + str(len(tests)) + " tests in " + Settings["paths"]["tests"].replace(Settings["paths"]["project base"], ""))
     # Allow python scripts to use ProjectBase scripts
     PrepareExecEnvironment()
 
@@ -160,63 +159,62 @@ def _RunAllTests(Prefix=""):
         try:
             Result = LaunchSilentProcess(Command)
         except ProcessError as ex:
-            Result = ex.Returned
+            Result = ex.returned
         Result["test name"] = TestName
-        AllOutputs.append(Result)
+        all_outputs.append(Result)
 
-    TestsArgs = []
-    for TestIndex in range(len(Tests)):
-        TestName = Tests[TestIndex]
-        TestsArgs.append((Settings["paths"]["tests"] + "/", TestName, ))
+    tests_args = []
+    for test_index in range(len(tests)):
+        test_name = tests[test_index]
+        tests_args.append((Settings["paths"]["tests"] + "/", test_name, ))
 
-    RunInThreadsWithProgress(Run, TestsArgs)
+    RunInThreadsWithProgress(Run, tests_args)
     print("\n")
 
-    return AllOutputs
+    return all_outputs
 
 def run_all_tests():
-    Errors = 0
-    AllOutputs = _RunAllTests()
-    for Output in AllOutputs:
-        if Output["code"] != 0:
-            Errors += 1
-            print(ColorFormat(Colors.Red, Output["test name"] + " ( " + str(Output["code"]) + " )"))
-            if len(Output["stdout"]) != 0:
-                print(ColorFormat(Colors.Blue, "\t\tSTDOUT\n") + Output["stdout"])
-            if len(Output["stderr"]) != 0:
-                print(ColorFormat(Colors.Yellow, "\t\tSTDERR\n") + Output["stderr"])
+    errors = 0
+    all_outputs = _RunAllTests()
+    for output in all_outputs:
+        if output["code"] != 0:
+            errors += 1
+            print(ColorFormat(Colors.Red, output["test name"] + " ( " + str(output["code"]) + " )"))
+            if len(output["stdout"]) != 0:
+                print(ColorFormat(Colors.Blue, "\t\tSTDOUT\n") + output["stdout"])
+            if len(output["stderr"]) != 0:
+                print(ColorFormat(Colors.Yellow, "\t\tSTDERR\n") + output["stderr"])
         else:
-            print(ColorFormat(Colors.Green, '"' + Output["test name"] + '" returned code = '+str(Output["code"])))
+            print(ColorFormat(Colors.Green, '"' + output["test name"] + '" returned code = '+str(output["code"])))
 
-    if Errors == 0:
-        print(ColorFormat(Colors.Green, "All "+str(len(AllOutputs))+" tests successful!"))
+    if errors == 0:
+        print(ColorFormat(Colors.Green, "All "+str(len(all_outputs))+" tests successful!"))
         return
 
-    print(ColorFormat(Colors.Red, ("="*40)+"\n          " + str(Errors) + " Errors reported\n"+("="*40)))
-    print(ColorFormat(Colors.Green, "Successes: ["+str(len(AllOutputs) - Errors)+"]"))
+    print(ColorFormat(Colors.Red, ("="*40)+"\n          " + str(errors) + " Errors reported\n"+("="*40)))
+    print(ColorFormat(Colors.Green, "Successes: ["+str(len(all_outputs) - errors)+"]"))
 
 def run_all_tests_on_valgrind():
-    Errors = 0
-    AllOutputs = _RunAllTests("valgrind --fair-sched=yes -s --leak-check=full --track-origins=yes")
-    for Output in AllOutputs:
-        # print(Output["stderr"])
-        if "ERROR SUMMARY: 0 errors from 0 contexts" not in Output["stderr"]:
-            print(ColorFormat(Colors.Red, "\t" + Output["test name"] + " (" + str(Output["code"]) + ")"))
-            if len(Output["stderr"]) != 0:
+    errors = 0
+    all_outputs = _RunAllTests("valgrind --fair-sched=yes -s --leak-check=full --track-origins=yes")
+    for output in all_outputs:
+        if "ERROR SUMMARY: 0 errors from 0 contexts" not in output["stderr"]:
+            print(ColorFormat(Colors.Red, "\t" + output["test name"] + " (" + str(output["code"]) + ")"))
+            if len(output["stderr"]) != 0:
                 print(ColorFormat(Colors.Yellow, "\t\tSTDERR"))
-                print(Output["stderr"])
+                print(output["stderr"])
 
-            if len(Output["stdout"]) != 0:
+            if len(output["stdout"]) != 0:
                 print(ColorFormat(Colors.Blue, "\t\tSTDOUT"))
-                print(Output["stdout"])
-            Errors = Errors+ 1
+                print(output["stdout"])
+            errors = errors+ 1
         else:
-            print(ColorFormat(Colors.Green, "\t" + Output["test name"] + " is clean"))
+            print(ColorFormat(Colors.Green, "\t" + output["test name"] + " is clean"))
 
-    if Errors == 0:
-        print(ColorFormat(Colors.Green, "No leaks found in "+str(len(AllOutputs))+" tests!"))
+    if errors == 0:
+        print(ColorFormat(Colors.Green, "No leaks found in "+str(len(all_outputs))+" tests!"))
     else:
-        # ErrorSentence = "Leaks found in " + str(Errors) + " tests"
+        # ErrorSentence = "Leaks found in " + str(errors) + " tests"
         # print(ColorFormat(Colors.Red, ("="*40)+"\n          " + ErrorSentence + "\n"+("="*40)))
-        print(ColorFormat(Colors.Green, "Clean:\t["+str(len(AllOutputs) - Errors)+"]"))
-        print(ColorFormat(Colors.Red, "Leaks:\t["+str(Errors)+"]"))
+        print(ColorFormat(Colors.Green, "Clean:\t["+str(len(all_outputs) - errors)+"]"))
+        print(ColorFormat(Colors.Red, "Leaks:\t["+str(errors)+"]"))
