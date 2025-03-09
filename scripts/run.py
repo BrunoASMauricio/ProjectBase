@@ -15,13 +15,15 @@ if __name__ != "__main__":
 logging.basicConfig(filename="/tmp/project_base.log",
                     filemode='a', level = logging.DEBUG)
 
-for handler in logging.getLogger().handlers:
-    handler.setFormatter(Formatter)
-
 logging.info("\n\n\n=============== PROJECTBASE start ===============")
 logging.info("=============== at " + GetNow() + " ===============")
 
 Settings.init()
+
+if Settings["debug"] == True:
+    for handler in logging.getLogger().handlers:
+        handler.setFormatter(Formatter)
+
 if False == ValueNotEmpty(Settings, "url"):
     Settings["url"] = UserChooseProject()
 
