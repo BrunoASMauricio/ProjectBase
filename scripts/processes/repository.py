@@ -188,9 +188,12 @@ def LoadRepositories(root_configs, cache_path):
     loaded_amount = 0
     dependencies.clear()
     while unloaded > 0:
+        if loaded_amount == 0:
+            print(f"\n{len(repositories)} unloaded dependencies found")
+        else:
+            print(f"\n{unloaded} unloaded dependencies found")
         loaded_amount = 0
 
-        print(f"\n{unloaded} unloaded dependencies found")
         # For each unloaded repository, load it
         repo_args = []
         for repo_id in repositories:
