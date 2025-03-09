@@ -50,6 +50,8 @@ class SETTINGS(dict):
 
         parser.add_argument("-e", "--exit", action='store_true', help = "Exit after running command line arguments", default=False, required=False)
 
+        parser.add_argument("-d", "--debug", action='store_true', help = "Increase log verbosity to debug ProjectBase", default=False, required=False)
+
         project_args, action_args = parser.parse_known_args()
 
         self["url"]           = project_args.url
@@ -57,6 +59,7 @@ class SETTINGS(dict):
         self["branch"]        = project_args.branch
         self["exit"]          = project_args.exit
         self["single thread"] = project_args.single_thread
+        self["debug"]         = project_args.debug
         # Trailing unknown arguments
         self["action"] = action_args
 
