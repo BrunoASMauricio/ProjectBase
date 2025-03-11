@@ -197,9 +197,11 @@ def RunAllTests():
 def RunAllTestsWithValgrind():
     errors = 0
     all_outputs = _RunAllTests("valgrind --fair-sched=yes -s --leak-check=full --track-origins=yes")
+    summary_leaks = ""
+    summary_no_leaks = ""
     for output in all_outputs:
         if "ERROR SUMMARY: 0 errors from 0 contexts" not in output["stderr"]:
-            print(ColorFormat(Colors.Red, "\t" + output["test name"] + " (" + str(output["code"]) + ")"))
+            print(ColorFormat(Colors.Red, f"\t{output["test name"]} ({str(output["code"])})"))
             if len(output["stderr"]) != 0:
                 print(ColorFormat(Colors.Yellow, "\t\tSTDERR"))
                 print(output["stderr"])
@@ -208,8 +210,9 @@ def RunAllTestsWithValgrind():
                 print(ColorFormat(Colors.Blue, "\t\tSTDOUT"))
                 print(output["stdout"])
             errors = errors+ 1
+            summary_leaks += ColorFormat(Colors.Red, f"  {output["test name"]} is leaking\n")
         else:
-            print(ColorFormat(Colors.Green, "\t" + output["test name"] + " is clean"))
+            summary_no_leaks += ColorFormat(Colors.Green, f"  {output["test name"]} is not leaking\n")
 
     if errors == 0:
         print(ColorFormat(Colors.Green, "No leaks found in "+str(len(all_outputs))+" tests!"))
@@ -217,4 +220,6 @@ def RunAllTestsWithValgrind():
         # ErrorSentence = "Leaks found in " + str(errors) + " tests"
         # print(ColorFormat(Colors.Red, ("="*40)+"\n          " + ErrorSentence + "\n"+("="*40)))
         print(ColorFormat(Colors.Green, "Clean:\t["+str(len(all_outputs) - errors)+"]"))
-        print(ColorFormat(Colors.Red, "Leaks:\t["+str(errors)+"]"))
+        print(ColorFormat(Colors.Red, "Leaks:\t["+str(errors)+"]\n"))
+        print(summary_no_leaks)
+        print(summary_leaks)
