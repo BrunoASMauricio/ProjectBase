@@ -3,6 +3,7 @@ import pty
 import logging
 import traceback
 import threading
+from time import time
 import subprocess
 
 from time import sleep
@@ -44,7 +45,8 @@ def Flushthread_log():
             logging.info(thread_log)
         thread_log = ""
 
-def PrintProgressWhileWaitOnThreads(threads, print_function=None, print_arguments=None):
+def PrintProgressWhileWaitOnThreads(thread_data, max_delay=None, print_function=None, print_arguments=None):
+    threads, callback, args = thread_data
     if print_arguments == None:
         print_arguments = {}
 
@@ -59,6 +61,8 @@ def PrintProgressWhileWaitOnThreads(threads, print_function=None, print_argument
     threads_alive = len(threads)
     progress = 0
     prev_alive = threads_alive
+    initial_timestamp = time()
+
     while threads_alive != progress:
         threads_alive = len(threads)
         for thread in threads:
@@ -67,6 +71,18 @@ def PrintProgressWhileWaitOnThreads(threads, print_function=None, print_argument
             threads_alive -= 1
         if prev_alive != threads_alive:
             PrintProgress()
+            prev_alive = threads_alive
+
+        if max_delay != None and time() - initial_timestamp > max_delay:
+            initial_timestamp = time()
+            print(f"{progress - threads_alive} threads are taking more time than expected ({max_delay}s). Currently running threads:")
+            for thread_ind in range(len(threads)):
+                thread = threads[thread_ind]
+                if not thread.is_alive():
+                    continue
+
+                print(f"Thread alive for {callback} with arguments: {args[thread_ind]}")
+            # Ask user if we should kill, reset timer, or ignore
 
         # Keep flushing log
         Flushthread_log()
@@ -123,7 +139,7 @@ Run run_callback with each argument in run_args, in separate threads or
 sequentially if "single thread" mode is on
 If print_callback is present, it will be called to register the operation progress
 """
-def RunInThreadsWithProgress(run_callback, run_args, print_callback=None, print_args=None):
+def RunInThreadsWithProgress(run_callback, run_args, max_delay=None, print_callback=None, print_args=None):
     global thread_return
 
     thread_return.clear()
@@ -155,7 +171,7 @@ def RunInThreadsWithProgress(run_callback, run_args, print_callback=None, print_
     else:
         try:
             threads = RunInThreads(run_callback, run_args)
-            PrintProgressWhileWaitOnThreads(threads, print_callback, print_args)
+            PrintProgressWhileWaitOnThreads((threads, run_callback, run_args), max_delay, print_callback, print_args)
         except KeyboardInterrupt:
             print("Keyboard Interrupt, stopping threads")
             for thread in threads:
@@ -215,7 +231,7 @@ def RunOnFolders(paths, callback, arguments={}):
             raise Exception(path+" is not a valid directory, cannot perform "+str(callback)+"("+str(arguments)+")")
         run_args.append((callback, path, arguments,))
 
-    RunInThreadsWithProgress(__RunOnFoldersThreadWrapper, run_args, __PrintRunOnFoldersProgress, {"paths":paths})
+    RunInThreadsWithProgress(__RunOnFoldersThreadWrapper, run_args, 20, __PrintRunOnFoldersProgress, {"paths":paths})
     os.chdir(current_dir)
 
     return operation_status

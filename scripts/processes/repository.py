@@ -122,7 +122,6 @@ def __LoadRepositoryFolder(imposed_configs):
 
 def __RepoHasNoCode(repository):
     files = FindInodeByPattern(repository["repo path"], "CMakeLists.txt")
-    logging.error(f"Files from {repository}: {files}")
     return len(files) == 0
 
 def __RepoHasFlagSet(repository, flag):
@@ -203,7 +202,7 @@ def LoadRepositories(root_configs, cache_path):
                 loaded_amount += 1
 
         # Load remaining repositories
-        RunInThreadsWithProgress(LoadRepository, repo_args, __PrintLoadProgress)
+        RunInThreadsWithProgress(LoadRepository, repo_args, None, __PrintLoadProgress)
 
         # Merge dependencies with existing repositories
         unloaded = 0

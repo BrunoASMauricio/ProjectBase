@@ -168,7 +168,7 @@ def _RunAllTests(Prefix=""):
         test_name = tests[test_index]
         tests_args.append((Settings["paths"]["tests"] + "/", test_name, ))
 
-    RunInThreadsWithProgress(Run, tests_args)
+    RunInThreadsWithProgress(Run, tests_args, 20)
     print("\n")
 
     return all_outputs
