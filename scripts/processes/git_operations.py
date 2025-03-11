@@ -1,5 +1,6 @@
 import os
 import logging
+from data.settings import Settings
 from data.colors import ColorFormat, Colors
 from processes.process import ProcessError, ParseProcessResponse, LaunchProcess
 from data.common import IsEmpty
@@ -12,7 +13,8 @@ def ParseGitResult(git_command, path):
     try:
         response = ParseProcessResponse(LaunchProcess(git_command, path, False))
     finally:
-        logging.debug(f"Git Operation return: {response}")
+        if len(response) > 0 or Settings["debug"]:
+            logging.debug(f"Git Operation return: {response}")
     return response
 
 # ================= GET operations =================
