@@ -86,6 +86,7 @@ Ordered by priority
 
 ### General
 
+- [ ] Print information about the running thread, if it takes too long
 - [ ] Add auto-test option that pulls each repository independently, loads and builds the project, runs all tests and checks if everything went ok
 - [ ] Consecutive failures should only make ProjectBase quit if they happen in quick succession
 - [ ] Add option to disable dense logging
@@ -144,6 +145,7 @@ Ordered by priority
 - [X] Allow to clean Project Base cache
 - [X] Separate loading from setup (loading loads the repos internally, setup forces a load and runs setup commands)
 - [X] Improve detection of configuration change
+  - [ ] Improve detection of configuration change for imposed configs
 - [?] Improve ability to change configs on the fly (without committing, pushing, deleting and recreating the project)
 
 ### Configurability
