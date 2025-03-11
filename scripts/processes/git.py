@@ -90,7 +90,6 @@ def FindGitRepo(base_path, repo_url, repo_commitish = None, depth=-1):
 
     # Nothing can be found inside baregits
     if FolderIsBareGit(base_path):
-        logging.warning("Found bare git")
         return None
 
     # Now look at their files
