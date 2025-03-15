@@ -13,7 +13,7 @@ def ParseGitResult(git_command, path):
     try:
         response = ParseProcessResponse(LaunchProcess(git_command, path, False))
     finally:
-        if len(response) > 0 or Settings["debug"]:
+        if Settings["debug"]:
             logging.debug(f"Git Operation return: {response}")
     return response
 
