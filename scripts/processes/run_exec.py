@@ -34,7 +34,7 @@ def __ParseInput(og_user_input):
     prefixes = {
         "!G": "gdb --args ",
         "!S": "gdbserver 127.0.0.1:6175 ",
-        "!V": "valgrind --fair-sched=yes -s --leak-check=full --track-origins=yes",
+        "!V": "valgrind --fair-sched=yes -s --leak-check=full --show-leak-kinds=all --track-origins=yes",
         "!g": "gdb",
         "!s": "gdbserver",
         "!v": "valgrind"
