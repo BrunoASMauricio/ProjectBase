@@ -90,7 +90,6 @@ Ordered by priority
 - [ ] Add auto-test option that pulls each repository independently, loads and builds the project, runs all tests and checks if everything went ok
 - [ ] Consecutive failures should only make ProjectBase quit if they happen in quick succession
 - [ ] Add option to disable dense logging
-- [ ] Allow configs.json at root level
 - [ ] Provide "code only" view into a project
   - [ ] Just like build folder is separate, use links to generate a view that only contains headers and source code
 - [X] Add abstraction similar to menu, but for multiple choice stuff (i.e. executable/test/project/single repo to manage operations)
@@ -144,11 +143,15 @@ Ordered by priority
 - [X] Fix long loading times
 - [X] Allow to clean Project Base cache
 - [X] Separate loading from setup (loading loads the repos internally, setup forces a load and runs setup commands)
+- [ ] Review imposed configs
 - [X] Improve detection of configuration change
   - [ ] Improve detection of configuration change for imposed configs
 - [?] Improve ability to change configs on the fly (without committing, pushing, deleting and recreating the project)
 
 ### Configurability
+
+- [ ] Collapse configs into single configs.json (dont use folder)
+  - [ ] Allow users to specify source files and executables/tests to build
 - [ ] Allow extra cflags per
   - [ ] object
   - [ ] module
@@ -160,6 +163,7 @@ Ordered by priority
 - [ ] Allow public, private and test headers to be defined by each project. Or simply allow public and private, and tests have access to both?
 
 ### Versioning
+
 - [X] In status, warn if there are dirty repos that will not be commited (have the no commit flag set)
 - [X] Add information on sync status in getting repo status
 - [ ] Toggle between project wide and specific repository operations
@@ -181,7 +185,15 @@ Ordered by priority
 - [ ] Deal with repositories pulled into other repositories
   - [ ] An example is when moving worktree, inner worktrees will be broken
 - [ ] Do not perform `cd` for every git operation (why?)
+- [ ] Allow swapping all repositories to a new branch
+  - [ ] Allow seing all branches
+  - [ ] Allow merging of that branch into another branch
+    - [ ] Branches with no changes suffer nothing
+- [ ] From time to time automatically sync (temporary commit)
 
 Configs that CAN NOT have variables
   local path
   url
+
+same dependencies with different imposed configs shoudld errorr out
+ssame dependenceis with different branches/commits in the same path (in different paths it should work)
