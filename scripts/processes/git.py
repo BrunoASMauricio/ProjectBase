@@ -107,7 +107,6 @@ def FindGitRepo(base_path, repo_url, repo_commitish = None, depth=-1):
         if Result != None:
             return Result
 
-    logging.warning(f"Nothing more to do for FindGitRepo at {base_path} in {repo_url}")
     return None
 
 def GetAllGitRepos(path_to_search, depth=-1):
