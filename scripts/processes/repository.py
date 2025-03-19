@@ -305,7 +305,7 @@ def __SetupCMake(repositories):
 
             if __RepoHasFlagSet(repository, "independent project"):
                 # TODO Throw error if CMakeLists.txt does not exist in sub_dire
-                IncludeEntry = 'add_subdirectory("' + repository["build path"] + '")'
+                IncludeEntry = f'add_subdirectory("{repository["repo path"]}" "{repository["build path"]}")'
             else:
                 IncludeEntry = 'include("' + JoinPaths(repository["build path"], "CMakeLists.txt") + '")'
             ReposToBuild.append(IncludeEntry)
