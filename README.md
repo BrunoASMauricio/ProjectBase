@@ -148,6 +148,10 @@ Ordered by priority
   - [ ] Improve detection of configuration change for imposed configs
 - [?] Improve ability to change configs on the fly (without committing, pushing, deleting and recreating the project)
 
+### Tests
+
+- [ ] Allow defining different testing groups (i.e. tests that are heavy and should therefore not run everytime)
+
 ### Configurability
 
 - [ ] Collapse configs into single configs.json (dont use folder)
