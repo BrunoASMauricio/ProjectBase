@@ -174,12 +174,13 @@ def _RunAllTests(Prefix=""):
     return all_outputs
 
 def RunAllTests():
-    errors = 0
+    errors = []
     all_outputs = _RunAllTests()
     for output in all_outputs:
         if output["code"] != 0:
-            errors += 1
-            print(ColorFormat(Colors.Red, output["test name"] + " ( " + str(output["code"]) + " )"))
+            header_msg = ColorFormat(Colors.Red, output["test name"] + " ( " + str(output["code"]) + " )")
+            errors.append(header_msg)
+            print(header_msg)
             if len(output["stdout"]) != 0:
                 print(ColorFormat(Colors.Blue, "\t\tSTDOUT\n") + output["stdout"])
             if len(output["stderr"]) != 0:
@@ -187,12 +188,12 @@ def RunAllTests():
         else:
             print(ColorFormat(Colors.Green, '"' + output["test name"] + '" returned code = '+str(output["code"])))
 
-    if errors == 0:
+    if len(errors) == 0:
         print(ColorFormat(Colors.Green, "All "+str(len(all_outputs))+" tests successful!"))
         return
 
-    print(ColorFormat(Colors.Red, ("="*40)+"\n          " + str(errors) + " Errors reported\n"+("="*40)))
-    print(ColorFormat(Colors.Green, "Successes: ["+str(len(all_outputs) - errors)+"]"))
+    print(ColorFormat(Colors.Red, f"\nErrors reported {len(errors)}\n" + ("="*40)+"\n" + '\n'.join(errors) + "\n" + ("="*40)))
+    print(ColorFormat(Colors.Green, "Successes: ["+str(len(all_outputs) - len(errors))+"]"))
 
 def RunAllTestsWithValgrind():
     errors = 0
