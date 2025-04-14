@@ -281,7 +281,7 @@ def LaunchProcess(command, path=None, to_print=False):
         return returned
 
     # Need to cd for each git, because doing os.chdir changes the cwd for ALL threads
-    command = f"cd {path}; {command}"
+    command = f"cd '{path}'; {command}"
     
     command = f"set -e; {command}"
 
