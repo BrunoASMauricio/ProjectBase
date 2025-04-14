@@ -12,7 +12,7 @@ from data.settings import Settings
 from data.colors import ColorFormat, Colors
 from processes.progress_bar import PrintProgressBar
 from data.common import Abort, AppendToEnvVariable, RemoveControlCharacters, RemoveAnsiEscapeCharacters
-from data.common import ErrorCheckLogs, SlimError, GetNow
+from data.common import ErrorCheckLogs, SlimError, GetNow, RemoveNonAscii
 
 #                           PROCESS OPERATIONS
 
@@ -315,8 +315,14 @@ def LaunchProcess(command, path=None, to_print=False):
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
         returned["command"] = command
-        returned["stdout"]  = result.stdout.decode('utf-8')
-        returned["stderr"]  = result.stderr.decode('utf-8')
+        try:
+            returned["stdout"]  = result.stdout.decode('utf-8')
+            returned["stderr"]  = result.stderr.decode('utf-8')
+        except UnicodeDecodeError as Ex:
+            print(f"Decoding error: {Ex}")
+            returned["stdout"]  = RemoveNonAscii(result.stdout)
+            returned["stderr"]  = RemoveNonAscii(result.stderr)
+
         returned["code"]    = int(result.returncode)
 
     if returned["code"] != 0:

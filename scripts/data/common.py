@@ -107,6 +107,9 @@ def RemoveControlCharacters(str):
     new_str = "".join(ch for ch in str if (unicodedata.category(ch)[0] != "C" or ch in allowed_CCs))
     return new_str.rstrip()
 
+def RemoveNonAscii(str):
+    return ''.join(char for char in str if ord(char) < 128)
+
 def RemoveAnsiEscapeCharacters(str):
     ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
     return ansi_escape.sub("", str)
