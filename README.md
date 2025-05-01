@@ -86,7 +86,11 @@ Ordered by priority
 
 ### General
 
-- [ ] Print information about the running thread, if it takes too long
+- [ ] Add ProjectBase configs
+  - [ ] For project wide flags
+  - [ ] For build system setup
+  - [ ] For config system setup
+- [X] Print information about the running thread, if it takes too long
 - [ ] Add auto-test option that pulls each repository independently, loads and builds the project, runs all tests and checks if everything went ok
 - [ ] Consecutive failures should only make ProjectBase quit if they happen in quick succession
 - [ ] Add option to disable dense logging
@@ -130,6 +134,10 @@ Ordered by priority
   - [ ] In general stack printing (non process stack)
 - [ ] Sometimes input is blocked. A Ctrl+C fixes this, but it should still be fixed
 - [ ] Ponder idea of "virtual" dependencies that are just configuration layers for a project (i.e. they do not need an actual repository?)
+- [ ] Allow extra preprocessing stage (i.e. custom preprocessor before GCC?). Maybe generalize how compilation runs. Needs to be done via CMakeLists but supported by ProjectBase
+- [ ] Allow patches to be applied to dependencies on initial setup
+  - [I] Purpose: Dependent on open source repos, but require some changes
+- [ ] Only print a full menu if there isn't an automated input for the next one. If there is, print just the name of the operation that ran and from what menu it is
 
 ### CMake
 
@@ -151,6 +159,12 @@ Ordered by priority
 ### Tests
 
 - [ ] Allow defining different testing groups (i.e. tests that are heavy and should therefore not run everytime)
+- [ ] Once a configuration system is present, allow running tests for multiple different configurations
+  - [ ] Compile and run tests for each configuration independently (requires multiple CMAKE build and binary directories)
+  - [ ] Depending on the load, adapt amount of threads spawned for tests
+- [ ] On failure, provide better summary
+  - [ ] After printing messages, print summary
+  - [ ] In the summary, also print the index of the tests that failed, next to their name
 
 ### Configurability
 
