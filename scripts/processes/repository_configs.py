@@ -144,14 +144,14 @@ def ConfigsChanged(folder_path):
         # Did they exist before?
         if folder_path in global_configs_state.keys():
             # Delete and return confirmation of change
-            return True
-        return False
+            return "was removed"
+        return None
 
     current_state = __GetConfigsFolderState(folder_path)
 
     # Configs exist, are they already loaded?
     if folder_path not in global_configs_state.keys() or global_configs_state[folder_path] == None:
-        return True
+        return "was not loaded"
 
     # Configs existed, load current and previous state
     previous_state = global_configs_state[folder_path]
@@ -161,20 +161,20 @@ def ConfigsChanged(folder_path):
 
     # Different amounts of timestamps
     if len(current_state_paths) != len(previous_state_paths):
-        return True
+        return "different amount of contents"
 
     for path in current_state_paths:
         # Check if all paths exist in both lists
         if path not in previous_state_paths:
-            return True
+            return "different paths"
 
         current_timestamp  = current_state[path]
         previous_timestamp = previous_state[path]
         # Validate last modification time
         if current_timestamp != previous_timestamp:
-            return True
+            return "different timestamps"
 
-    return False
+    return None
 
 def ResetConfigsState():
     global global_configs_state
