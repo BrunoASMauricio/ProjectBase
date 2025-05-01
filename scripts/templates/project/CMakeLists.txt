@@ -6,7 +6,7 @@
 ### RESPECT THE CURRENT ORDER OF COMMANDS
 
 ### Cmake minimum version
-CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.6)
 
 ### Setup configuration file in binary tree
 #configure_file(TutorialConfig.h.in TutorialConfig.h)
@@ -99,6 +99,6 @@ $$INCLUDE_REPOSITORY_CMAKELISTS$$
 
 ## Activate compiler flags
 #add_definitions(${GCC_COMPILE_FLAGS})
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COMPILE_FLAGS} -DENABLE_SANITY_CHECKS -g3 -O0  -fwrapv -ftrapv -fno-delete-null-pointer-checks -Wno-missing-field-initializers -Wall -Wextra -Werror -Wconversion -Wno-type-limits -Wno-unused-function")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COMPILE_FLAGS} -Wstrict-prototypes -DENABLE_SANITY_CHECKS -g3 -O0  -fwrapv -ftrapv -fno-delete-null-pointer-checks -Wno-missing-field-initializers -Wall -Wextra -Werror -Wconversion -Wno-type-limits -Wno-unused-function")
 
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GCC_COMPILE_FLAGS} -DENABLE_SANITY_CHECKS -Wno-implicit-int -g3 -O0  -fwrapv -ftrapv -fno-delete-null-pointer-checks -Wno-c90-c99-compat -Wno-missing-field-initializers -Wall -Wextra -Werror -Wconversion -Wno-type-limits -Wno-unused-function")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}     ${GCC_COMPILE_FLAGS} -Wstrict-prototypes -DENABLE_SANITY_CHECKS -Wno-implicit-int -g3 -O0  -fwrapv -ftrapv -fno-delete-null-pointer-checks -Wno-c90-c99-compat -Wno-missing-field-initializers -Wall -Wextra -Werror -Wconversion -Wno-type-limits -Wno-unused-function")
