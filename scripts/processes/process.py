@@ -75,13 +75,13 @@ def PrintProgressWhileWaitOnThreads(thread_data, max_delay=None, print_function=
 
         if max_delay != None and time() - initial_timestamp > max_delay:
             initial_timestamp = time()
-            print(f"{progress - threads_alive} threads are taking more time than expected ({max_delay}s). Currently running threads:")
+            print(f"\n{threads_alive - progress} threads are taking more time than expected ({max_delay}s). Currently running threads:")
             for thread_ind in range(len(threads)):
                 thread = threads[thread_ind]
                 if not thread.is_alive():
                     continue
 
-                print(f"Thread alive for {callback} with arguments: {args[thread_ind]}")
+                print(f"Thread ({thread.get_ident()}) alive for {callback} with arguments: {args[thread_ind]}")
             # Ask user if we should kill, reset timer, or ignore
 
         # Keep flushing log
@@ -320,8 +320,13 @@ def LaunchProcess(command, path=None, to_print=False):
             returned["stderr"]  = result.stderr.decode('utf-8')
         except UnicodeDecodeError as Ex:
             print(f"Decoding error: {Ex}")
-            returned["stdout"]  = RemoveNonAscii(result.stdout)
-            returned["stderr"]  = RemoveNonAscii(result.stderr)
+            try:
+                returned["stdout"]  = RemoveNonAscii(RemoveControlCharacters(result.stdout))
+                returned["stderr"]  = RemoveNonAscii(RemoveControlCharacters(result.stderr))
+            except Exception as Ex:
+                print(f"Exception trying to handle decoding error: {Ex}")
+                returned["stdout"] = result.stdout
+                returned["stderr"] = result.stderr
 
         returned["code"]    = int(result.returncode)
 
