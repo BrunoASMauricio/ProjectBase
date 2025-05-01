@@ -51,6 +51,9 @@ def GetProjectPaths(project_name):
     # Projects main directory
     paths["project main"] = paths["project base"]+"/projects/" + project_name + ".ProjectBase"
 
+    # Projects configs directory
+    paths["project configs"]       = paths["project main"] + "/configs"
+
     # Projects build directory
     paths["build"]       = paths["project main"] + "/build"
     # Cache for the build artifacts

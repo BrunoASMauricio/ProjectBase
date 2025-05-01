@@ -276,6 +276,117 @@ def LoadRepository(imposed_configs):
             dependencies[dep_repo_id] = dependency_configs
         repositories_lock.release()
 
+def __GenerateFullMenu(repositories):
+    root = {}
+    for repo_id in repositories:
+        repository = repositories[repo_id]
+        kconfig_path = None
+
+        if "kconfig" in repository:
+            kconfig_path = repository["kconfig"]
+            if not os.path.isfile(kconfig_path):
+                logging.error(f"Invalid Kconfig file path {kconfig_path}")
+                kconfig_path = None
+
+        if kconfig_path == None:
+            kconfig_path = JoinPaths(repository['current repo path'], "configs", "Kconfig")
+            if not os.path.isfile(kconfig_path):
+                continue
+
+        # Use local_path to derive menu name
+        parts = repository["local path"].split("/")
+        menu = root
+        logging.error(f"For repository {repository["name"]}")
+
+        for part in parts:
+            if part not in menu:
+                menu[part] = {}
+
+            menu = menu[part]
+        menu[repository["name"]] = kconfig_path
+    logging.error("root")
+    logging.error(root)
+    return root
+
+# Receives the root menu and its' name
+# Returns the collapsed root menu
+# input = {'Core': {'Core': "path to Core kconfig"}, 'Runtime': {'Data': {'Memory': {'Val1': "path to Val1 kconfig"}, 'Map': "path to Map kconfig"}, 'Binary': "path to Binary kconfig"}}
+# outputs: {'Core/Core': "path to Core kconfig", 'Runtime': {'Data': {'Memory/Val1': "path to Val1 kconfig", 'Map': "path to Map kconfig"}, 'Binary': "path to Binary kconfig"}}
+def __CollapseSingleEntryMenus(root):
+    result = {}
+    def RecursivelyCollapse(key, value):
+        if isinstance(value, str):
+            return value
+
+        # Collapse dictionary
+        if len(value.keys()) == 1:
+            return key + "/" + list(value.keys())[0]
+
+        to_return = {}
+        for subkey, subval in value.items():
+            # Other leaves remain
+            if isinstance(subval, str):
+                to_return[subkey] = subval
+                continue
+
+            # Investigate sub dictionaries
+            collapsed = RecursivelyCollapse(subkey, subval)
+            if isinstance(collapsed, dict):
+                to_return[subkey] = collapsed
+            elif collapsed != None:
+                # Child collapsed
+                to_return[collapsed] = list(subval.values())[0]
+        return to_return
+
+    for key, value in root.items():
+        to_root = RecursivelyCollapse(key, value)
+        if isinstance(to_root, dict):
+            # Child is dict, keep it as is
+            result[key] = to_root
+        else:
+            # Child collapsed
+            result[to_root] = list(value.values())[0]
+    return result
+
+def __GenerateKConfigs(config_dict, menu_path=""):
+    for key, value in config_dict.items():
+        current_path = JoinPaths(menu_path, key)
+        file_path = JoinPaths(Settings["paths"]["project configs"], current_path)
+
+        if isinstance(value, str):
+            # Link Kconfig
+            os.makedirs(file_path, exist_ok=True)
+            LaunchProcess(f"ln -s {value} Kconfig", file_path)
+        elif isinstance(value, dict):
+            # Create Kconfig submenu
+            os.makedirs(file_path, exist_ok=True)
+            # Generate a menu with nested includes
+            with open(file_path + "/Kconfig", "w") as f:
+                f.write(f'menu "{key}"\n\n')
+                for subkey in value:
+                    subpath = JoinPaths(current_path, subkey).replace("/", os.sep)
+                    if isinstance(value[subkey], dict):
+                        f.write(f'source "{subpath}/Kconfig"\n')
+                    else:
+                        f.write(f'source "{subpath}/Kconfig"\n')
+                f.write(f'\nendmenu\n')
+            # Recurse into submenus
+            __GenerateKConfigs(value, current_path)
+
+def __CreateRootKConfig(menus):
+    root_kconfig_path = JoinPaths(Settings["paths"]["project configs"], "Kconfig")
+    with open(root_kconfig_path, "w") as f:
+        for src in menus:
+            f.write(f'source "{Settings["paths"]["project configs"]}/{src}/Kconfig"\n')
+
+def __SetupKConfig(repositories):
+    menu_root = __GenerateFullMenu(repositories)
+    collapsed_menus = __CollapseSingleEntryMenus(menu_root)
+    __GenerateKConfigs(collapsed_menus, Settings["paths"]["project configs"])
+    __CreateRootKConfig(collapsed_menus)
+    logging.error(collapsed_menus)
+    # __CollapseEmptyMenus()
+
 def __SetupCMake(repositories):
     public_header_folders = []
     ObjectsToLink       = []
@@ -360,6 +471,9 @@ def __SetupCMake(repositories):
 
 
 def Setup(repositories):
+    # Get KConfig ready
+    __SetupKConfig(repositories)
+
     # Get CMakeLists ready
     __SetupCMake(repositories)
 
