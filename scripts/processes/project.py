@@ -78,7 +78,7 @@ class PROJECT(dict):
     def build(self):
         logging.info("Building project")
 
-        CMakeCommand =  'cmake'
+        CMakeCommand =  'cmake -DCMAKE_BUILD_TYPE=Debug'
         # Dont complain about unused -D parameters, they are not mandatory
         CMakeCommand += ' --no-warn-unused-cli'
         CMakeCommand += ' -S ' + self.paths["build env"]
@@ -112,8 +112,9 @@ class PROJECT(dict):
 
         # Single change in configs must trigger full reloading of configs
         for repository in self.repositories:
-            if ConfigsChanged(self.repositories[repository]["configs path"]):
-                print("Config change detected, reloading")
+            config_change = ConfigsChanged(self.repositories[repository]["configs path"])
+            if config_change != None:
+                print(f"Config change detected ({self.repositories[repository]["configs path"]}: {config_change}), reloading")
                 self.load()
                 break
 
