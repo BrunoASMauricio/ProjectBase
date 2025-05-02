@@ -86,6 +86,7 @@ Ordered by priority
 
 ### General
 
+- [X] Dependency visualizer
 - [ ] Add ProjectBase configs
   - [ ] For project wide flags
   - [ ] For build system setup
@@ -133,6 +134,7 @@ Ordered by priority
   - [ ] In logging
   - [ ] In general stack printing (non process stack)
 - [ ] Sometimes input is blocked. A Ctrl+C fixes this, but it should still be fixed
+- [ ] Only refresh project configurations for changes to configs.json
 - [ ] Ponder idea of "virtual" dependencies that are just configuration layers for a project (i.e. they do not need an actual repository?)
 - [ ] Allow extra preprocessing stage (i.e. custom preprocessor before GCC?). Maybe generalize how compilation runs. Needs to be done via CMakeLists but supported by ProjectBase
 - [ ] Allow patches to be applied to dependencies on initial setup
