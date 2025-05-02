@@ -81,12 +81,14 @@ class PROJECT(dict):
         CMakeCommand =  'cmake -DCMAKE_BUILD_TYPE=Debug'
         # Dont complain about unused -D parameters, they are not mandatory
         CMakeCommand += ' --no-warn-unused-cli'
-        CMakeCommand += ' -S ' + self.paths["build env"]
-        CMakeCommand += ' -B ' + self.paths["build cache"]
+        # Include generated configuration
+        # CMakeCommand += f' -I{self.paths["project configs"]}/.config'
+        CMakeCommand += f' -S {self.paths["build env"]}'
+        CMakeCommand += f' -B {self.paths["build cache"]}'
         # CMakeCommand += ' -DBUILD_MODE='+ActiveSettings["Mode"]
-        CMakeCommand += ' -DPROJECT_NAME=' + self.name
-        CMakeCommand += ' -DPROJECT_BASE_SCRIPT_PATH=' + self.paths["scripts"]
-        CMakeCommand += ' && cmake --build ' + self.paths["build cache"]
+        CMakeCommand += f' -DPROJECT_NAME={self.name}'
+        CMakeCommand += f' -DPROJECT_BASE_SCRIPT_PATH={self.paths["scripts"]}'
+        CMakeCommand += f' && cmake --build {self.paths["build cache"]}'
         # Enable multi process
         CMakeCommand += ' -- -j $(nproc)'
 

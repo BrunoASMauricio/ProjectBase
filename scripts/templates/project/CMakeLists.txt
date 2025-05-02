@@ -19,11 +19,6 @@ PROJECT("${PROJECT_NAME}")
 ### Eventually add project version
 #project("${PROJECT_NAME}" VERSION 1.0)
 
-### Add binary dir to project
-#target_include_directories(${PROJECT_NAME} PUBLIC
-#                           "${PROJECT_BINARY_DIR}"
-#                           )
-
 ### Then add this to it
 #// the configured options and settings for ${PROJECT_NAME}
 ##define ${PROJECT_NAME}_VERSION_MAJOR @${PROJECT_NAME}_VERSION_MAJOR@
@@ -46,7 +41,7 @@ SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${LIB_PATH})
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OBJS_PATH})
 
 ### Set base compiler flags
-SET(GCC_COMPILE_FLAGS "")
+SET(GCC_COMPILE_FLAGS "-include $$AUTOGEN_HEADERS$$")
 SET(GLOBAL_COMPILE_FLAGS_BUILD "")
 
 ###                 SETUP macros

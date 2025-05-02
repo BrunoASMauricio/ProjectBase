@@ -304,8 +304,6 @@ def __GenerateFullMenu(repositories):
 
             menu = menu[part]
         menu[repository["name"]] = kconfig_path
-    logging.error("root")
-    logging.error(root)
     return root
 
 # Receives the root menu and its' name
@@ -356,6 +354,8 @@ def __GenerateKConfigs(config_dict, menu_path=""):
         if isinstance(value, str):
             # Link Kconfig
             os.makedirs(file_path, exist_ok=True)
+            if os.path.isfile(JoinPaths(file_path, "Kconfig")):
+                LaunchProcess(f"unlink Kconfig", file_path)
             LaunchProcess(f"ln -s {value} Kconfig", file_path)
         elif isinstance(value, dict):
             # Create Kconfig submenu
@@ -377,7 +377,46 @@ def __CreateRootKConfig(menus):
     root_kconfig_path = JoinPaths(Settings["paths"]["project configs"], "Kconfig")
     with open(root_kconfig_path, "w") as f:
         for src in menus:
+            f.write(f'menu "{src}"\n')
             f.write(f'source "{Settings["paths"]["project configs"]}/{src}/Kconfig"\n')
+            f.write(f'\nendmenu\n')
+
+def ConvertKconfigToHeader():
+    # LaunchProcess(f"cat .config | kconfig-config2h > {JoinPaths(Settings["paths"]["project configs"], "autogen.h")}", )
+    # Have to do by hand. If there is a better way, please rewrite this
+    kconfig_path = JoinPaths(Settings["paths"]["project configs"], ".config")
+    header_path = JoinPaths(Settings["paths"]["project configs"], "autogen.h")
+    with open(kconfig_path, "r") as config, open(header_path, "w") as header:
+        header.write("#ifndef AUTOGEN_H\n")
+        header.write("#define AUTOGEN_H\n")
+        header.write("/* Auto-generated config header */\n\n")
+
+        for line in config:
+            line = line.strip()
+            logging.error(line)
+
+            if not line or line.startswith("#"):
+                continue
+
+            if line.startswith("CONFIG_"):
+                key, val = line.split("=", 1)
+
+                if val == "y":
+                    header.write(f"#define {key} 1\n")
+                elif val == "n":
+                    header.write(f"/* #undef {key} */\n")
+                else:
+                    # handle strings and integers
+                    if val.startswith('"') and val.endswith('"'):
+                        header.write(f"#define {key} {val}\n")
+                    else:
+                        header.write(f"#define {key} {val}\n")
+        header.write("\n#endif\n")
+
+def __GenerateDefaultKconfig():
+    if not os.path.isfile(JoinPaths(Settings["paths"]["project configs"], ".config")):
+        LaunchProcess("kconfig-conf --alldefconfig Kconfig", Settings["paths"]["project configs"])
+    ConvertKconfigToHeader()
 
 def __SetupKConfig(repositories):
     menu_root = __GenerateFullMenu(repositories)
@@ -385,7 +424,7 @@ def __SetupKConfig(repositories):
     __GenerateKConfigs(collapsed_menus, Settings["paths"]["project configs"])
     __CreateRootKConfig(collapsed_menus)
     logging.error(collapsed_menus)
-    # __CollapseEmptyMenus()
+    __GenerateDefaultKconfig()
 
 def __SetupCMake(repositories):
     public_header_folders = []
@@ -466,6 +505,7 @@ def __SetupCMake(repositories):
 
     SetupTemplateScript("project/CMakeLists.txt", JoinPaths(Settings["paths"]["build env"], "CMakeLists.txt"), {
         "INCLUDE_REPOSITORY_CMAKELISTS":'\n'.join(ReposToBuild),
+        "AUTOGEN_HEADERS": JoinPaths(Settings["paths"]["project configs"], "autogen.h"),
         "PROJECT_PATH": Settings["paths"]["project main"]
     })
 

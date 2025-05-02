@@ -2,7 +2,6 @@ from menus.menu import Menu
 from data.settings import Settings, CLONE_TYPE
 from data.colors import ColorFormat, Colors
 from processes.project import Project
-from menus.kconfig import KconfigMenu
 from dependency_graph import BuildDependencyGraph, VisualizeGraph
 
 def current_mode_entry():
@@ -65,5 +64,4 @@ SettingsMenu = Menu("Settings Menu")
 SettingsMenu.prologue = settings_prologue
 SettingsMenu.AddCallbackEntry(current_mode_entry, toggle_mode)
 SettingsMenu.AddCallbackEntry(current_clone_type_entry, toggle_clone_type)
-SettingsMenu.AddSubmenuEntry("Build Configuration (Kconfig)", KconfigMenu)
 SettingsMenu.AddCallbackEntry("Create dependency graph", create_dependency_graph)

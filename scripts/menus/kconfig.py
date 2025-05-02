@@ -5,7 +5,7 @@ from data.paths import JoinPaths
 from menus.menu import Menu
 from data.settings import Settings
 from data.colors import ColorFormat, Colors
-from processes.process import LaunchProcess
+from processes.repository import ConvertKconfigToHeader
 
 def find_kconfig_tool(tool_name):
     """Find a kconfig tool in common locations."""
@@ -49,6 +49,7 @@ def RunMenuConfig():
         command = f'cd {Settings["paths"]["project configs"]}; {command}'
         logging.error(command)
         subprocess.run(command, shell=True)
+        ConvertKconfigToHeader()
         # subprocess.run([mconf_tool, kconfig_path], check=True)
         
         # Generate CMake and header files after configuration
