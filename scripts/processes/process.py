@@ -81,7 +81,7 @@ def PrintProgressWhileWaitOnThreads(thread_data, max_delay=None, print_function=
                 if not thread.is_alive():
                     continue
 
-                print(f"Thread ({thread.get_ident()}) alive for {callback} with arguments: {args[thread_ind]}")
+                print(f"Thread alive for {callback} with arguments: {args[thread_ind]}")
             # Ask user if we should kill, reset timer, or ignore
 
         # Keep flushing log
