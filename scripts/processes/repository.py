@@ -1,6 +1,5 @@
-import sys
 import logging
-from time import sleep
+from pprint import pformat
 from data.git import GetRepoNameFromURL
 from processes.git import *
 from data.common import SetupTemplateScript
@@ -249,32 +248,37 @@ def LoadRepository(imposed_configs):
 
     repositories[repo_id]["reloaded"] = True
     # Load dependencies
-    for dependency in imposed_configs["dependencies"]:
-        base_dependency = imposed_configs["dependencies"][dependency]
-        if "configs" in base_dependency:
-            dependency_configs = base_dependency["configs"].copy()
-        else:
-            dependency_configs = {}
+    try:
+        for dependency in imposed_configs["dependencies"]:
+            base_dependency = imposed_configs["dependencies"][dependency]
+            if "configs" in base_dependency:
+                dependency_configs = base_dependency["configs"].copy()
+            else:
+                dependency_configs = {}
 
-        dependency_configs["url"] = GetValueOrDefault(base_dependency, "url", dependency)
-        dependency_configs["reloaded"] = False
-        if "commit" in base_dependency and base_dependency["commit"] != None:
-            dependency_configs["commitish"] = {}
-            dependency_configs["commitish"]["type"] = "commit"
-            dependency_configs["commitish"]["commit"] = base_dependency["commit"]
-        elif "branch" in base_dependency and base_dependency["branch"] != None:
-            dependency_configs["commitish"] = {}
-            dependency_configs["commitish"]["type"] = "branch"
-            dependency_configs["commitish"]["branch"] = base_dependency["branch"]
-        else:
-            dependency_configs["commitish"] = None
+            dependency_configs["url"] = GetValueOrDefault(base_dependency, "url", dependency)
+            dependency_configs["reloaded"] = False
+            if "commit" in base_dependency and base_dependency["commit"] != None:
+                dependency_configs["commitish"] = {}
+                dependency_configs["commitish"]["type"] = "commit"
+                dependency_configs["commitish"]["commit"] = base_dependency["commit"]
+            elif "branch" in base_dependency and base_dependency["branch"] != None:
+                dependency_configs["commitish"] = {}
+                dependency_configs["commitish"]["type"] = "branch"
+                dependency_configs["commitish"]["branch"] = base_dependency["branch"]
+            else:
+                dependency_configs["commitish"] = None
 
-        dep_repo_id = GetRepoId(dependency_configs)
-        repositories_lock.acquire()
-        # if dep_repo_id in dependencies??
-        if dep_repo_id not in repositories and dep_repo_id not in dependencies:
-            dependencies[dep_repo_id] = dependency_configs
-        repositories_lock.release()
+            logging.error(dependency_configs)
+            dep_repo_id = GetRepoId(dependency_configs)
+            repositories_lock.acquire()
+            # if dep_repo_id in dependencies??
+            if dep_repo_id not in repositories and dep_repo_id not in dependencies:
+                dependencies[dep_repo_id] = dependency_configs
+            repositories_lock.release()
+    except Exception as ex:
+        logging.error(f"Failed to load {pformat(imposed_configs)}")
+        raise ex
 
 def __GenerateFullMenu(repositories):
     root = {}
@@ -426,85 +430,159 @@ def __SetupKConfig(repositories):
     logging.error(collapsed_menus)
     __GenerateDefaultKconfig()
 
-def __SetupCMake(repositories):
-    public_header_folders = []
-    ObjectsToLink       = []
-    ReposToBuild        = []
+a = 0
+
+def DependencyOf(repo, target):
+    for dependency_url in repo["dependencies"].keys():
+        if SameUrl(dependency_url, target["url"]):
+            # logging.error(f"{target["name"]} is a dependency of {repo["name"]}")
+            return True
+    # logging.error(f"{target["name"]} is not a dependency of {repo["name"]}")
+    return False
+
+def __FetchAllPublicHeaders(repositories):
+    public_header_folders = {}
+    objects_to_link = {}
     for repo_id in repositories:
         try:
             repository = repositories[repo_id]
             # Fetch all public headers
             if len(repository["public headers"]) > 0:
                 # build_dir = __RepoPathToBuild(repository)
-                public_header_folders += [JoinPaths(repository["repo path"], x) for x in repository["public headers"]]
+                new_public_headers = [JoinPaths(repository["repo path"], x) for x in repository["public headers"]]
+                new_public_headers = [x for x in new_public_headers if os.path.isdir(x) and len(x) != 0]
+                if repo_id not in public_header_folders and len(new_public_headers) != 0:
+                    public_header_folders[repo_id] = []
+
+                if repo_id in public_header_folders:
+                    public_header_folders[repo_id] += list(set(new_public_headers))
 
             # Fetch all objects to link
             if not __RepoHasFlagSet(repository, "independent project") and not (__RepoHasFlagSet(repository, "no auto build") or __RepoHasNoCode(repository)):
-                ObjectsToLink.append(repository["name"]+'_lib')
+                objects_to_link[repo_id] = repository["name"]+'_lib'
+
         except Exception as ex:
             traceback.print_exc()
             print(str(ex))
             print(repositories[repo_id])
-    # print([repositories[x]["full worktree path"] for x in repositories])
-    # sys.exit(0)
-    for repo_id in repositories:
-        try:
-            repository = repositories[repo_id]
-            if __RepoHasFlagSet(repository, "no auto build") or __RepoHasNoCode(repository):
+    return objects_to_link, public_header_folders
+
+def __SetupCMake(repositories):
+    global a
+    repos_to_build = []
+
+    objects_to_link, public_header_folders = __FetchAllPublicHeaders(repositories)
+
+    # Build CMake for each repository
+    logging.error(repositories)
+    for repo_id in repositories.keys():
+        repository = repositories[repo_id]
+
+        print(f"{repo_id} {repository["url"]}")
+        # logging.error(repository)
+        if __RepoHasFlagSet(repository, "no auto build") or __RepoHasNoCode(repository):
+            logging.info(f"Skipping CMake setup for {repo_id}")
+            continue
+
+        if __RepoHasFlagSet(repository, "independent project"):
+            # TODO Throw error if CMakeLists.txt does not exist in sub_dire
+            IncludeEntry = f'add_subdirectory("{repository["repo path"]}" "{repository["build path"]}")'
+        else:
+            IncludeEntry = 'include("' + JoinPaths(repository["build path"], "CMakeLists.txt") + '")'
+
+        repo_cmake_lists = JoinPaths(repository["build path"], "CMakeLists.txt")
+
+        # Only import headers that are direct and/or indirect dependencies
+        # Only link objects that are direct dependencies
+        def GetDependencyData(repositories, starting_repo_id):
+            dependencies = [starting_repo_id]
+            starting_dependency_amount = len(dependencies)
+            current_dependency_amount = 0
+            first_iteration = 1
+            # direct_dependencies = []
+            # While the amount of dependencies changed
+            while starting_dependency_amount != current_dependency_amount:
+                starting_dependency_amount = len(dependencies)
+                # For all of the current dependencies
+                for dependency in dependencies:
+                    # Find a dependency that hasn't yet been added
+                    for repo_id in repositories:
+                        # Already exists
+                        if repo_id in dependencies:
+                            continue
+                        # Does not exist. Is it a dependency?
+                        if DependencyOf(repositories[dependency], repositories[repo_id]):
+                            dependencies.append(repo_id)
+
+                if first_iteration == 1:
+                    # direct_dependencies = dependencies.copy()
+                    first_iteration = 2
+                current_dependency_amount = len(dependencies)
+                break
+            # return direct_dependencies, dependencies
+            # Return the latest dependencies first
+            dependencies.reverse()
+            return dependencies
+
+        # Unfortunately, linking only direct dependencies does not work due to transitive dependency failure
+        # direct_dependencies, dependencies = GetDependencyData(repositories, repo_id)
+        dependencies = GetDependencyData(repositories, repo_id)
+        # Only import from dependencies
+        public_headers       = []
+        test_headers         = []
+        private_headers      = []
+        temp_objects_to_link = []
+        # For indirect dependencies, also include headers (due to headers including headers)
+        for dep_repo_id in dependencies:
+            if dep_repo_id in public_header_folders:
+                public_headers += public_header_folders[dep_repo_id]
+
+        # For direct dependencies, only perform linking
+        # for dep_repo_id in direct_dependencies:
+        for dep_repo_id in dependencies:
+            if repo_id == dep_repo_id:
                 continue
+            if dep_repo_id in objects_to_link:
+                temp_objects_to_link.append(objects_to_link[dep_repo_id])
 
-            if __RepoHasFlagSet(repository, "independent project"):
-                # TODO Throw error if CMakeLists.txt does not exist in sub_dire
-                IncludeEntry = f'add_subdirectory("{repository["repo path"]}" "{repository["build path"]}")'
-            else:
-                IncludeEntry = 'include("' + JoinPaths(repository["build path"], "CMakeLists.txt") + '")'
-            ReposToBuild.append(IncludeEntry)
+        if len(repository["public headers"]) > 0:
+            public_headers += [JoinPaths(repository["repo path"], x) for x in repository["public headers"]]
 
-            repo_cmake_lists = JoinPaths(repository["build path"], "CMakeLists.txt")
+        if len(repository["private headers"]) > 0:
+            private_headers += [JoinPaths(repository["repo path"], x) for x in repository["private headers"]]
 
-            public_headers  = public_header_folders.copy()
-            if len(repository["public headers"]) > 0:
-                public_headers += [JoinPaths(repository["repo path"], x) for x in repository["public headers"]]
+        if len(repository["test headers"]) > 0:
+            test_headers += [JoinPaths(repository["repo path"], x) for x in repository["test headers"]]
 
-            private_headers = []
-            if len(repository["private headers"]) > 0:
-                private_headers += [JoinPaths(repository["repo path"], x) for x in repository["private headers"]]
+        # Check if there is already a CMakeLists and it isn't ours
+        if os.path.isfile(repo_cmake_lists):
+            can_delete = False
+            with open(repo_cmake_lists) as f:
+                content = f.readlines()
 
-            test_headers = []
-            if len(repository["test headers"]) > 0:
-                test_headers += [JoinPaths(repository["repo path"], x) for x in repository["test headers"]]
+            if len(content) > 0 and "# PROJECTBASE" in content[0]:
+                can_delete = True
 
-            # Check if there is already a CMakeLists and it isn't ours
-            if os.path.isfile(repo_cmake_lists):
-                can_delete = False
-                with open(repo_cmake_lists) as f:
-                    content = f.readlines()
+            if can_delete:
+                os.unlink(repo_cmake_lists)
 
-                if len(content) > 0 and "# PROJECTBASE" in content[0]:
-                    can_delete = True
+        repos_to_build.append(IncludeEntry)
 
-                if can_delete:
-                    os.unlink(repo_cmake_lists)
-
-            temp_objects_to_link = [x for x in ObjectsToLink if x != repository["name"]+'_lib']
-            if not os.path.isfile(repo_cmake_lists):
-                SetupTemplateScript("repository/CMakeLists.txt", repo_cmake_lists, {
-                    "ADD_LIBRARY_TYPE": "",
-                    "TARGET_INCLUDE_TYPE": "PUBLIC",
-                    "PUBLIC_INCLUDES":  '\n'.join(public_headers),
-                    "PRIVATE_INCLUDES": '\n'.join(private_headers),
-                    "TESTS_INCLUDES":   '\n'.join(test_headers),
-                    "LINK_DEPENDENCIES": '\n'.join(temp_objects_to_link),
-                    "REPO_SOURCES": repository["repo path"],
-                    "REPO_NAME": repository["repo name"]
-                })
-        except Exception as ex:
-            traceback.print_exc()
-            print(str(ex))
-            sys.exit(0)
+        # if not os.path.isfile(repo_cmake_lists):
+        # logging.error(f"{repository["name"]} {repository["current repo path"]} repo_cmake_lists {repo_cmake_lists}")
+        SetupTemplateScript("repository/CMakeLists.txt", repo_cmake_lists, {
+            "ADD_LIBRARY_TYPE": "",
+            "TARGET_INCLUDE_TYPE": "PUBLIC",
+            "PUBLIC_INCLUDES":  '\n'.join(public_headers),
+            "PRIVATE_INCLUDES": '\n'.join(private_headers),
+            "TESTS_INCLUDES":   '\n'.join(test_headers),
+            "LINK_DEPENDENCIES": '\n'.join(temp_objects_to_link),
+            "REPO_SOURCES": repository["repo path"],
+            "REPO_NAME": repository["repo name"]
+        })
 
     SetupTemplateScript("project/CMakeLists.txt", JoinPaths(Settings["paths"]["build env"], "CMakeLists.txt"), {
-        "INCLUDE_REPOSITORY_CMAKELISTS":'\n'.join(ReposToBuild),
+        "INCLUDE_REPOSITORY_CMAKELISTS":'\n'.join(repos_to_build),
         "AUTOGEN_HEADERS": JoinPaths(Settings["paths"]["project configs"], "autogen.h"),
         "PROJECT_PATH": Settings["paths"]["project main"]
     })
