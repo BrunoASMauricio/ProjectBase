@@ -219,26 +219,39 @@ def __GetCurrentTemporaryCommits():
 
     return temporary_commmits
 
+def __CountTemporaryCommits(temporary_commmits):
+    total = 0
+    for path in temporary_commmits.keys():
+        total += len(temporary_commmits[path])
+    return total
+
 def GlobalTemporaryCommit():
     global TempCommitMessage
 
-    def CountTemporaryCommits(temporary_commmits):
-        total = 0
-        for path in temporary_commmits.keys():
-            total += len(temporary_commmits[path])
-        return total
 
     temporary_commmits = __GetCurrentTemporaryCommits()
-    print(f"\nCurrent amount of temporary commits: {CountTemporaryCommits(temporary_commmits)}")
+    print(f"\nCurrent amount of temporary commits: {__CountTemporaryCommits(temporary_commmits)}")
 
     commit_message = f"{TempCommitMessage}"
     RunOnAllManagedRepos(RepoSaveChanges, {"commit_message":commit_message})
 
     temporary_commmits = __GetCurrentTemporaryCommits()
-    print(f"\nNew amount of temporary commits: {CountTemporaryCommits(temporary_commmits)}")
+    print(f"\nNew amount of temporary commits: {__CountTemporaryCommits(temporary_commmits)}")
 
 def GlobalFixedCommit():
-    temporary_commmits = __GetCurrentTemporaryCommits()
+
+    temp_commit_count = 0
+
+    try:
+        temporary_commmits = __GetCurrentTemporaryCommits()
+        temp_commit_count = __CountTemporaryCommits(temporary_commmits)
+    finally:
+        if len(temp_commit_count) == 0:
+            print("There are no temporary commits. Direct global commit message")
+            commit_message = GetNextOption("[ fixed commit message ][<] ", True)
+            RunOnAllManagedRepos(RepoSaveChanges, {"commit_message":commit_message})
+            return
+
     paths = temporary_commmits.keys()
     status_message = f"\nMerging in {len(paths)} repositories"
 
