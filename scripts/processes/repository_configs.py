@@ -221,9 +221,14 @@ def LoadConfigs(current_repo_path):
     __CheckHeaders("private headers", configs, ["code/", "code/source"], ["execs/"])
     __CheckHeaders("test headers", configs, ["tests/", "tests/source"], ["tests/", "execs/tests/"])
 
+    configs["API"] = GetValueOrDefault(configs, "API", {})
     configs["local path"] = GetValueOrDefault(configs, "local path", Settings["paths"]["default local path"])
     configs["flags"] = GetValueOrDefault(configs, "flags", [])
     configs["dependencies"] = GetValueOrDefault(configs, "dependencies", {})
+
+    if len(configs["API"]) != 0:
+        configs["dependencies"].update(configs["API"])
+
     # Repository commands
     configs["setup"]        = GetValueOrDefault(configs, "setup", {})
     configs["before build"] = GetValueOrDefault(configs, "before build", {})

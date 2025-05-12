@@ -2,7 +2,7 @@ from menus.menu import Menu
 from data.settings import Settings, CLONE_TYPE
 from data.colors import ColorFormat, Colors
 from processes.project import Project
-from dependency_graph import BuildDependencyGraph, VisualizeGraph
+from dependency_graph import BuildGraph, VisualizeGraph
 
 def current_mode_entry():
     if Settings["active"]["Mode"] == "Release":
@@ -57,11 +57,16 @@ def settings_prologue():
 
 
 def create_dependency_graph():
-    graph = BuildDependencyGraph(Project.GetRepositories())
-    VisualizeGraph(graph)
+    graph = BuildGraph(Project.GetRepositories(), "dependencies")
+    VisualizeGraph(graph, "dependencies")
+
+def create_api_graph():
+    graph = BuildGraph(Project.GetRepositories(), "API")
+    VisualizeGraph(graph, "API")
 
 SettingsMenu = Menu("Settings Menu")
 SettingsMenu.prologue = settings_prologue
 SettingsMenu.AddCallbackEntry(current_mode_entry, toggle_mode)
 SettingsMenu.AddCallbackEntry(current_clone_type_entry, toggle_clone_type)
 SettingsMenu.AddCallbackEntry("Create dependency graph", create_dependency_graph)
+SettingsMenu.AddCallbackEntry("Create API graph", create_api_graph)

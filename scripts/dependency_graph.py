@@ -4,7 +4,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 
-def BuildDependencyGraph(repos_data):
+def BuildGraph(repos_data, data_name):
     """Create a directed graph of repository dependencies."""
     graph = nx.DiGraph()
     
@@ -16,7 +16,7 @@ def BuildDependencyGraph(repos_data):
     # Add dependency edges
     for repo_id, repo_data in repos_data.items():
         source = repo_data.get("name", repo_id)
-        dependencies = repo_data.get("dependencies", {})
+        dependencies = repo_data.get(data_name, {})
         
         for dep_id, dep_info in dependencies.items():
             # If it's a URL as key, use it directly
@@ -41,7 +41,7 @@ def BuildDependencyGraph(repos_data):
     
     return graph
 
-def VisualizeGraph(graph):
+def VisualizeGraph(graph, data_name):
     """Visualize the dependency graph."""
     plt.figure(figsize=(18, 14))
     
@@ -63,7 +63,7 @@ def VisualizeGraph(graph):
 
     nx.draw_networkx_edges(graph, pos, width=1.5, alpha=0.7, arrows=True, arrowsize=15)
     
-    plt.title("Repository Dependency Graph", fontsize=16)
+    plt.title(f"Repository {data_name} Graph", fontsize=16)
     plt.axis("off")
     plt.tight_layout()
 
