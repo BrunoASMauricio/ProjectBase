@@ -10,7 +10,7 @@ To: git@<git repo>:<path el 1>/<path el 2>/<path el 3>/<path el 4>.git
 def url_HTTPS_to_SSH(url):
     if not url.startswith("https"):
         if not url.startswith("git@"):
-            raise Exception("Cannot convert " + url)
+            raise Exception(f"Cannot convert: {url}")
         else:
             # Already in ssh format
             return url
@@ -29,7 +29,7 @@ To: https://<git repo>/<path el 1>/<path el 2>/<path el 3>/<path el 4>
 def url_SSH_to_HTTPS(url):
     if not url.startswith("git@"):
         if not url.startswith("https"):
-            raise Exception("Cannot convert " + url)
+            raise Exception(f"Cannot convert: {url}")
         else:
             # Already in ssh format
             return url
@@ -51,7 +51,7 @@ def FlipUrl(url):
     elif url.startswith("https"):
         return url_HTTPS_to_SSH(url)
     else:
-        raise Exception("Cannot convert " + url)
+        raise Exception(f"Cannot convert: {url}")
 
 
 def GetRepoNameFromURL(url):
