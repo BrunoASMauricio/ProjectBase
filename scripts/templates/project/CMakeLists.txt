@@ -48,7 +48,7 @@ SET(GLOBAL_COMPILE_FLAGS_BUILD "")
 ### Prepare a normal executable to be compiled
 MACRO(COMPILE_EXECUTABLE EXECUTABLE_NAME EXECUTABLE_SOURCE)
     ADD_EXECUTABLE(${EXECUTABLE_NAME} ${EXECUTABLE_SOURCE})
-    TARGET_LINK_LIBRARIES(${EXECUTABLE_NAME} ${RepositoryName}_lib)
+    #TARGET_LINK_LIBRARIES(${EXECUTABLE_NAME} ${RepositoryName}_lib)
     LIST(APPEND EXECUTABLES ${EXECUTABLE_NAME})
 ENDMACRO()
 
@@ -57,7 +57,7 @@ MACRO(COMPILE_TEST TEST_NAME TEST_SOURCE)
     set(FULL_TEST_NAME "${REPO_NAME}_${TEST_NAME}")
 
     ADD_EXECUTABLE(${FULL_TEST_NAME} ${TEST_SOURCE})
-    TARGET_LINK_LIBRARIES(${FULL_TEST_NAME} ${RepositoryName}_lib)
+    #TARGET_LINK_LIBRARIES(${FULL_TEST_NAME} ${RepositoryName}_lib)
     LIST(APPEND TESTS ${FULL_TEST_NAME})
 ENDMACRO()
 
@@ -94,6 +94,6 @@ $$INCLUDE_REPOSITORY_CMAKELISTS$$
 
 ## Activate compiler flags
 #add_definitions(${GCC_COMPILE_FLAGS})
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COMPILE_FLAGS} -Wstrict-prototypes -DENABLE_SANITY_CHECKS -g3 -O0  -fwrapv -ftrapv -fno-delete-null-pointer-checks -Wno-missing-field-initializers -Wall -Wextra -Werror -Wconversion -Wno-type-limits -Wno-unused-function")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COMPILE_FLAGS} -lncurses -lm -Wstrict-prototypes -DENABLE_SANITY_CHECKS -g3 -O0  -fwrapv -ftrapv -fno-delete-null-pointer-checks -Wno-missing-field-initializers -Wall -Wextra -Werror -Wconversion -Wno-type-limits -Wno-unused-function")
 
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}     ${GCC_COMPILE_FLAGS} -Wstrict-prototypes -DENABLE_SANITY_CHECKS -Wno-implicit-int -g3 -O0  -fwrapv -ftrapv -fno-delete-null-pointer-checks -Wno-c90-c99-compat -Wno-missing-field-initializers -Wall -Wextra -Werror -Wconversion -Wno-type-limits -Wno-unused-function")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}     ${GCC_COMPILE_FLAGS} -lncurses -lm -Wstrict-prototypes -DENABLE_SANITY_CHECKS -Wno-implicit-int -g3 -O0  -fwrapv -ftrapv -fno-delete-null-pointer-checks -Wno-c90-c99-compat -Wno-missing-field-initializers -Wall -Wextra -Werror -Wconversion -Wno-type-limits -Wno-unused-function")

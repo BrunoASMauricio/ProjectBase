@@ -458,7 +458,10 @@ def __FetchAllPublicHeaders(repositories):
                     public_header_folders[repo_id] += list(set(new_public_headers))
 
             # Fetch all objects to link
-            if not __RepoHasFlagSet(repository, "independent project") and not (__RepoHasFlagSet(repository, "no auto build") or __RepoHasNoCode(repository)):
+            will_link = not __RepoHasNoCode(repository)
+            will_link = will_link and not __RepoHasFlagSet(repository, "no auto build")
+            will_link = will_link and not __RepoHasFlagSet(repository, "independent project")
+            if will_link:
                 objects_to_link[repo_id] = repository["name"]+'_lib'
 
         except Exception as ex:

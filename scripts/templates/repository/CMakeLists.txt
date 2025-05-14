@@ -73,10 +73,22 @@ if(EXISTS $$REPO_SOURCES$$/configs/CMakeLists.txt)
 	if( NOT ${RepositoryName}ListSize EQUAL 0)
 
 		### Setup library to be imported by other repositorys
-		add_library(${RepositoryName}_lib ${repository_source_files})
+		add_library(${RepositoryName}_lib STATIC ${repository_source_files})
 
+		# TODO: Check what this is actually hiding here
 		list(APPEND EXECUTABLES ${RepositoryName}_lib)
 
+		foreach(EXECUTABLE ${EXECUTABLES})
+			if(NOT "${EXECUTABLE}" STREQUAL "${RepositoryName}_lib")
+				TARGET_LINK_LIBRARIES(${EXECUTABLE} ${RepositoryName}_lib)
+			endif()
+		endforeach()
+
+		foreach(TEST ${TESTS})
+			if(NOT "${TEST}" STREQUAL "${RepositoryName}_lib")
+				TARGET_LINK_LIBRARIES(${TEST} ${RepositoryName}_lib)
+			endif()
+		endforeach()
 	endif()
 
 	foreach(EXECUTABLE ${EXECUTABLES})
