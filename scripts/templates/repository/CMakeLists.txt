@@ -31,14 +31,17 @@ SET(REPO_CODE_PATH $$REPO_SOURCES$$/code)
 SET(REPO_PATH $$REPO_SOURCES$$)
 SET(REPO_NAME $$REPO_NAME$$)
 
+### Headers available from dependency repositories
 SET(PUBLIC_HEADERS
 $$PUBLIC_INCLUDES$$
 )
 
+### Headers local to this repository
 SET(PRIVATE_HEADERS
 $$PRIVATE_INCLUDES$$
 )
 
+### Headers for testing only
 SET(TEST_HEADERS
 $$TESTS_INCLUDES$$
 )
@@ -73,22 +76,22 @@ if(EXISTS $$REPO_SOURCES$$/configs/CMakeLists.txt)
 	if( NOT ${RepositoryName}ListSize EQUAL 0)
 
 		### Setup library to be imported by other repositorys
-		add_library(${RepositoryName}_lib STATIC ${repository_source_files})
+		add_library(${RepositoryName}_lib SHARED ${repository_source_files})
 
-		# TODO: Check what this is actually hiding here
-		list(APPEND EXECUTABLES ${RepositoryName}_lib)
+		target_include_directories(${RepositoryName}_lib
+			PUBLIC
+			${PUBLIC_HEADERS}
+			${PRIVATE_HEADERS}
+			${TEST_HEADERS}
+		)
 
-		foreach(EXECUTABLE ${EXECUTABLES})
-			if(NOT "${EXECUTABLE}" STREQUAL "${RepositoryName}_lib")
-				TARGET_LINK_LIBRARIES(${EXECUTABLE} ${RepositoryName}_lib)
-			endif()
-		endforeach()
+		### Allow extra links to be made
+		if( DEFINED extra_libraries_to_link )
+			### Set to PRIVATE to isolate the library
+			target_link_libraries(${RepositoryName}_lib PRIVATE ${extra_libraries_to_link})
+		endif()
 
-		foreach(TEST ${TESTS})
-			if(NOT "${TEST}" STREQUAL "${RepositoryName}_lib")
-				TARGET_LINK_LIBRARIES(${TEST} ${RepositoryName}_lib)
-			endif()
-		endforeach()
+		list(APPEND DEPENDENCY_LIBS ${RepositoryName}_lib)
 	endif()
 
 	foreach(EXECUTABLE ${EXECUTABLES})
@@ -99,11 +102,6 @@ if(EXISTS $$REPO_SOURCES$$/configs/CMakeLists.txt)
 
 		target_compile_options(${EXECUTABLE} PRIVATE ${CUSTOM_C_FLAGS})
 
-		### Allow extra links to be made
-		if( DEFINED extra_libraries_to_link )
-			target_link_libraries(${EXECUTABLE} ${extra_libraries_to_link})
-		endif()
-		
 		### Include dependency repository directories 
 		target_include_directories(${EXECUTABLE}
 			PUBLIC
@@ -126,11 +124,6 @@ if(EXISTS $$REPO_SOURCES$$/configs/CMakeLists.txt)
 
 		### Use repository specific C Flags
 		target_compile_options(${TEST} PRIVATE ${CUSTOM_C_FLAGS})
-
-		### Allow extra links to be made
-		if( DEFINED extra_libraries_to_link )
-			target_link_libraries(${TEST} ${extra_libraries_to_link})
-		endif()
 		
 		### Include dependency repository directories 
 		target_include_directories(${TEST}
@@ -145,6 +138,5 @@ if(EXISTS $$REPO_SOURCES$$/configs/CMakeLists.txt)
 			${DEPENDENCY_LIBS}
 		)
 	endforeach()
-
 
 endif()
