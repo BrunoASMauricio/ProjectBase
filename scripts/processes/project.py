@@ -81,6 +81,8 @@ class PROJECT(dict):
         CMakeCommand =  'cmake -DCMAKE_BUILD_TYPE=Debug'
         # Dont complain about unused -D parameters, they are not mandatory
         CMakeCommand += ' --no-warn-unused-cli'
+        # Add compile.json for better IDE support
+        CMakeCommand += ' -DCMAKE_EXPORT_COMPILE_COMMANDS=1'
         # Include generated configuration
         # CMakeCommand += f' -I{self.paths["project configs"]}/.config'
         CMakeCommand += f' -S {self.paths["build env"]}'
