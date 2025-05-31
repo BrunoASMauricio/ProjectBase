@@ -93,6 +93,6 @@ $$INCLUDE_REPOSITORY_CMAKELISTS$$
 
 ## Activate compiler flags
 #add_definitions(${GCC_COMPILE_FLAGS})
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COMPILE_FLAGS} -lncurses -lm -Wstrict-prototypes -DENABLE_SANITY_CHECKS -g3 -O0  -fwrapv -ftrapv -fno-delete-null-pointer-checks -Wno-missing-field-initializers -Wall -Wextra -Werror -Wconversion -Wno-type-limits -Wno-unused-function")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COMPILE_FLAGS}  -lX11 -lncurses -lm -Wstrict-prototypes -DENABLE_SANITY_CHECKS -g3 -O0  -fwrapv -ftrapv -fno-delete-null-pointer-checks -Wno-missing-field-initializers -Wall -Wextra -Werror -Wconversion -Wno-type-limits -Wno-unused-function")
 
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}     ${GCC_COMPILE_FLAGS} -lncurses -lm -Wstrict-prototypes -DENABLE_SANITY_CHECKS -Wno-implicit-int -g3 -O0  -fwrapv -ftrapv -fno-delete-null-pointer-checks -Wno-c90-c99-compat -Wno-missing-field-initializers -Wall -Wextra -Werror -Wconversion -Wno-type-limits -Wno-unused-function")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}     ${GCC_COMPILE_FLAGS}  -lX11 -lncurses -lm -Wstrict-prototypes -DENABLE_SANITY_CHECKS -Wno-implicit-int -g3 -O0  -fwrapv -ftrapv -fno-delete-null-pointer-checks -Wno-c90-c99-compat -Wno-missing-field-initializers -Wall -Wextra -Werror -Wconversion -Wno-type-limits -Wno-unused-function")
