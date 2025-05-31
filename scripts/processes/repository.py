@@ -498,34 +498,37 @@ def __SetupCMake(repositories):
         # Only import headers that are direct and/or indirect dependencies
         # Only link objects that are direct dependencies
         def GetDependencyData(repositories, starting_repo_id):
-            dependencies = [starting_repo_id]
-            starting_dependency_amount = len(dependencies)
-            current_dependency_amount = 0
-            first_iteration = 1
-            # direct_dependencies = []
-            # While the amount of dependencies changed
-            while starting_dependency_amount != current_dependency_amount:
-                starting_dependency_amount = len(dependencies)
-                # For all of the current dependencies
-                for dependency in dependencies:
-                    # Find a dependency that hasn't yet been added
-                    for repo_id in repositories:
-                        # Already exists
-                        if repo_id in dependencies:
-                            continue
-                        # Does not exist. Is it a dependency?
-                        if DependencyOf(repositories[dependency], repositories[repo_id]):
-                            dependencies.append(repo_id)
-
-                if first_iteration == 1:
-                    # direct_dependencies = dependencies.copy()
-                    first_iteration = 2
-                current_dependency_amount = len(dependencies)
-                break
-            # return direct_dependencies, dependencies
-            # Return the latest dependencies first
+            dependencies = list(repositories.keys())
             dependencies.reverse()
             return dependencies
+            # dependencies = [starting_repo_id]
+            # starting_dependency_amount = len(dependencies)
+            # current_dependency_amount = 0
+            # first_iteration = 1
+            # # direct_dependencies = []
+            # # While the amount of dependencies changed
+            # while starting_dependency_amount != current_dependency_amount:
+            #     starting_dependency_amount = len(dependencies)
+            #     # For all of the current dependencies
+            #     for dependency in dependencies:
+            #         # Find a dependency that hasn't yet been added
+            #         for repo_id in repositories:
+            #             # Already exists
+            #             if repo_id in dependencies:
+            #                 continue
+            #             # Does not exist. Is it a dependency?
+            #             if DependencyOf(repositories[dependency], repositories[repo_id]):
+            #                 dependencies.append(repo_id)
+
+            #     if first_iteration == 1:
+            #         # direct_dependencies = dependencies.copy()
+            #         first_iteration = 2
+            #     current_dependency_amount = len(dependencies)
+            #     break
+            # # return direct_dependencies, dependencies
+            # # Return the latest dependencies first
+            # dependencies.reverse()
+            # return dependencies
 
         # Unfortunately, linking only direct dependencies does not work due to transitive dependency failure
         # direct_dependencies, dependencies = GetDependencyData(repositories, repo_id)
