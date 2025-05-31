@@ -133,10 +133,11 @@ def ExecuteMenu(path_to_scan):
                 return
             except KeyboardInterrupt:
                 print("Keyboard Interrupt")
+                break
 
         except KeyboardInterrupt:
             print("\nCtrl+C interrupts running operations and enter goes to the previous menu. Press Ctrl+D to back out of ProjectBase")
-            continue
+            break
         except EOFError:
             break
 
