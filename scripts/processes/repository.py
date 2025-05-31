@@ -546,6 +546,9 @@ def __SetupCMake(repositories):
             if repo_id == dep_repo_id:
                 continue
             if dep_repo_id in objects_to_link:
+                dep = repositories[dep_repo_id]
+                if __RepoHasFlagSet(dep, "no auto build") or __RepoHasNoCode(dep):
+                    continue
                 temp_objects_to_link.append(objects_to_link[dep_repo_id])
 
         if len(repository["public headers"]) > 0:
