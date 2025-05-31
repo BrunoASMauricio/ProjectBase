@@ -111,7 +111,9 @@ if(EXISTS $$REPO_SOURCES$$/configs/CMakeLists.txt)
 
 		### Link executable to dependency repositories
 		target_link_libraries(${EXECUTABLE}
+			-Wl,--whole-archive
 			${DEPENDENCY_LIBS}
+			-Wl,--no-whole-archive
 		)
 	endforeach()
 
