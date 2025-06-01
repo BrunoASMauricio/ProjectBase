@@ -587,7 +587,8 @@ def __SetupCMake(repositories):
             "TESTS_INCLUDES":   '\n'.join(test_headers),
             "LINK_DEPENDENCIES": '\n'.join(temp_objects_to_link),
             "REPO_SOURCES": repository["repo path"],
-            "REPO_NAME": repository["repo name"]
+            "REPO_NAME": repository["repo name"],
+            "PROJECT_PATH": Settings["paths"]["project main"]
         })
 
     SetupTemplateScript("project/CMakeLists.txt", JoinPaths(Settings["paths"]["build env"], "CMakeLists.txt"), {
