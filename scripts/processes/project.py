@@ -23,6 +23,12 @@ Is represented by a simple dictionary
 """
 class PROJECT(dict):
     # Load constant and known variables
+    def DeleteRepositories(self):
+        for repo in self.repositories:
+            del repo
+        del self.repositories
+        self.ResetRepositories()
+
     def ResetRepositories(self):
         self.repositories = {}
 
@@ -227,4 +233,4 @@ def CleanPBCache():
     global Project
     LaunchVerboseProcess(f"rm -rf {Settings["paths"]["cache path"]}")
     LaunchVerboseProcess(f"rm -rf {Settings["paths"]["temporary"]}/*")
-    Project.ResetRepositories()
+    Project.DeleteRepositories()
