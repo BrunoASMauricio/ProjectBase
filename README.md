@@ -87,6 +87,7 @@ Ordered by priority
 ### General
 
 - [X] Dependency visualizer
+- [ ] ProjectBase documentation
 - [ ] Add ProjectBase configs
   - [ ] For project wide flags
   - [ ] For build system setup
