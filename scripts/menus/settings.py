@@ -3,6 +3,7 @@ from data.settings import Settings, CLONE_TYPE
 from data.colors import ColorFormat, Colors
 from processes.project import Project
 from dependency_graph import BuildGraph, VisualizeGraph
+from processes.project import CleanPBCache
 
 def current_speed_entry():
     if Settings["active"]["Speed"] == "Fast":
@@ -87,3 +88,4 @@ SettingsMenu.AddCallbackEntry(current_clone_type_entry, toggle_clone_type)
 SettingsMenu.AddCallbackEntry(current_speed_entry, toggle_speed)
 SettingsMenu.AddCallbackEntry("Create dependency graph", create_dependency_graph)
 SettingsMenu.AddCallbackEntry("Create API graph", create_api_graph)
+SettingsMenu.AddCallbackEntry("Clean project cache", CleanPBCache)
