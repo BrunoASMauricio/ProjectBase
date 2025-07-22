@@ -4,6 +4,22 @@ from data.colors import ColorFormat, Colors
 from processes.project import Project
 from dependency_graph import BuildGraph, VisualizeGraph
 
+def current_speed_entry():
+    if Settings["active"]["Speed"] == "Fast":
+        return "Change from Fast to Safe"
+    else:
+        return "Change from Safe to Fast"    
+
+def toggle_speed():
+    current_type = Settings["active"]["Speed"]
+    if Settings["active"]["Speed"] == "Fast":
+        Settings["active"]["Speed"] = "Safe"
+    else:
+        Settings["active"]["Speed"] = "Fast"
+
+    if current_type != Settings["active"]["Speed"]:
+        Settings.save_persisted_settings()
+
 def current_mode_entry():
     if Settings["active"]["Mode"] == "Release":
         return "Change from Release to Debug"
@@ -68,5 +84,6 @@ SettingsMenu = Menu("Settings Menu")
 SettingsMenu.prologue = settings_prologue
 SettingsMenu.AddCallbackEntry(current_mode_entry, toggle_mode)
 SettingsMenu.AddCallbackEntry(current_clone_type_entry, toggle_clone_type)
+SettingsMenu.AddCallbackEntry(current_speed_entry, toggle_speed)
 SettingsMenu.AddCallbackEntry("Create dependency graph", create_dependency_graph)
 SettingsMenu.AddCallbackEntry("Create API graph", create_api_graph)

@@ -1,5 +1,6 @@
 import os
 import logging
+import pickle
 
 from data.settings import Settings, CLONE_TYPE
 from data.paths    import GetProjectPaths, JoinPaths
@@ -109,18 +110,40 @@ class PROJECT(dict):
             LaunchProcess("git remote rm origin; git remote add origin " + url, repository["full worktree path"])
 
     def GetRepositories(self):
+        # See if saved cache exist 
+        base_path = "configs/project_cache/"
+        load_file = base_path + self.name + "_load_project.pkl"
+        if(Settings["active"]["Speed"] == "Fast"):
+            if os.path.exists(load_file):
+                with open(load_file, "rb") as f:
+                    loaded = pickle.load(f)
+                    self.__dict__.update(loaded.__dict__)
+                    self.update(loaded)
+                    logging.info("Loaded project from pickle.")
+                    print("Loaded project from pickle.")
+            
         # Not loaded, load and return
         if len(self.repositories) == 0:
+            print("Len Repos is 0.")
             self.load()
             return self.repositories
 
-        # Single change in configs must trigger full reloading of configs
-        for repository in self.repositories:
-            config_change = ConfigsChanged(self.repositories[repository]["configs path"])
-            if config_change != None:
-                print(f"Config change detected ({self.repositories[repository]["configs path"]}: {config_change}), reloading")
-                self.load()
-                break
+        if(Settings["active"]["Speed"] == "Safe"):
+            # Single change in configs must trigger full reloading of configs
+            # Also internally this code is slower than it shoud there are proably ways to
+            # speed it up. TODO 
+            for repository in self.repositories:
+                config_change = ConfigsChanged(self.repositories[repository]["configs path"])
+                if config_change != None:
+                    print(f"Config change detected ({self.repositories[repository]["configs path"]}: {config_change}), reloading")
+                    self.load()
+                    break
+
+        if(Settings["active"]["Speed"] == "Fast"):       
+            with open(load_file, "wb") as f:
+                pickle.dump(self, f)
+                logging.info("Saved project to pickle.")
+                print("Saved project to pickle.")
 
         return self.repositories
 

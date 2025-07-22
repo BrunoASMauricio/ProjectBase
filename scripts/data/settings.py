@@ -52,6 +52,8 @@ class SETTINGS(dict):
 
         parser.add_argument("-d", "--debug", action='store_true', help = "Increase log verbosity to debug ProjectBase", default=False, required=False)
 
+        parser.add_argument("-f", "--fast", action='store_true', help = "Cache Repositories in pickle and do not consider config changes, deactivate to consider if needed", default=False, required=False)
+
         project_args, action_args = parser.parse_known_args()
 
         self["url"]           = project_args.url
@@ -60,6 +62,7 @@ class SETTINGS(dict):
         self["exit"]          = project_args.exit
         self["single thread"] = project_args.single_thread
         self["debug"]         = project_args.debug
+        self["fast"]          = project_args.fast
         # Trailing unknown arguments
         self["action"] = action_args
 
@@ -72,6 +75,7 @@ class SETTINGS(dict):
         project_name = self["ProjectName"]
 
         default_settings = {
+            "Speed":      "Safe", 
             "Mode":       "Debug",
             "Clone Type": CLONE_TYPE.SSH.value
         }
