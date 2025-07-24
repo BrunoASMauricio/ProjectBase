@@ -240,7 +240,7 @@ def GlobalTemporaryCommit():
 
 def GlobalFixedCommit():
 
-    temp_commit_count = 0
+    temp_commit_count = []
 
     try:
         temporary_commmits = __GetCurrentTemporaryCommits()
