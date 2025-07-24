@@ -180,6 +180,7 @@ Ordered by priority
 - [ ] Add support for a configuration system (i.e. Kconfig)
 - [ ] Add support for a hardware description language (i.e. devicetree)
 - [ ] Investigate necessity/feasibility of sending strings into code
+- [ ] Allow the use of strings and lists (i.e. check type)
 - [ ] Add option for custom command to run on all repos
 - [ ] Allow public, private and test headers to be defined by each project. Or simply allow public and private, and tests have access to both?
 
