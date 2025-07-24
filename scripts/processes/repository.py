@@ -235,7 +235,6 @@ def LoadRepository(imposed_configs):
 
     imposed_configs = __LoadRepositoryFolder(imposed_configs)
     imposed_configs["reloaded"] = True
-    repositories[repo_id] = imposed_configs
 
     config_variable_data = {
         "PROJECT_PATH": Settings["paths"]["project main"],
@@ -246,7 +245,9 @@ def LoadRepository(imposed_configs):
     # Reload metadata
     imposed_configs = ParseConfigs(imposed_configs, config_variable_data)
 
+    repositories[repo_id] = imposed_configs
     repositories[repo_id]["reloaded"] = True
+
     # Load dependencies
     try:
         for dependency in imposed_configs["dependencies"]:
@@ -461,6 +462,10 @@ def __FetchAllPublicHeaders(repositories):
             will_link = not __RepoHasNoCode(repository)
             will_link = will_link and not __RepoHasFlagSet(repository, "no auto build")
             will_link = will_link and not __RepoHasFlagSet(repository, "independent project")
+            # TODO: execs only should be infered by the build environment not having ".c"s to compile
+            # however it is planned for an overhaul of the build system (abstract away from cmake only)
+            # which would enable this change
+            will_link = will_link and not __RepoHasFlagSet(repository, "execs only")
             if will_link:
                 objects_to_link[repo_id] = repository["name"]+'_lib'
 
