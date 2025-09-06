@@ -204,8 +204,8 @@ def LoadConfigs(current_repo_path):
 
     basic_headers = ["headers", "inc", "include"]
 
-    def __CheckHeaders(flag, configs, static_paths, dynamic_paths):
-        paths = GetValueOrDefault(configs, flag, [])
+    def __CheckHeaders(key, configs, static_paths, dynamic_paths):
+        paths = GetValueOrDefault(configs, key, [])
         if len(paths) == 0:
             for path in static_paths:
                 paths.append(path)
@@ -214,8 +214,8 @@ def LoadConfigs(current_repo_path):
                 for path in dynamic_paths:
                     paths.append(path + header)
 
-            __FindRepoFolders(current_repo_path, configs, flag, paths)
-        configs[flag] = paths
+            __FindRepoFolders(current_repo_path, configs, key, paths)
+        configs[key] = paths
 
     __CheckHeaders("public headers",  configs, [], ["code/", ""])
     __CheckHeaders("private headers", configs, ["code/", "code/source"], ["execs/"])
