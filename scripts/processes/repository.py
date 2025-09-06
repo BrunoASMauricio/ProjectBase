@@ -79,7 +79,7 @@ def __LoadRepositoryFolder(imposed_configs):
         logging.info(f"Repository {imposed_configs} not found")
         # Setup helper worktree
         helper_path = AddWorkTree(imposed_configs["bare path"], imposed_configs["url"], imposed_configs["commitish"], Settings["paths"]["temporary"])
-        repository  = MergeConfigs(imposed_configs, LoadConfigs(helper_path))
+        repository  = MergeConfigs(LoadConfigs(helper_path), imposed_configs)
 
         expected_local_path = JoinPaths(Settings["paths"]["project code"], repository["local path"])
 
@@ -93,7 +93,7 @@ def __LoadRepositoryFolder(imposed_configs):
 
     else: # Repository present at current_location
         # logging.debug("Repo " + imposed_configs["name"] + " found at " + current_location)
-        repository = MergeConfigs(imposed_configs, LoadConfigs(current_location))
+        repository = MergeConfigs(LoadConfigs(current_location), imposed_configs)
 
         # Is that the expected path?
         expected_local_path = JoinPaths(Settings["paths"]["project code"], repository["local path"])
