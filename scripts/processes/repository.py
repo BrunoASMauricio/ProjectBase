@@ -270,8 +270,9 @@ def LoadRepository(imposed_configs):
             else:
                 dependency_configs["commitish"] = None
 
-            logging.error(dependency_configs)
             dep_repo_id = GetRepoId(dependency_configs)
+            logging.error(f"dependency_configs of {imposed_configs["name"]} for {dep_repo_id}")
+            logging.error(pformat(dependency_configs))
             repositories_lock.acquire()
             # if dep_repo_id in dependencies??
             if dep_repo_id not in repositories and dep_repo_id not in dependencies:
@@ -482,9 +483,9 @@ def __SetupCMake(repositories):
     objects_to_link, public_header_folders = __FetchAllPublicHeaders(repositories)
 
     # Build CMake for each repository
-    logging.error(repositories)
     for repo_id in repositories.keys():
         repository = repositories[repo_id]
+        logging.error(pformat(repository))
 
         print(f"{repo_id} {repository["url"]}")
         # logging.error(repository)
