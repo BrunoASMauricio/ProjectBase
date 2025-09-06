@@ -140,7 +140,9 @@ def IsEmpty(object):
     if type(object) == type([]) or type(object) == type(""):
         return len(object) == 0
 
-    raise Exception("Unknown type for IsEmpty: " + str(type(object)))
+    # Other values cannot be empty (no way to detect that)
+    return False
+    # raise Exception("Unknown type for IsEmpty: " + str(type(object)) + str(object))
 
 def RemoveNonAlfanumeric(string):
     return re.sub(r'[^A-Za-z0-9]+', '', string)
