@@ -35,6 +35,7 @@ def __ParseInput(og_user_input):
         "!G": "gdb --args ",
         "!S": "gdbserver 127.0.0.1:6175 ",
         "!V": "valgrind --fair-sched=yes -s --leak-check=full --show-leak-kinds=all --track-origins=yes",
+        "!C": "valgrind --tool=callgrind",
         "!g": "gdb",
         "!s": "gdbserver",
         "!v": "valgrind"
@@ -88,10 +89,15 @@ def ExecuteMenu(path_to_scan):
             exploded = executables_available[index].split("_")
             repo = exploded[0]
             name = '_'.join(exploded[1:])
-            if previous_repo_name != repo:
-                print(ColorFormat(Colors.Yellow, "\t<" + repo + ">"))
-                previous_repo_name = repo
-            print("["+str(index)+"]" +ColorFormat(Colors.Blue, name))
+
+            if len(name) != 0:
+                if previous_repo_name != repo:
+                    print(ColorFormat(Colors.Yellow, "\t<" + repo + ">"))
+                    previous_repo_name = repo
+                print("["+str(index)+"]" +ColorFormat(Colors.Blue, name))
+            else:
+                print("["+str(index)+"] "+ColorFormat(Colors.Yellow, "<" + repo + ">"))
+
         print()
 
         
