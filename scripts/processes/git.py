@@ -66,7 +66,8 @@ def FindGitRepo(base_path, repo_url, repo_commitish = None, depth=-1):
         return None
 
     # TODO: Is this really the better option?? Just blindly assume the flipped url is valid
-    if SameUrl(repo_url, GetRepositoryUrl(base_path)):
+    url_base_path = GetRepositoryUrl(base_path)
+    if SameUrl(repo_url,  url_base_path ):
         if repo_commitish != None:
             # Look into commit
             if repo_commitish["type"] == "commit":
@@ -130,12 +131,25 @@ def GetAllGitRepos(path_to_search, depth=-1):
 
     return git_repos
 
+
+
+import os
 def SetupBareData(repo_url):
     repo_url       = FixUrl(repo_url)
     # ActiveSettings = Settings["active"]
+
     bare_gits      = Settings["paths"]["bare gits"]
-    bare_git       = FindGitRepo(bare_gits, repo_url)
-    
+
+    # This called takes time 
+
+    repo_url_base = url_SSH_to_HTTPS(repo_url)
+    bare_git_probable_path = bare_gits + "/" + repo_url_base[8:] + ".git"
+
+    if(os.path.exists(bare_git_probable_path)):
+        bare_git = bare_git_probable_path 
+    else:
+        bare_git  = FindGitRepo(bare_gits, repo_url)
+
     if bare_git == None:
         bare_tree_name = GetRepoBareTreePath(repo_url)
         clone_command = 'git clone "' + repo_url + '" "' + JoinPaths(bare_gits, bare_tree_name) + '" --bare'

@@ -56,7 +56,6 @@ def __LoadRepositoryFolder(imposed_configs):
 
     # Current full path to the repository
     current_location = None
-
     # We already have cached metadata on this repo
     if repo_id in repositories.keys() and repositories[repo_id] != None and repositories[repo_id]["reloaded"] == True:
         repository = repositories[repo_id]
@@ -70,10 +69,17 @@ def __LoadRepositoryFolder(imposed_configs):
     else:
         SetDetectedStateChange()
 
+    # Try to see if repository is still on the cached localization
+    if current_location == None: # Do a guess of the correct place
+        if("repo path" in imposed_configs):
+            repo_path_cached = imposed_configs["repo path"]
+            if(repo_path_cached != ""):
+                cached_url = GetRepositoryUrl(repo_path_cached)
+                if(SameUrl(cached_url,imposed_configs["url"])):
+                    current_location = repo_path_cached
     # Repo path unknown, or not where expected. Find repository
     if current_location == None:
         current_location = FindGitRepo(Settings["paths"]["project code"], imposed_configs["url"], imposed_configs["commitish"])
-
     # Repo nowhere to be found, add it
     if current_location == None:
         logging.info(f"Repository {imposed_configs} not found")
@@ -105,6 +111,9 @@ def __LoadRepositoryFolder(imposed_configs):
             current_location = repo_path
             SetDetectedStateChange()
         current_location = repo_path
+
+
+
 
     # From this point on:
     # 1. Repository dict exists containing configs
