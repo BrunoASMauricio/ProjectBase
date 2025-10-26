@@ -99,7 +99,9 @@ def FindGitRepo(base_path, repo_url, repo_commitish = None, depth=-1):
         # Only look for directories that are git repositories (worktrees/bare gits)
         if not os.path.isdir(full_path):
             continue
-
+        # Do not follow symbolic links to avoid infinite loops
+        if os.path.islink(full_path):
+            continue
         if depth == -1: # No depth limitation
             Result = FindGitRepo(full_path, repo_url, repo_commitish)
         else:
@@ -123,11 +125,15 @@ def GetAllGitRepos(path_to_search, depth=-1):
         git_repos.append(path_to_search)
 
     for Inode in os.listdir(path_to_search):
-        if os.path.isdir(JoinPaths(path_to_search, Inode)) and Inode != ".git":
+        NextPath = JoinPaths(path_to_search, Inode)
+        if os.path.isdir(NextPath) and Inode != ".git":
+            # Do not follow symbolic links to avoid infinite loops
+            if os.path.islink(NextPath):
+                continue
             if depth == -1: # No depth limitation
-                git_repos = git_repos + GetAllGitRepos(JoinPaths(path_to_search, Inode))
+                git_repos = git_repos + GetAllGitRepos(NextPath)
             else:
-                git_repos = git_repos + GetAllGitRepos(JoinPaths(path_to_search, Inode), depth - 1)
+                git_repos = git_repos + GetAllGitRepos(NextPath, depth - 1)
 
     return git_repos
 
