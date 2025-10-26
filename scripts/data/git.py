@@ -10,7 +10,9 @@ To: git@<git repo>:<path el 1>/<path el 2>/<path el 3>/<path el 4>.git
 def url_HTTPS_to_SSH(url):
     if not url.startswith("https"):
         if not url.startswith("git@"):
-            raise Exception(f"Cannot convert: {url}")
+            # Special case. url type is not recognized, so just use it as is
+            return url
+            # raise Exception(f"Cannot convert: {url}")
         else:
             # Already in ssh format
             return url
@@ -29,7 +31,8 @@ To: https://<git repo>/<path el 1>/<path el 2>/<path el 3>/<path el 4>
 def url_SSH_to_HTTPS(url):
     if not url.startswith("git@"):
         if not url.startswith("https"):
-            raise Exception(f"Cannot convert: {url}")
+            # Special case. url type is not recognized, so just use it as is
+            return url
         else:
             # Already in ssh format
             return url
