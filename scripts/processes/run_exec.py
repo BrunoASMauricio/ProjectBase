@@ -5,24 +5,30 @@ from data.colors import *
 from processes.process import RunExecutable, PrepareExecEnvironment
 from processes.process import LaunchSilentProcess, ProcessError, RunInThreadsWithProgress
 from menus.menu import GetNextOption, MenuExit
+from data.paths import JoinPaths
 
 """
-scan path_to_scan for appropriate executables
+scan PathToScan for appropriate executables
 Return a list with the executables
 """
-def __GetAvailableExecutables(path_to_scan):
+def __GetAvailableExecutables(PathToScan, CurrentAvailables=[]):
     executables_available = []
     os.chdir(Settings["paths"]["project main"])
 
-    for entry in os.scandir(path_to_scan):
+    for entry in os.scandir(PathToScan):
+        ExecPath = JoinPaths(PathToScan, entry.name)
         # Must be fully executable
         if entry.stat().st_mode & 0o111 != 0o111:
             continue
+        # Do not follow symbolic links to avoid infinite loops
+        if os.path.islink(ExecPath):
+            continue
         # Must be a file
         if not entry.is_file():
+            executables_available = executables_available + __GetAvailableExecutables(ExecPath, CurrentAvailables)
             continue
 
-        executables_available.append(entry.name)
+        executables_available.append(ExecPath)
     return executables_available
 
 """
@@ -51,7 +57,7 @@ def __ParseInput(og_user_input):
 """
 Locate the actual executable used and return its' path
 """
-def __LocateExecutable(user_input, executables_available, path_to_scan):
+def __LocateExecutable(user_input, executables_available):
     input_list = user_input.split(' ')
     executable = input_list[0]
     if StringIsNumber(executable):
@@ -59,30 +65,22 @@ def __LocateExecutable(user_input, executables_available, path_to_scan):
         if exec_ind > len(executables_available):
             print("Out of bounds index: " + user_input)
             return None, None
-        path_to_exec = path_to_scan + "/" + executables_available[exec_ind]
+        path_to_exec = executables_available[exec_ind]
     else:
-        # By name
-        if os.path.isfile(path_to_scan + "/" + executable):
-            path_to_exec = path_to_scan + "/" + executable
-        # By absolute path
-        elif os.path.isfile(executable):
-            path_to_exec = executable
-        else:
-            print("Unknown executable: " + executable)
-            return None, None
+        raise Exception("Unimplemented. First implement proper executable presentation per module and alphabetical")
     return path_to_exec, input_list
 
-def ExecuteMenu(path_to_scan):
+def ExecuteMenu(PathToScan):
     # Allow python scripts to use ProjectBase scripts
     PrepareExecEnvironment()
 
     while True:
-        executables_available = __GetAvailableExecutables(path_to_scan)
+        executables_available = __GetAvailableExecutables(PathToScan)
         if len(executables_available) == 0:
             print("No executables found")
             return
 
-        print("Executables available in "+path_to_scan+":")
+        print("Executables available in "+PathToScan+":")
         executables_available.sort()
         previous_repo_name = ""
         for index in range(len(executables_available)):
@@ -118,7 +116,7 @@ def ExecuteMenu(path_to_scan):
             prefix, user_input = __ParseInput(og_user_input)
 
             # Locate executable
-            path_to_exec, input_list = __LocateExecutable(user_input, executables_available, path_to_scan)
+            path_to_exec, input_list = __LocateExecutable(user_input, executables_available)
             if path_to_exec == None:
                 print("Executable not found")
                 continue
@@ -161,21 +159,21 @@ def _RunAllTests(Prefix=""):
     # Allow python scripts to use ProjectBase scripts
     PrepareExecEnvironment()
 
-    def Run(TestPath, TestName):
-        Command = Prefix + " " + TestPath + "/" + TestName
+    def Run(TestPath):
+        Command = Prefix + " " + TestPath
         try:
             Result = LaunchSilentProcess(Command)
         except ProcessError as ex:
             Result = ex.returned
-        Result["test name"] = TestName
+        Result["test name"] = TestPath.split(" ")[-1]
         all_outputs.append(Result)
 
     tests_args = []
     for test_index in range(len(tests)):
         test_name = tests[test_index]
-        tests_args.append((Settings["paths"]["tests"] + "/", test_name, ))
+        tests_args.append((test_name, ))
 
-    RunInThreadsWithProgress(Run, tests_args, 20)
+    RunInThreadsWithProgress(Run, tests_args, None)
     print("\n")
 
     return all_outputs

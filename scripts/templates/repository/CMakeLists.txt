@@ -5,17 +5,15 @@
 
 ### RESPECT THE CURRENT ORDER OF COMMANDS
 
-### Obtain this repositorys' name
-get_filename_component(RepositoryName $$REPO_SOURCES$$ NAME)
-string(REPLACE " " "_" RepositoryName ${RepositoryName})
-
-MESSAGE("Generating ${RepositoryName}")
-
-
 ### Remove existing variables
 unset(repository_source_files)
-unset(REPO_CODE_PATH)
-unset(REPO_PATH)
+unset(REPO_NAME)
+unset(REPO_SRC_PATH)
+unset(REPO_BUILD_PATH)
+unset(REPO_EXEC_PATH)
+unset(REPO_TESTS_PATH)
+unset(REPO_LIB_PATH)
+
 unset(PUBLIC_HEADERS)
 unset(PRIVATE_HEADERS)
 unset(TEST_HEADERS)
@@ -27,10 +25,20 @@ unset(REP_DEBUG_C_FLAGS)
 unset(REP_RELEASE_C_FLAGS)
 
 ### Setup useful variables
-SET(PROJECT_PATH $$PROJECT_PATH$$)
-SET(REPO_CODE_PATH $$REPO_SOURCES$$/code)
-SET(REPO_PATH $$REPO_SOURCES$$)
-SET(REPO_NAME $$REPO_NAME$$)
+SET(REPO_NAME       $$REPO_NAME$$)
+SET(REPO_SRC_PATH   $$REPO_SRC_PATH$$)
+SET(REPO_BUILD_PATH $$REPO_BUILD_PATH$$)
+SET(REPO_EXEC_PATH  $$REPO_EXEC_PATH$$)
+SET(REPO_TESTS_PATH $$REPO_TESTS_PATH$$)
+SET(REPO_LIB_PATH   $$REPO_LIB_PATH$$)
+
+### Obtain this repositorys' name
+get_filename_component(RepositoryName $$REPO_SRC_PATH$$ NAME)
+string(REPLACE " " "_" RepositoryName ${RepositoryName})
+
+MESSAGE("Generating ${RepositoryName}")
+
+link_directories(${PROJ_LIB_PATH}/elfutils/elfutils)
 
 ### Headers available from dependency repositories
 SET(PUBLIC_HEADERS
@@ -55,8 +63,8 @@ SET(EXECUTABLES)
 SET(TESTS)
 
 ### Include custom CMakeLists
-if(EXISTS $$REPO_SOURCES$$/configs/CMakeLists.txt)
-	include($$REPO_SOURCES$$/configs/CMakeLists.txt)
+if(EXISTS $$REPO_SRC_PATH$$/configs/CMakeLists.txt)
+	include($$REPO_SRC_PATH$$/configs/CMakeLists.txt)
 
 	SET(CUSTOM_C_FLAGS "")
 	### Use repository specific C Flags
@@ -98,7 +106,7 @@ if(EXISTS $$REPO_SOURCES$$/configs/CMakeLists.txt)
 	foreach(EXECUTABLE ${EXECUTABLES})
 		### Setup executable path
 		set_target_properties(${EXECUTABLE} PROPERTIES
-			RUNTIME_OUTPUT_DIRECTORY ${EXECS_PATH}
+			RUNTIME_OUTPUT_DIRECTORY ${REPO_EXEC_PATH}
 		)
 
 		target_compile_options(${EXECUTABLE} PRIVATE ${CUSTOM_C_FLAGS})
@@ -108,6 +116,7 @@ if(EXISTS $$REPO_SOURCES$$/configs/CMakeLists.txt)
 			PUBLIC
 			${PUBLIC_HEADERS}
 			${PRIVATE_HEADERS}
+			${TEST_HEADERS}
 		)
 
 		### Link executable to dependency repositories
@@ -122,7 +131,7 @@ if(EXISTS $$REPO_SOURCES$$/configs/CMakeLists.txt)
 
 		### Setup test path
 		set_target_properties(${TEST} PROPERTIES
-			RUNTIME_OUTPUT_DIRECTORY ${TESTS_PATH}
+			RUNTIME_OUTPUT_DIRECTORY ${REPO_TESTS_PATH}
 		)
 
 		### Use repository specific C Flags

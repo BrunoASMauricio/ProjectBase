@@ -148,6 +148,11 @@ Ordered by priority
 - [ ] Allow all build configs via configs.json
 - [ ] Prevent executables from having the same name as a generated object/executable/library (aka a target)
 - [ ] Only link directly against actual dependencies
+- [ ] Alphabetically organize executables, and present them organized by the module they were defined in
+
+### Build
+
+- [ ] Make requested bash commands "before build" and "after build" run parallel to other such command lists
 
 ### Setup
 

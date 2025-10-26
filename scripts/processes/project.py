@@ -54,6 +54,7 @@ class PROJECT(dict):
         CreateDirectory(self.repo_cache_path)
 
     def load(self):
+        logging.info("Loading repositories")
         # Reset configs state
         ResetConfigsState()
 
@@ -84,6 +85,7 @@ class PROJECT(dict):
 
     def build(self):
         logging.info("Building project")
+        repositories = self.GetRepositories()
 
         CMakeCommand =  'cmake -DCMAKE_BUILD_TYPE=Debug'
         # Dont complain about unused -D parameters, they are not mandatory
@@ -101,7 +103,7 @@ class PROJECT(dict):
         # Enable multi process
         CMakeCommand += ' -- -j $(nproc)'
 
-        Build(self.GetRepositories(), CMakeCommand)
+        Build(repositories, CMakeCommand)
 
     def SetCloneType(self, clone_type):
         repos = self.GetRepositories()
@@ -130,7 +132,7 @@ class PROJECT(dict):
             
         # Not loaded, load and return
         if len(self.repositories) == 0:
-            print("Len Repos is 0.")
+            logging.info("No repositories loaded")
             self.load()
             return self.repositories
 

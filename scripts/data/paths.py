@@ -52,7 +52,8 @@ def GetProjectPaths(project_name):
     paths["project main"] = paths["project base"]+"/projects/" + project_name + ".ProjectBase"
 
     # Projects configs directory
-    paths["project configs"]       = paths["project main"] + "/configs"
+    paths["project configs"]   = paths["project main"] + "/configs"
+    paths["autogened headers"] = paths["project configs"] + "/autogened_headers"
 
     # Projects build directory
     paths["build"]       = paths["project main"] + "/build"
@@ -61,7 +62,11 @@ def GetProjectPaths(project_name):
     paths["build env"]   = paths["build"] + "/cmake"
 
     # Project output binaries
-    paths["binaries"] =     paths["project main"]+"/binaries"
+    paths["binaries"]    = paths["project main"] + "/binaries"
+    paths["libraries"]   = paths["binaries"]     + "/libs"
+    paths["objects"]     = paths["binaries"]     + "/objects"
+    paths["executables"] = paths["objects"]      + "/executables"
+    paths["tests"]       = paths["objects"]      + "/tests"
 
     # Project repository worktrees
     paths["project code"] = paths["project main"]+'/code'
@@ -70,12 +75,6 @@ def GetProjectPaths(project_name):
 
     # Path for repositories that don't specify local_path
     paths["general repository"] = ""
-
-    # Path for output binaries
-    paths["objects"]     = paths["binaries"]+"/objects"
-    paths["executables"] = paths["objects"]+"/executables"
-    paths["tests"]       = paths["objects"]+"/tests"
-    paths["libraries"]   = paths["binaries"]+"/libs"
 
     # Path for whatever data might be used/needed
     paths["data"]        = paths["project main"]+"/data"

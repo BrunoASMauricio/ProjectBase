@@ -17,4 +17,12 @@ def FindInodeByPattern(directory, pattern):
     if directory[-1] != "/":
         directory = f"{directory}/"
     directory = f"{directory}**"
+    # WARNING: Can be VERY slow on deep folder structures
     return glob.glob(os.path.join(directory, f"*/{pattern}"), recursive=True, include_hidden=True)
+
+def FindFiles(search_path, filename):
+    result = []
+    for root, dirs, files in os.walk(search_path):
+        if filename in files:
+            result.append(os.path.join(root, filename))
+    return result

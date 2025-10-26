@@ -7,7 +7,7 @@ from data.settings import Settings
 from data.json import dump_json_file, load_json_file
 from processes.repository_configs import LoadConfigs, MergeConfigs, ParseConfigs, UpdateState
 from data.common import GetValueOrDefault
-from processes.filesystem import CreateDirectory, FindInodeByPattern
+from processes.filesystem import CreateDirectory, FindFiles
 from processes.progress_bar import PrintProgressBar
 from threading import Lock
 from data.paths import JoinPaths
@@ -71,8 +71,8 @@ def __LoadRepositoryFolder(imposed_configs):
 
     # Try to see if repository is still on the cached localization
     if current_location == None: # Do a guess of the correct place
-        if("repo path" in imposed_configs):
-            repo_path_cached = imposed_configs["repo path"]
+        if("repo source" in imposed_configs):
+            repo_path_cached = imposed_configs["repo source"]
             if(repo_path_cached != ""):
                 cached_url = GetRepositoryUrl(repo_path_cached)
                 if(SameUrl(cached_url,imposed_configs["url"])):
@@ -121,15 +121,20 @@ def __LoadRepositoryFolder(imposed_configs):
     # 3. expected_local_path contains the parent of the repo
     # 4. Path is consistent with the path requested in configs
     repository["full worktree path"] = expected_local_path
-    repository["repo path"]  = current_location
-    repository["repo name"]  = GetRepositoryName(repository["repo path"])
-    repository["build path"] = repository["repo path"].replace(Settings["paths"]["project code"], Settings["paths"]["build env"])
+    repository["repo source"]  = current_location
+    repository["repo name"]  = GetRepositoryName(repository["repo source"])
+    repository["build path"] = repository["repo source"].replace(Settings["paths"]["project code"], Settings["paths"]["build env"])
+    repository["libraries"]   = JoinPaths(Settings["paths"]["libraries"],   repository["repo name"])
+    repository["executables"] = JoinPaths(Settings["paths"]["executables"], repository["repo name"])
+    repository["tests"]       = JoinPaths(Settings["paths"]["tests"],       repository["repo name"])
+
     UpdateState(repository["configs path"])
 
     return repository
 
 def __RepoHasNoCode(repository):
-    files = FindInodeByPattern(repository["repo path"], "CMakeLists.txt")
+    logging.debug(repository["repo source"])
+    files = FindFiles(repository["repo source"], "CMakeLists.txt")
     return len(files) == 0
 
 def __RepoHasFlagSet(repository, flag):
@@ -157,8 +162,13 @@ def __RunRepoCommands(command_set_name, commands):
             command_block     = commands[block_name]
             proceed_condition = command_block["condition to proceed"]
             command_list      = command_block["command list"]
-            result = ParseProcessResponse(LaunchProcess(proceed_condition))
-            if result != "":
+            try:
+                ParseProcessResponse(LaunchProcess(proceed_condition))
+                result = True
+            except ProcessError as proc_error:
+                if proc_error.returned["code"] == 1:
+                    result = False
+            if result == False:
                 logging.info("\t Condition to proceed: '" + proceed_condition + "' is False, skipping " + str(len(command_list)) + " commands")
                 return
 
@@ -242,25 +252,31 @@ def LoadRepository(imposed_configs):
 
     imposed_configs["bare path"] = SetupBareData(imposed_configs["url"])
 
-    imposed_configs = __LoadRepositoryFolder(imposed_configs)
-    imposed_configs["reloaded"] = True
+    configs = __LoadRepositoryFolder(imposed_configs)
+    configs["reloaded"] = True
 
     config_variable_data = {
         "PROJECT_PATH": Settings["paths"]["project main"],
-        "REPO_PATH":    imposed_configs["repo path"],
-        "REPOPATH":     imposed_configs["repo path"]
+        "REPO_SRC_PATH":    configs["repo source"],
+        # "REPOPATH":     configs["repo source"],
+        # Repos specific paths for non-assisted build
+        ## For intermediary build objects
+        "REPO_BUILD_PATH":  configs["build path"],
+        "REPO_EXEC_PATH":   configs["executables"],
+        "REPO_TESTS_PATH":  configs["tests"],
+        "REPO_LIB_PATH":    configs["libraries"],
     }
 
     # Reload metadata
-    imposed_configs = ParseConfigs(imposed_configs, config_variable_data)
+    configs = ParseConfigs(configs, config_variable_data)
 
-    repositories[repo_id] = imposed_configs
+    repositories[repo_id] = configs
     repositories[repo_id]["reloaded"] = True
 
     # Load dependencies
     try:
-        for dependency in imposed_configs["dependencies"]:
-            base_dependency = imposed_configs["dependencies"][dependency]
+        for dependency in configs["dependencies"]:
+            base_dependency = configs["dependencies"][dependency]
             if "configs" in base_dependency:
                 dependency_configs = base_dependency["configs"].copy()
             else:
@@ -280,7 +296,7 @@ def LoadRepository(imposed_configs):
                 dependency_configs["commitish"] = None
 
             dep_repo_id = GetRepoId(dependency_configs)
-            logging.error(f"dependency_configs of {imposed_configs["name"]} for {dep_repo_id}")
+            logging.error(f"dependency_configs of {configs["name"]} for {dep_repo_id}")
             logging.error(pformat(dependency_configs))
             repositories_lock.acquire()
             # if dep_repo_id in dependencies??
@@ -288,7 +304,7 @@ def LoadRepository(imposed_configs):
                 dependencies[dep_repo_id] = dependency_configs
             repositories_lock.release()
     except Exception as ex:
-        logging.error(f"Failed to load {pformat(imposed_configs)}")
+        logging.error(f"Failed to load {pformat(configs)}")
         raise ex
 
 def __GenerateFullMenu(repositories):
@@ -400,7 +416,7 @@ def ConvertKconfigToHeader():
     # LaunchProcess(f"cat .config | kconfig-config2h > {JoinPaths(Settings["paths"]["project configs"], "autogen.h")}", )
     # Have to do by hand. If there is a better way, please rewrite this
     kconfig_path = JoinPaths(Settings["paths"]["project configs"], ".config")
-    header_path = JoinPaths(Settings["paths"]["project configs"], "autogen.h")
+    header_path = JoinPaths(Settings["paths"]["autogened headers"], "autogen.h")
     with open(kconfig_path, "r") as config, open(header_path, "w") as header:
         header.write("#ifndef AUTOGEN_H\n")
         header.write("#define AUTOGEN_H\n")
@@ -434,14 +450,13 @@ def __GenerateDefaultKconfig():
     ConvertKconfigToHeader()
 
 def __SetupKConfig(repositories):
+    logging.info("Setting up KConfig")
     menu_root = __GenerateFullMenu(repositories)
     collapsed_menus = __CollapseSingleEntryMenus(menu_root)
     __GenerateKConfigs(collapsed_menus, Settings["paths"]["project configs"])
     __CreateRootKConfig(collapsed_menus)
     logging.error(collapsed_menus)
     __GenerateDefaultKconfig()
-
-a = 0
 
 def DependencyOf(repo, target):
     for dependency_url in repo["dependencies"].keys():
@@ -460,7 +475,7 @@ def __FetchAllPublicHeaders(repositories):
             # Fetch all public headers
             if len(repository["public headers"]) > 0:
                 # build_dir = __RepoPathToBuild(repository)
-                new_public_headers = [JoinPaths(repository["repo path"], x) for x in repository["public headers"]]
+                new_public_headers = [JoinPaths(repository["repo source"], x) for x in repository["public headers"]]
                 new_public_headers = [x for x in new_public_headers if os.path.isdir(x) and len(x) != 0]
                 if repo_id not in public_header_folders and len(new_public_headers) != 0:
                     public_header_folders[repo_id] = []
@@ -483,9 +498,11 @@ def __FetchAllPublicHeaders(repositories):
             traceback.print_exc()
             print(str(ex))
             print(repositories[repo_id])
+            logging.error(str(ex))
     return objects_to_link, public_header_folders
 
 def __SetupCMake(repositories):
+    logging.info("Setting up CMake")
     global a
     repos_to_build = []
 
@@ -504,7 +521,7 @@ def __SetupCMake(repositories):
 
         if __RepoHasFlagSet(repository, "independent project"):
             # TODO Throw error if CMakeLists.txt does not exist in sub_dire
-            IncludeEntry = f'add_subdirectory("{repository["repo path"]}" "{repository["build path"]}")'
+            IncludeEntry = f'add_subdirectory("{repository["repo source"]}" "{repository["build path"]}")'
         else:
             IncludeEntry = 'include("' + JoinPaths(repository["build path"], "CMakeLists.txt") + '")'
 
@@ -570,13 +587,13 @@ def __SetupCMake(repositories):
                 temp_objects_to_link.append(objects_to_link[dep_repo_id])
 
         if len(repository["public headers"]) > 0:
-            public_headers += [JoinPaths(repository["repo path"], x) for x in repository["public headers"]]
+            public_headers += [JoinPaths(repository["repo source"], x) for x in repository["public headers"]]
 
         if len(repository["private headers"]) > 0:
-            private_headers += [JoinPaths(repository["repo path"], x) for x in repository["private headers"]]
+            private_headers += [JoinPaths(repository["repo source"], x) for x in repository["private headers"]]
 
         if len(repository["test headers"]) > 0:
-            test_headers += [JoinPaths(repository["repo path"], x) for x in repository["test headers"]]
+            test_headers += [JoinPaths(repository["repo source"], x) for x in repository["test headers"]]
 
         # Check if there is already a CMakeLists and it isn't ours
         if os.path.isfile(repo_cmake_lists):
@@ -597,19 +614,29 @@ def __SetupCMake(repositories):
         SetupTemplateScript("repository/CMakeLists.txt", repo_cmake_lists, {
             "ADD_LIBRARY_TYPE": "",
             "TARGET_INCLUDE_TYPE": "PUBLIC",
-            "PUBLIC_INCLUDES":  '\n'.join(public_headers),
-            "PRIVATE_INCLUDES": '\n'.join(private_headers),
-            "TESTS_INCLUDES":   '\n'.join(test_headers),
+            "PUBLIC_INCLUDES":   '\n'.join(public_headers),
+            "PRIVATE_INCLUDES":  '\n'.join(private_headers),
+            "TESTS_INCLUDES":    '\n'.join(test_headers),
             "LINK_DEPENDENCIES": '\n'.join(temp_objects_to_link),
-            "REPO_SOURCES": repository["repo path"],
-            "REPO_NAME": repository["repo name"],
-            "PROJECT_PATH": Settings["paths"]["project main"]
+            "REPO_NAME":       repository["repo name"],
+            "REPO_SRC_PATH":   repository["repo source"],
+            "REPO_BUILD_PATH": repository["build path"],
+            "REPO_EXEC_PATH":  repository["executables"],
+            "REPO_TESTS_PATH": repository["tests"],
+            "REPO_LIB_PATH":   repository["libraries"]
         })
 
     SetupTemplateScript("project/CMakeLists.txt", JoinPaths(Settings["paths"]["build env"], "CMakeLists.txt"), {
         "INCLUDE_REPOSITORY_CMAKELISTS":'\n'.join(repos_to_build),
-        "AUTOGEN_HEADERS": JoinPaths(Settings["paths"]["project configs"], "autogen.h"),
-        "PROJECT_PATH": Settings["paths"]["project main"]
+        "AUTOGEN_HEADERS_PATH": Settings["paths"]["autogened headers"],
+        "PROJ_NAME": Settings["ProjectName"],
+        "PROJ_PATH": Settings["paths"]["project main"],
+        "PROJ_BUILD_PATH":   Settings["paths"]["build"],
+        "PROJ_BIN_PATH":     Settings["paths"]["binaries"],
+        "PROJ_LIB_PATH":     Settings["paths"]["libraries"],
+        "PROJ_OBJS_PATH":    Settings["paths"]["objects"],
+        "PROJ_EXECS_PATH":   Settings["paths"]["executables"],
+        "PROJ_TESTS_PATH":   Settings["paths"]["tests"]
     })
 
 

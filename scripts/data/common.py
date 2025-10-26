@@ -231,6 +231,8 @@ def UserYesNoChoice(message):
 
 # Sets up a script according to its template and the target variable substitutions
 def SetupTemplateScript(script_name, target_file, variable_substitutions={}):
+    logging.debug(f"Setting up script {script_name}")
+
     whole_script = ""
     project_base_paths = GetBasePaths()
 

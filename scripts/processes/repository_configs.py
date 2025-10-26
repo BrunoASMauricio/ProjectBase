@@ -142,9 +142,9 @@ def ConfigsChanged(folder_path):
     # Configs dont exist
     if not os.path.isdir(folder_path):
         # Did they exist before?
-        if folder_path in global_configs_state.keys():
+        if folder_path in global_configs_state.keys() and global_configs_state[folder_path] != None:
             # Delete and return confirmation of change
-            return "was removed"
+            return f"was removed (used to be at {global_configs_state[folder_path]})"
         return None
 
     current_state = __GetConfigsFolderState(folder_path)

@@ -15,7 +15,7 @@ from processes.git     import GetAllCommits
 
 def GetKnownAndUnknownGitRepos():
     repos = Project.GetRepositories()
-    known_paths   = [repos[repo]["repo path"] for repo in repos]
+    known_paths   = [repos[repo]["repo source"] for repo in repos]
     all_git_repos = GetAllGitRepos(Settings["paths"]["project main"])
 
     unknown_paths = [repo for repo in all_git_repos if repo not in known_paths]
@@ -28,7 +28,7 @@ def RunOnAllRepos(callback, arguments={}):
 
 def RunOnAllManagedRepos(callback, arguments={}):
     repos = Project.GetRepositories()
-    known_paths   = [repos[repo]["repo path"] for repo in repos if False == __RepoHasFlagSet(repos[repo], "no commit")]
+    known_paths   = [repos[repo]["repo source"] for repo in repos if False == __RepoHasFlagSet(repos[repo], "no commit")]
 
     return RunOnFolders(known_paths, callback, arguments)
 
