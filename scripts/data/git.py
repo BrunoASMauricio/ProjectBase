@@ -54,7 +54,8 @@ def FlipUrl(url):
     elif url.startswith("https"):
         return url_HTTPS_to_SSH(url)
     else:
-        raise Exception(f"Cannot convert: {url}")
+        return url
+        # raise Exception(f"Cannot convert: {url}")
 
 
 def GetRepoNameFromURL(url):
