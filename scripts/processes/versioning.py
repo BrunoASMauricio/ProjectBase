@@ -108,15 +108,15 @@ def __AssembleReposStatusMessage(statuses):
                 repo_url = FlipUrl(repo_url)
 
             if repo_url in repos.keys() and __RepoHasFlagSet(repos[repo_url], "no commit"):
-                    status_message += ColorFormat(Colors.Red, "dirty (with `no commit` flag set) ")
+                    status_message += ColorFormat(Colors.Yellow, "dirty (with `no commit` flag set) ")
             else:
                 status_message += ColorFormat(Colors.Red, "dirty ")
 
-            status_message += "\n" + CLICenterString(" " + ColorFormat(Colors.Red, repo_name), ColorFormat(Colors.Red, "="))
-            status_message += "\n\t" + path
-            status_message += "\n\t" + ColorFormat(Colors.Yellow, status).replace("\n", "\n\t") + "\n\n"
-            status_message += "\n" + CLICenterString("", ColorFormat(Colors.Red, "="))
-            dirty.append(repo_name)
+                status_message += "\n" + CLICenterString(" " + ColorFormat(Colors.Red, repo_name), ColorFormat(Colors.Red, "="))
+                status_message += "\n\t" + path
+                status_message += "\n\t" + ColorFormat(Colors.Yellow, status).replace("\n", "\n\t") + "\n\n"
+                status_message += "\n" + CLICenterString("", ColorFormat(Colors.Red, "="))
+                dirty.append(repo_name)
 
 
         status_message +=  "\n"
