@@ -8,14 +8,28 @@ from processes.git_operations import RepoPull, RepoPush, RepoFetch, GetRepoStatu
 from processes.git_operations import RepoCleanUntracked, RepoSaveChanges, RepoResetToLatestSync, RepoHardReset
 from processes.git_operations import SquashUntilSpecifiedCommit
 from menus.menu import GetNextOption
-from processes.repository import __RepoHasFlagSet
+from processes.repository import __RepoHasFlagSet, GetRepoIdFromURL
 from processes.git     import GetAllGitRepos, GetRepoNameFromPath
 from processes.git     import CheckIfStatusIsClean, CheckIfStatusIsDiverged, CheckIfStatusIsAhead, CheckIfStatusIsBehind, CheckIfStatusIsUpToDate
 from processes.git     import GetAllCommits
 
-def GetKnownAndUnknownGitRepos():
+from processes.repository import __RepoHasSomeFlagSet
+
+# Flags are the flags to check for before adding, or to check for before ignoring
+def GetKnownAndUnknownGitRepos(flags_to_include=[],flags_to_exclude=[]):
     repos = Project.GetRepositories()
-    known_paths   = [repos[repo]["repo source"] for repo in repos]
+    known_paths = []
+    for repo in repos:
+        # Ignore if the repo does not contain an expected flag
+        if len(flags_to_include) != 0 and not __RepoHasSomeFlagSet(repos[repo], flags_to_include):
+            print("Ignored 1 "+str(repo))
+            continue
+        # Ignore if the repo contains a flag to ignore
+        if len(flags_to_exclude) != 0 and __RepoHasSomeFlagSet(repos[repo], flags_to_exclude):
+            print("Ignored 2 "+str(repo))
+            continue
+        known_paths.append(repos[repo]["repo source"])
+
     all_git_repos = GetAllGitRepos(Settings["paths"]["project main"])
 
     unknown_paths = [repo for repo in all_git_repos if repo not in known_paths]
@@ -80,6 +94,7 @@ def __AssembleReposStatusMessage(statuses):
     for path in statuses:
         status    = statuses[path]
         repo_url  = GetRepositoryUrl(path)
+        repo_id   = GetRepoIdFromURL(repo_url)
         relevant_path = ColorFormat(Colors.Grey, f"(at {GetRelevantPath(path)})")
         repo_name = f"{GetRepoNameFromURL(repo_url)} {relevant_path}"
 
@@ -99,24 +114,28 @@ def __AssembleReposStatusMessage(statuses):
             status_message += ColorFormat(Colors.Green, "synced")
 
         status_message += " and "
+
+        ignored = False
+
+        if repo_id in repos.keys() and __RepoHasFlagSet(repos[repo_id], "no commit"):
+            status_message += ColorFormat(Colors.Yellow, "(`no commit` flag set) ")
+            ignored = True
+
         if CheckIfStatusIsClean(status):
             status_message += ColorFormat(Colors.Green, "clean")
         else:
             # Symptom of not having standardized way to identify repos
             # TODO: Remove this if after a proper ID is created/found
-            if FlipUrl(repo_url) in repos.keys():
-                repo_url = FlipUrl(repo_url)
+            if repo_id in repos.keys():
 
-            if repo_url in repos.keys() and __RepoHasFlagSet(repos[repo_url], "no commit"):
-                    status_message += ColorFormat(Colors.Yellow, "dirty (with `no commit` flag set) ")
-            else:
                 status_message += ColorFormat(Colors.Red, "dirty ")
 
-                status_message += "\n" + CLICenterString(" " + ColorFormat(Colors.Red, repo_name), ColorFormat(Colors.Red, "="))
-                status_message += "\n\t" + path
-                status_message += "\n\t" + ColorFormat(Colors.Yellow, status).replace("\n", "\n\t") + "\n\n"
-                status_message += "\n" + CLICenterString("", ColorFormat(Colors.Red, "="))
-                dirty.append(repo_name)
+                if not ignored:
+                    status_message += "\n" + CLICenterString(" " + ColorFormat(Colors.Red, repo_name), ColorFormat(Colors.Red, "="))
+                    status_message += "\n\t" + path
+                    status_message += "\n\t" + ColorFormat(Colors.Yellow, status).replace("\n", "\n\t") + "\n\n"
+                    status_message += "\n" + CLICenterString("", ColorFormat(Colors.Red, "="))
+                    dirty.append(repo_name)
 
 
         status_message +=  "\n"
@@ -124,7 +143,7 @@ def __AssembleReposStatusMessage(statuses):
     return dirty, desynced, status_message
 
 def PrintProjectStatus():
-    _, known_paths, unknown_paths = GetKnownAndUnknownGitRepos()
+    _, known_paths, unknown_paths = GetKnownAndUnknownGitRepos(flags_to_exclude="independent project")
 
     # Obtain status for known and unknown repos
     known_repo_status = RunOnFolders(known_paths, GetRepoStatus)

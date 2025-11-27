@@ -44,6 +44,10 @@ def GetRepoId(repo_configs):
     return url
     # return str(repo_configs["url"]) + " " + str(repo_configs["branch"]) + " " + str(repo_configs["commit"])
 
+def GetRepoIdFromURL(repo_url):
+    url = url_SSH_to_HTTPS(repo_url)
+    return url
+
 """
 Based on the imposed_configs, make sure the repository is checked out
 at the expected path
@@ -122,6 +126,8 @@ def __LoadRepositoryFolder(imposed_configs):
     # 4. Path is consistent with the path requested in configs
     repository["full worktree path"] = expected_local_path
     repository["repo source"]  = current_location
+    repository["commitish"] = imposed_configs["commitish"]
+    repository["url"] = imposed_configs["url"]
     repository["repo name"]  = GetRepositoryName(repository["repo source"])
     repository["build path"] = repository["repo source"].replace(Settings["paths"]["project code"], Settings["paths"]["build env"])
     repository["libraries"]   = JoinPaths(Settings["paths"]["libraries"],   repository["repo name"])
@@ -137,6 +143,14 @@ def __RepoHasNoCode(repository):
     files = FindFiles(repository["repo source"], "CMakeLists.txt")
     return len(files) == 0
 
+# Check if the repository has at least one of the flags presented
+def __RepoHasSomeFlagSet(repository, flags):
+    for flag in flags:
+        if flag in repository["flags"]:
+            return True
+    return False
+
+# Check if the repository has the flag presented
 def __RepoHasFlagSet(repository, flag):
     return flag in repository["flags"]
 
@@ -656,13 +670,13 @@ def Setup(repositories):
 def Build(repositories, build_command):
     for repo_id in repositories:
         repository = repositories[repo_id]
-        __RunRepoCommands("before build", repository["before build"])
+        __RunRepoCommands(f"before build ({repository['name']})", repository["before build"])
 
     logging.info(f"Building project with {build_command}")
     LaunchVerboseProcess(build_command)
 
     for repo_id in repositories:
         repository = repositories[repo_id]
-        __RunRepoCommands("after build", repository["after build"])
+        __RunRepoCommands(f"after build ({repository['name']})", repository["after build"])
 
 
