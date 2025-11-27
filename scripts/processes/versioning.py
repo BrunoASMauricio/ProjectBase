@@ -48,11 +48,14 @@ def RunOnAllManagedRepos(callback, arguments={}):
 
 def DirectlyManageSingleRepository():
     all_paths, known_paths, _ = GetKnownAndUnknownGitRepos()
+    repos = Project.GetRepositories()
 
     dynamic_entries = []
     for path_ind in range(len(all_paths)):
         new_entry = []
         path = all_paths[path_ind]
+        repo_url  = GetRepositoryUrl(path)
+        repo_id   = GetRepoIdFromURL(repo_url)
         path = RemoveSequentialDuplicates(path, "/")
 
         status = GetRepoStatus(path)
@@ -76,7 +79,11 @@ def DirectlyManageSingleRepository():
             message += ColorFormat(Colors.Yellow, " (managed)")
         else:
             message += ColorFormat(Colors.Magenta, " (unmanaged)")
-        
+
+        # Ignored or not
+        if repo_id in repos.keys() and __RepoHasFlagSet(repos[repo_id], "no commit"):
+            message += ColorFormat(Colors.Yellow, "(`no commit` flag set) ")
+
         # Print path (relative to cwd)
         message += " " + ColorFormat(Colors.Blue, GetRepoNameFromPath(path))
         message += " ." + path.replace(Settings["paths"]["project main"], "")
