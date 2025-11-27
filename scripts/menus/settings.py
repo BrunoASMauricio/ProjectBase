@@ -81,6 +81,21 @@ def create_api_graph():
     graph = BuildGraph(Project.GetRepositories(), "API")
     VisualizeGraph(graph, "API")
 
+def print_repo(repo):
+    print(f"{repo["repo name"]}")
+    if len(repo["flags"]) == 0:
+        print(f"\tNo flags")
+    else:
+        print(f"\tFlags: {repo["flags"]}")
+    print(f"\tURL: {repo["url"]}")
+    print(f"\tComittish: {repo["commitish"]}")
+    # print(f"\tURL: {repo["flags"]}")
+
+def show_repositories():
+    repos = Project.GetRepositories()
+    for repo in repos:
+        print_repo(repos[repo])
+
 SettingsMenu = Menu("Settings Menu")
 SettingsMenu.prologue = settings_prologue
 SettingsMenu.AddCallbackEntry(current_mode_entry, toggle_mode)
@@ -88,4 +103,5 @@ SettingsMenu.AddCallbackEntry(current_clone_type_entry, toggle_clone_type)
 SettingsMenu.AddCallbackEntry(current_speed_entry, toggle_speed)
 SettingsMenu.AddCallbackEntry("Create dependency graph", create_dependency_graph)
 SettingsMenu.AddCallbackEntry("Create API graph", create_api_graph)
+SettingsMenu.AddCallbackEntry("Show repositories", show_repositories)
 SettingsMenu.AddCallbackEntry("Clean project cache", CleanPBCache)
