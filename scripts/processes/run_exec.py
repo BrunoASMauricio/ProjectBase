@@ -87,6 +87,9 @@ def ExecuteMenu(PathToScan):
             exploded = executables_available[index].split("_")
             repo = exploded[0]
             name = '_'.join(exploded[1:])
+            # Parse out path
+            exploded = repo.split("/")
+            repo = exploded[-1]
 
             if len(name) != 0:
                 if previous_repo_name != repo:
