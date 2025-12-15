@@ -80,6 +80,23 @@ if(EXISTS $$REPO_SRC_PATH$$/configs/CMakeLists.txt)
 		LIST(APPEND CUSTOM_C_FLAGS ${REP_RELEASE_C_FLAGS})
 	ENDIF()
 
+	## Deduplicate all big lists
+    if(CUSTOM_C_FLAGS)
+        list(REMOVE_DUPLICATES CUSTOM_C_FLAGS)
+    endif()
+    if(PUBLIC_HEADERS)
+        list(REMOVE_DUPLICATES PUBLIC_HEADERS)
+    endif()
+    if(PRIVATE_HEADERS)
+        list(REMOVE_DUPLICATES PRIVATE_HEADERS)
+    endif()
+    if(TEST_HEADERS)
+        list(REMOVE_DUPLICATES TEST_HEADERS)
+    endif()
+    if(DEPENDENCY_LIBS)
+        list(REMOVE_DUPLICATES DEPENDENCY_LIBS)
+    endif()
+
 	### In case the custom CMakeLists defined any source files
 	list(LENGTH repository_source_files ${RepositoryName}ListSize)
 	if( NOT ${RepositoryName}ListSize EQUAL 0)
@@ -101,6 +118,7 @@ if(EXISTS $$REPO_SRC_PATH$$/configs/CMakeLists.txt)
 		endif()
 
 		list(APPEND DEPENDENCY_LIBS ${RepositoryName}_lib)
+		list(REMOVE_DUPLICATES DEPENDENCY_LIBS)
 	endif()
 
 	foreach(EXECUTABLE ${EXECUTABLES})
