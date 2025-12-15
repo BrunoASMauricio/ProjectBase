@@ -6,8 +6,7 @@
 ### RESPECT THE CURRENT ORDER OF COMMANDS
 
 ### Cmake minimum version
-CMAKE_MINIMUM_REQUIRED(VERSION 3.6)
-
+CMAKE_MINIMUM_REQUIRED(VERSION 4.0)
 ### Setup configuration file in binary tree
 #configure_file(TutorialConfig.h.in TutorialConfig.h)
 
