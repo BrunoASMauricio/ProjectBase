@@ -4,6 +4,15 @@
 #   <- Project specific add-ons (add as needed)
 
 ### RESPECT THE CURRENT ORDER OF COMMANDS
+function(filter_existing_dirs out_var)
+    set(result "")
+    foreach(d ${ARGN})
+        if(IS_DIRECTORY "${d}")
+            list(APPEND result "${d}")
+        endif()
+    endforeach()
+    set(${out_var} "${result}" PARENT_SCOPE)
+endfunction()
 
 ### Remove existing variables
 unset(repository_source_files)
@@ -54,6 +63,10 @@ $$PRIVATE_INCLUDES$$
 SET(TEST_HEADERS
 $$TESTS_INCLUDES$$
 )
+
+filter_existing_dirs(PUBLIC_HEADERS  ${PUBLIC_HEADERS})
+filter_existing_dirs(PRIVATE_HEADERS ${PRIVATE_HEADERS})
+filter_existing_dirs(TEST_HEADERS    ${TEST_HEADERS})
 
 SET(DEPENDENCY_LIBS
 $$LINK_DEPENDENCIES$$
