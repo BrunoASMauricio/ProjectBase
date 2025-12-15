@@ -46,7 +46,7 @@ class SETTINGS(dict):
 
         parser.add_argument("-s", "--single_thread",
                             help = "Do not run PB in multiple threads",
-                            default=False, required=False, type=bool, action=argparse.BooleanOptionalAction)
+                            default=False, required=False, action=argparse.BooleanOptionalAction)
 
         parser.add_argument("-e", "--exit", action='store_true', help = "Exit after running command line arguments", default=False, required=False)
 
