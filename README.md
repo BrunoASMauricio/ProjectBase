@@ -143,19 +143,12 @@ Ordered by priority
 - [ ] Only print a full menu if there isn't an automated input for the next one. If there is, print just the name of the operation that ran and from what menu it is
 
 ### CMake
-- [ ] Build commands are now becoming too big and some error are appearing like so: 
+- [X] Build commands are now becoming too big and some error are appearing like so: 
   cc: fatal error: cannot execute ‘/usr/libexec/gcc/x86_64-redhat-linux/15/cc1’: posix_spawn: Argument list too long
   compilation terminated.
   gmake[2]: [CMakeFiles/AppTest.dir/build.make:79: CMakeFiles/AppTest.dir/home/ricostynha/Desktop/myth/ProjectBase/projects/textformatter.ProjectBase/code/Application/TestApp/app.c.o] Error 1
-  Command has to be shrinked:
-     - Remove duplicates from the command itself: maybe following something on this github:
-      https://github.com/rock-core/base-cmake/issues/49
-     - Stop putting link flags in compile flags
-      Remove -lX11 -lXext -lncurses -lm -pg from CMAKE\_C\_FLAGS and CMAKE\_CXX\_FLAGS; keep them only in CMAKE\_EXE\_LINKER\_FLAGS / CMAKE\_SHARED\_LINKER\_FLAGS or target\_link\_libraries()
-     - Command is passing global path to everything what is too verbose (relative to base project rooth is more sensible in majoriy of cases)
-     - Use top level include dir instead of all subvarints:
-        For a tree like /code/Runtime/Data/Array/{headers,inc,include,code,execs,tests,...},
-        pick a single root (for example /code/Runtime/Data/Array) and adjust that module’s CMake to add only that as an include directory, letting the compiler find headers relative to it
+   - Fixed remove duplicate variables
+   - Remove paths that do not exist
 
 
 - [X] Only add headers that exist
