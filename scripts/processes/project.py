@@ -101,7 +101,7 @@ class PROJECT(dict):
         CMakeCommand += f' -DPROJECT_BASE_SCRIPT_PATH={self.paths["scripts"]}'
         CMakeCommand += f' && cmake --build {self.paths["build cache"]}'
         # Enable multi process
-        CMakeCommand += ' -- -j $(nproc)'
+        CMakeCommand += ' -- -j $(nproc) -k'
 
         Build(repositories, CMakeCommand)
 

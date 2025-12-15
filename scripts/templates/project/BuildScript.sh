@@ -4,4 +4,4 @@
 # Configure and build project
 cmake -S . -B cmake
 
-cmake --build cmake
+cmake --build cmake -- -k
