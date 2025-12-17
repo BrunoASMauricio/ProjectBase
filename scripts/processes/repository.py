@@ -459,9 +459,11 @@ def ConvertKconfigToHeader():
         header.write("\n#endif\n")
 
 def __GenerateDefaultKconfig():
-    if not os.path.isfile(JoinPaths(Settings["paths"]["project configs"], ".config")):
-        LaunchProcess("kconfig-conf --alldefconfig Kconfig", Settings["paths"]["project configs"])
-    ConvertKconfigToHeader()
+    # kconfig is to be removed it is an unmaitained project that is very hard to download
+    #if not os.path.isfile(JoinPaths(Settings["paths"]["project configs"], ".config")):
+    #    LaunchProcess("kconfig-conf --alldefconfig Kconfig", Settings["paths"]["project configs"])
+    #ConvertKconfigToHeader()
+    pass
 
 def __SetupKConfig(repositories):
     logging.info("Setting up KConfig")
