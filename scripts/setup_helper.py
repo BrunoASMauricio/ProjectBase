@@ -1,10 +1,17 @@
 import os
 import sys
-from common import Abort, SetupScript, GetProjectPaths
+from common import Abort, SetupTemplateScript, GetProjectPaths
 
-if __name__ != "__main__":
-    Abort("This script is not meant to be imported, please run directly")
 
+"""
+This script provides any necessary operation for the build process, so the exact build
+ system in used can be abstracted, and no build system dependency is required.
+"""
+
+
+"""
+
+"""
 def WrongUsage(MainMessage = ""):
     ErrorMessage  = MainMessage+"\n"
     ErrorMessage += "\nUsage:\n"
@@ -15,6 +22,9 @@ def WrongUsage(MainMessage = ""):
     ErrorMessage += "Received data:\n\t"+'\n\t'.join(sys.argv[1:])+"\n"
     ErrorMessage += "Cannot proceed"
     Abort(ErrorMessage)
+
+if __name__ != "__main__":
+    Abort("This script is not meant to be imported, please run directly")
 
 # Correct ammount of arguments
 if len(sys.argv) != 5:
@@ -43,7 +53,8 @@ if not os.path.isdir(ProjectPaths["project main"]):
 
 FileName = FilePath.split("/")[-1]
 TargetPath = ProjectPaths[PathType]+"/"+FileName
-SetupScript(FilePath, TargetPath)
+SetupTemplateScript(FilePath, TargetPath)
 
 Permissions = FileTypePermissions[FileType]
 os.chmod(TargetPath, Permissions)
+# message("Setting up ${FILE_PATH} as a ${FILE_TYPE} file in the ${PATH_TYPE} folder")
