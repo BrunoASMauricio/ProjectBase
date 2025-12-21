@@ -249,6 +249,22 @@ class ProcessError(Exception):
             return
         raise self
 
+def GetEnvVars():
+    return {
+        "PYTHONPATH":       Settings["paths"]["scripts"],
+        "PB_ROOT_NAME":     Settings["name"],
+        "PB_ROOT_URL":      Settings["url"],
+    }
+
+# Setup necessary/useful environment variables
+def SetupLocalEnvVars():
+    # PYTHONPATH enables a script to import modules
+    for var, val in GetEnvVars().items():
+        AppendToEnvVariable(var, val)
+
+def GetEnvVarExports():
+    return "; ".join(f"export {var}='{val}'" for var, val in GetEnvVars().items())
+
 """
 Changes to the given directory, launches the Command in a forked process and
 returns the { "stdout": "..." , "code": "..."  } dictionary
@@ -280,9 +296,11 @@ def LaunchProcess(command, path=None, to_print=False):
     if command == "":
         return returned
 
+    # Setup relevant environment variables
+    # command = f"{GetEnvVarExports()}; {command}"
     # Need to cd for each git, because doing os.chdir changes the cwd for ALL threads
     command = f"cd '{path}'; {command}"
-    
+    # Fail on first error
     command = f"set -e; {command}"
 
     if to_print == True:
@@ -394,7 +412,3 @@ def AssertProcessRun(Process, ExpectedCode, ExpectedOutput):
         Message += "="*30 + "\n>"+ExpectedOutput+"<"
         Abort(Message)
 
-def PrepareExecEnvironment():
-    AppendToEnvVariable("PYTHONPATH",       Settings["paths"]["scripts"])
-    AppendToEnvVariable("PB_ROOT_NAME",     Settings["name"])
-    AppendToEnvVariable("PB_ROOT_URL",      Settings["url"])

@@ -3,7 +3,7 @@ from data.settings import Settings, CLONE_TYPE
 from data.colors import ColorFormat, Colors
 from processes.project import Project
 from dependency_graph import BuildGraph, VisualizeGraph
-from processes.project import CleanPBCache
+from processes.project import CleanPBCache, PurgePB
 
 def current_speed_entry():
     if Settings["active"]["Speed"] == "Fast":
@@ -105,3 +105,4 @@ SettingsMenu.AddCallbackEntry("Create dependency graph", create_dependency_graph
 SettingsMenu.AddCallbackEntry("Create API graph", create_api_graph)
 SettingsMenu.AddCallbackEntry("Show repositories", show_repositories)
 SettingsMenu.AddCallbackEntry("Clean project cache", CleanPBCache)
+SettingsMenu.AddCallbackEntry("Purge ProjectBase (fully resets PB state) (DANGEROUS)", PurgePB)

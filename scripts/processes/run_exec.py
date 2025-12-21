@@ -2,7 +2,7 @@ import os
 from data.settings import Settings
 from data.common import StringIsNumber
 from data.colors import *
-from processes.process import RunExecutable, PrepareExecEnvironment
+from processes.process import RunExecutable, SetupLocalEnvVars
 from processes.process import LaunchSilentProcess, ProcessError, RunInThreadsWithProgress
 from menus.menu import GetNextOption, MenuExit
 from data.paths import JoinPaths
@@ -72,7 +72,7 @@ def __LocateExecutable(user_input, executables_available):
 
 def ExecuteMenu(PathToScan):
     # Allow python scripts to use ProjectBase scripts
-    PrepareExecEnvironment()
+    SetupLocalEnvVars()
 
     while True:
         executables_available = __GetAvailableExecutables(PathToScan)
@@ -160,7 +160,7 @@ def _RunAllTests(Prefix=""):
 
     print("Running " + str(len(tests)) + " tests in " + Settings["paths"]["tests"].replace(Settings["paths"]["project base"], ""))
     # Allow python scripts to use ProjectBase scripts
-    PrepareExecEnvironment()
+    SetupLocalEnvVars()
 
     def Run(TestPath):
         Command = Prefix + " " + TestPath
