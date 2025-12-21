@@ -482,6 +482,29 @@ def DependencyOf(repo, target):
     # logging.error(f"{target["name"]} is not a dependency of {repo["name"]}")
     return False
 
+def GetProjectVariables():
+    return {
+        "AUTOGEN_HEADERS_PATH": Settings["paths"]["autogened headers"],
+        "PROJ_NAME": Settings["ProjectName"],
+        "PROJ_PATH": Settings["paths"]["project main"],
+        "PROJ_BUILD_PATH":   Settings["paths"]["build"],
+        "PROJ_BIN_PATH":     Settings["paths"]["binaries"],
+        "PROJ_LIB_PATH":     Settings["paths"]["libraries"],
+        "PROJ_OBJS_PATH":    Settings["paths"]["objects"],
+        "PROJ_EXECS_PATH":   Settings["paths"]["executables"],
+        "PROJ_TESTS_PATH":   Settings["paths"]["tests"]
+    }
+
+def GetRepositoryVariables(repository):
+    return {
+        "REPO_NAME":       repository["repo name"],
+        "REPO_SRC_PATH":   repository["repo source"],
+        "REPO_BUILD_PATH": repository["build path"],
+        "REPO_EXEC_PATH":  repository["executables"],
+        "REPO_TESTS_PATH": repository["tests"],
+        "REPO_LIB_PATH":   repository["libraries"]
+    }
+
 def __FetchAllPublicHeaders(repositories):
     public_header_folders = {}
     objects_to_link = {}
@@ -627,33 +650,19 @@ def __SetupCMake(repositories):
 
         # if not os.path.isfile(repo_cmake_lists):
         # logging.error(f"{repository["name"]} {repository["current repo path"]} repo_cmake_lists {repo_cmake_lists}")
-        SetupTemplateScript("repository/CMakeLists.txt", repo_cmake_lists, {
+        repo_vars  = {
             "ADD_LIBRARY_TYPE": "",
             "TARGET_INCLUDE_TYPE": "PUBLIC",
             "PUBLIC_INCLUDES":   '\n'.join(public_headers),
             "PRIVATE_INCLUDES":  '\n'.join(private_headers),
             "TESTS_INCLUDES":    '\n'.join(test_headers),
             "LINK_DEPENDENCIES": '\n'.join(temp_objects_to_link),
-            "REPO_NAME":       repository["repo name"],
-            "REPO_SRC_PATH":   repository["repo source"],
-            "REPO_BUILD_PATH": repository["build path"],
-            "REPO_EXEC_PATH":  repository["executables"],
-            "REPO_TESTS_PATH": repository["tests"],
-            "REPO_LIB_PATH":   repository["libraries"]
-        })
+        } | GetRepositoryVariables(repository)
 
-    SetupTemplateScript("project/CMakeLists.txt", JoinPaths(Settings["paths"]["build env"], "CMakeLists.txt"), {
-        "INCLUDE_REPOSITORY_CMAKELISTS":'\n'.join(repos_to_build),
-        "AUTOGEN_HEADERS_PATH": Settings["paths"]["autogened headers"],
-        "PROJ_NAME": Settings["ProjectName"],
-        "PROJ_PATH": Settings["paths"]["project main"],
-        "PROJ_BUILD_PATH":   Settings["paths"]["build"],
-        "PROJ_BIN_PATH":     Settings["paths"]["binaries"],
-        "PROJ_LIB_PATH":     Settings["paths"]["libraries"],
-        "PROJ_OBJS_PATH":    Settings["paths"]["objects"],
-        "PROJ_EXECS_PATH":   Settings["paths"]["executables"],
-        "PROJ_TESTS_PATH":   Settings["paths"]["tests"]
-    })
+        SetupTemplateScript("repository/CMakeLists.txt", repo_cmake_lists, repo_vars)
+
+    project_vars = {"INCLUDE_REPOSITORY_CMAKELISTS":'\n'.join(repos_to_build)} | GetProjectVariables()
+    SetupTemplateScript("project/CMakeLists.txt", JoinPaths(Settings["paths"]["build env"], "CMakeLists.txt"), project_vars)
 
 
 def Setup(repositories):
