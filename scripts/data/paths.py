@@ -21,6 +21,7 @@ def GetProjectBasePath():
     project_base_scripts_path = os.path.dirname(os.path.realpath(__file__))
     return project_base_scripts_path.replace("/scripts/data", "")
 
+# Provide base paths that must exist, and can be used internally
 def GetBasePaths():
     project_base_path = GetProjectBasePath()
 
@@ -28,16 +29,21 @@ def GetBasePaths():
     paths = {
         "project base": project_base_path,
     }
-
+    # Where the ProjectBase scripts are
     paths["scripts"] = paths["project base"]+"/scripts"
+    # Where the templates for build systems are
     paths["templates"] = paths["scripts"]+"/templates"
-
+    # ProjectBase information (history, bare gits, cache, etc) is
     paths["configs"] = paths["project base"]+"/configs"
 
+    ## Where histoy is stored
     paths["history"]   = paths["configs"]+"/history"
+    ## What temporary folder to use for setting up projects
     paths["temporary"] = paths["configs"]+"/temporary"
-    # Where the .git files are located
+    ## Where the .git files are located
     paths["bare gits"] = paths["configs"]+"/bare_gits"
+
+    paths["caches"] = JoinPaths(paths["configs"], "project_cache", "repositories")
 
     return paths
 
