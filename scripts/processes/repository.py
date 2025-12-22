@@ -2,7 +2,7 @@ import logging
 from pprint import pformat
 from data.git import GetRepoNameFromURL
 from processes.git import *
-from data.common import SetupTemplateScript
+from data.common import SetupTemplate
 from data.settings import Settings
 from data.json import dump_json_file, load_json_file
 from processes.repository_configs import LoadConfigs, MergeConfigs, ParseConfigs, UpdateState
@@ -263,6 +263,7 @@ def LoadRepository(imposed_configs):
 
     imposed_configs["name"] = GetRepoNameFromURL(imposed_configs["url"])
     repo_id = GetRepoId(imposed_configs)
+    imposed_configs["repo id"] = repo_id
 
     imposed_configs["bare path"] = SetupBareData(imposed_configs["url"])
 
@@ -498,6 +499,7 @@ def GetProjectVariables():
 def GetRepositoryVariables(repository):
     return {
         "REPO_NAME":       repository["repo name"],
+        "REPO_ID":         repository["repo id"],
         "REPO_SRC_PATH":   repository["repo source"],
         "REPO_BUILD_PATH": repository["build path"],
         "REPO_EXEC_PATH":  repository["executables"],
@@ -659,10 +661,10 @@ def __SetupCMake(repositories):
             "LINK_DEPENDENCIES": '\n'.join(temp_objects_to_link),
         } | GetRepositoryVariables(repository)
 
-        SetupTemplateScript("repository/CMakeLists.txt", repo_cmake_lists, repo_vars)
+        SetupTemplate("repository/CMakeLists.txt", repo_cmake_lists, repo_vars)
 
     project_vars = {"INCLUDE_REPOSITORY_CMAKELISTS":'\n'.join(repos_to_build)} | GetProjectVariables()
-    SetupTemplateScript("project/CMakeLists.txt", JoinPaths(Settings["paths"]["build env"], "CMakeLists.txt"), project_vars)
+    SetupTemplate("project/CMakeLists.txt", JoinPaths(Settings["paths"]["build env"], "CMakeLists.txt"), project_vars)
 
 
 def Setup(repositories):

@@ -17,6 +17,7 @@ endfunction()
 ### Remove existing variables
 unset(repository_source_files)
 unset(REPO_NAME)
+unset(REPO_ID)
 unset(REPO_SRC_PATH)
 unset(REPO_BUILD_PATH)
 unset(REPO_EXEC_PATH)
@@ -35,6 +36,7 @@ unset(REP_RELEASE_C_FLAGS)
 
 ### Setup useful variables
 SET(REPO_NAME       $$REPO_NAME$$)
+SET(REPO_ID         $$REPO_ID$$)
 SET(REPO_SRC_PATH   $$REPO_SRC_PATH$$)
 SET(REPO_BUILD_PATH $$REPO_BUILD_PATH$$)
 SET(REPO_EXEC_PATH  $$REPO_EXEC_PATH$$)
