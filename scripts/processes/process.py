@@ -297,7 +297,7 @@ def LaunchProcess(command, path=None, to_print=False):
         return returned
 
     # Setup relevant environment variables
-    # command = f"{GetEnvVarExports()}; {command}"
+    command = f"{GetEnvVarExports()}; {command}"
     # Need to cd for each git, because doing os.chdir changes the cwd for ALL threads
     command = f"cd '{path}'; {command}"
     # Fail on first error
