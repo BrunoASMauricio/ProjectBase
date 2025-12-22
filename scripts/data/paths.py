@@ -82,9 +82,12 @@ def GetProjectPaths(project_name):
     return paths
 
 def JoinPaths(*paths):
-    final_path = ""
+    final_path = []
     for path in paths:
-        final_path = os.path.join(final_path, path)
+        final_path.append(path)
+
+    final_path = '/'.join(final_path)
+
     while "//" in final_path:
         final_path = final_path.replace("//", "/")
     return final_path
