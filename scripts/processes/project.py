@@ -13,7 +13,7 @@ from processes.repository     import LoadRepositories, Setup, Build
 from processes.process        import LaunchProcess, LaunchVerboseProcess
 from data.colors              import ColorFormat, Colors
 from processes.git_operations import GetRepositoryUrl
-from processes.filesystem     import CreateDirectory
+from processes.process     import GetEnvVarExports
 from processes.run_linter     import CleanLinterFiles
 
 """
@@ -84,19 +84,20 @@ class PROJECT(dict):
         logging.info("Building project")
         repositories = self.GetRepositories()
 
-        CMakeCommand =  'cmake -DCMAKE_BUILD_TYPE=Debug'
+        CMakeCommand = f'{GetEnvVarExports()}; '
+        CMakeCommand += 'cmake -DCMAKE_BUILD_TYPE=Debug'
         # Dont complain about unused -D parameters, they are not mandatory
         CMakeCommand += ' --no-warn-unused-cli'
         # Add compile.json for better IDE support
         CMakeCommand += ' -DCMAKE_EXPORT_COMPILE_COMMANDS=1'
         # Include generated configuration
         # CMakeCommand += f' -I{self.paths["project configs"]}/.config'
-        CMakeCommand += f' -S {self.paths["build env"]}'
-        CMakeCommand += f' -B {self.paths["build cache"]}'
+        CMakeCommand += f' -S {Settings["paths"]["build env"]}'
+        CMakeCommand += f' -B {Settings["paths"]["build cache"]}'
         # CMakeCommand += ' -DBUILD_MODE='+ActiveSettings["Mode"]
         CMakeCommand += f' -DPROJECT_NAME={Settings["ProjectName"]}'
-        CMakeCommand += f' -DPROJECT_BASE_SCRIPT_PATH={self.paths["scripts"]}'
-        CMakeCommand += f' && cmake --build {self.paths["build cache"]}'
+        CMakeCommand += f' -DPROJECT_BASE_SCRIPT_PATH={Settings["paths"]["scripts"]}'
+        CMakeCommand += f' && cmake --build {Settings["paths"]["build cache"]}'
         # Enable multi process
         CMakeCommand += ' -- -j $(nproc) -k'
 
