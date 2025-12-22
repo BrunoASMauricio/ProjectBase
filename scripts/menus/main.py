@@ -24,13 +24,18 @@ def main_description():
     else:
         CloneType = ColorFormat(Colors.Cyan, "http[s] access")
     
+    if ActiveSettings["Speed"] == "Safe":
+        SpeedType = ColorFormat(Colors.Green, "Safe")
+    else:
+        SpeedType = ColorFormat(Colors.Yellow, "Fast")
+
     return ColorFormat(Colors.Yellow, r"""
  ______              __              __   ______
 |   __ \.----.-----.|__|.-----.----.|  |_|   __ \.---.-.-----.-----.
 |    __/|   _|  _  ||  ||  -__|  __||   _|   __ <|  _  |__ --|  -__|
 |___|   |__| |_____||  ||_____|____||____|______/|___._|_____|_____|
                    |___|
-""" ) + BuildBanner + "\n(" + Settings["url"]  + " - " + CloneType + ")\n("  + Settings["paths"]["project main"] + ")\n"
+""" ) + f"{BuildBanner} \n({Settings["url"]})\n({CloneType} - {SpeedType})\n({Settings["paths"]["project main"]})\n"
 
 def generate_project_description():
     return "Load project (" + str(len(Project.repositories)) + " loaded repositories)"
