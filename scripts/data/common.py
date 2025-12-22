@@ -15,7 +15,6 @@ import getpass # for getuser
 
 from data.paths import GetBasePaths
 from data.colors import ColorFormat, Colors
-from data.paths import CreateParentPath
 
 # Exception for stopping current operation without printing stack/operation information
 # Used when we know the error has been output (i.e. inside a thread) and we don't store it
@@ -229,29 +228,39 @@ def UserYesNoChoice(message):
             continue
     return answer
 
-# Sets up a script according to its template and the target variable substitutions
-def SetupTemplateScript(script_name, target_file, variable_substitutions={}):
-    logging.debug(f"Setting up script {script_name}")
+"""
+Copy some script over and replace variables
+"""
+def SetupScript(script_file, target_file, variable_substitutions={}):
+    logging.debug(f"Setting up script {script_file}")
 
     whole_script = ""
     project_base_paths = GetBasePaths()
 
-    if script_name.endswith(".sh"):
+    if script_file.endswith(".sh"):
         # Get bash header
         with open(project_base_paths["templates"]+"/scriptHeader.sh", 'r') as f:
             whole_script = f.read()+"\n\n"
 
     # Get rest of script
-    with open(project_base_paths["templates"]+"/"+script_name, 'r') as f:
+    with open(script_file, 'r') as f:
         whole_script += f.read()
+
     # Perform variable substitutions
     for variable_name in variable_substitutions:
         whole_script = whole_script.replace("$$"+variable_name+"$$", variable_substitutions[variable_name])
 
     # Write script back
-    CreateParentPath(target_file)
     with open(target_file, 'w') as f:
         f.write(whole_script)
+
+
+# Sets up a script according to its template and the target variable substitutions
+def SetupTemplate(template_name, target_file, variable_substitutions={}):
+    project_base_paths = GetBasePaths()
+
+    # Var replace and copy it over to the correct place
+    SetupScript(f"{project_base_paths["templates"]}/{template_name}", target_file, variable_substitutions)
 
 """
 If obj is string, returns it
