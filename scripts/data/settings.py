@@ -35,6 +35,8 @@ class SETTINGS(dict):
 
         # Adding optional argument
         parser.add_argument("-u", "--url", help = "Root repository's URL", default=None, required=False)
+        parser.add_argument("-o", "--out_file", help = "Output to file", default="", required=False)
+        parser.add_argument("-l", "--log_file", help = "Pipe internal logs to file", default="/tmp/project_base.log", required=False)
 
         parser.add_argument("-c", "--commit",
                             help = "Root repository's commit",
@@ -56,6 +58,8 @@ class SETTINGS(dict):
 
         project_args, action_args = parser.parse_known_args()
 
+        self["log_file"]      = project_args.log_file
+        self["out_file"]      = project_args.out_file
         self["url"]           = project_args.url
         self["commit"]        = project_args.commit
         self["branch"]        = project_args.branch
