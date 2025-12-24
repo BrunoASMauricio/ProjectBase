@@ -265,20 +265,7 @@ def SetupLocalEnvVars():
 def GetEnvVarExports():
     return "; ".join(f"export {var}='{val}'" for var, val in GetEnvVars().items())
 
-"""
-Changes to the given directory, launches the Command in a forked process and
-returns the { "stdout": "..." , "code": "..."  } dictionary
-"""
-def LaunchProcess(command, path=None, to_print=False):
-    """
-    Launch new process
-
-    to_print: whether to print the output (process thinks it is in a TY)
-
-    Returns:
-        _type_: {"stdout":"<stdout>", "code": return code}
-    """
-
+def _LaunchCommand(command, path=None, to_print=False):
     if path == None:
         path = os.getcwd()
     else:
@@ -288,7 +275,7 @@ def LaunchProcess(command, path=None, to_print=False):
     returned = {
         "stdout": "",
         "stderr": "",
-        "code": "",
+        "code": -1,
         "path": path,
         "command": command
     }
@@ -296,12 +283,7 @@ def LaunchProcess(command, path=None, to_print=False):
     if command == "":
         return returned
 
-    # Setup relevant environment variables
-    command = f"{GetEnvVarExports()}; {command}"
-    # Need to cd for each git, because doing os.chdir changes the cwd for ALL threads
     command = f"cd '{path}'; {command}"
-    # Fail on first error
-    command = f"set -e; {command}"
 
     if to_print == True:
         print(ColorFormat(Colors.Blue, command))
@@ -347,6 +329,31 @@ def LaunchProcess(command, path=None, to_print=False):
                 returned["stderr"] = result.stderr
 
         returned["code"]    = int(result.returncode)
+    return returned
+
+"""
+Changes to the given directory, launches the Command in a forked process and
+returns the { "stdout": "..." , "code": "..."  } dictionary
+"""
+def LaunchProcess(command, path=None, to_print=False):
+    """
+    Launch new process
+
+    to_print: whether to print the output (process thinks it is in a TY)
+
+    Returns:
+        _type_: {"stdout":"<stdout>", "code": return code}
+    """
+
+    # Setup relevant environment variables
+    command = f"{GetEnvVarExports()}; {command}"
+    # Fail on first error
+    command = f"set -e; {command}"
+
+    returned = _LaunchCommand(command, path, to_print)
+
+    if returned["code"] == -1:
+        return returned
 
     if returned["code"] != 0:
         message  = f"\n\t========================= Process failed (start) ({GetNow()}) =========================\n"
