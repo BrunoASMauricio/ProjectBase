@@ -42,7 +42,7 @@ class PROJECT(dict):
         Settings["cache file"]  = JoinPaths(Settings["paths"]["caches"], Settings["ProjectName"])
 
         # Setup all folders
-        CreateParentDirs(Settings["paths"])
+        CreateParentDirs(Settings["paths"].values())
 
         ## root url for automatic project detection
         DumpToFile(JoinPaths(Settings["paths"]["project main"], "root_url.txt"), Settings["url"])
