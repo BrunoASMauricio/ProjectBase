@@ -1,3 +1,4 @@
+import sys
 import os
 from data.settings import Settings
 from data.common import StringIsNumber
@@ -129,6 +130,12 @@ def ExecuteMenu(PathToScan):
             full_command = path_to_exec + " " + arguments
             if prefix != "":
                 full_command = prefix + " " + full_command
+
+            if path_to_exec.endswith(".py"):
+                # Specify venvs' python executable, to keep the same Venv
+                #  across python executables (i.e. pip installations and modules available)
+                full_command = f"{sys.executable} {full_command}"
+
             print("Running: \"" + full_command + "\"")
 
             try:
