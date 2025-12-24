@@ -51,9 +51,14 @@ def JoinPaths(*paths):
         final_path = final_path.replace("//", "/")
     return final_path
 
+def NewRandomName():
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+
+
 def GetNewTemporaryPath(paths):
     while True:
-        random_name = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+        random_name = NewRandomName()
         path = JoinPaths(paths["temporary"], random_name)
         if not os.path.exists(path):
             return path
+
