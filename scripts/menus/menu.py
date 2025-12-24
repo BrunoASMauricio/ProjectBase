@@ -237,10 +237,13 @@ class Menu():
             except KeyboardInterrupt:
                 print("\nCtrl+C interrupts running operations and enter goes to the previous menu. Press Ctrl+D to back out of ProjectBase")
                 continue
-            except SlimError:
+            except SlimError as ex:
                 # An error has already been printed, stop here
                 logging.error("A thread errored out, canceling operation")
                 print("\nThere was an error, operation canceled")
+                if Settings["exit"] == True:
+                    print("\nEarly exit")
+                    raise ex
             except EOFError:
                 # Ctrl+D
                 print("\nBye :)")
