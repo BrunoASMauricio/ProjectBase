@@ -648,7 +648,6 @@ def __SetupCMake(repositories):
             if can_delete:
                 os.unlink(repo_cmake_lists)
 
-        repos_to_build.append(IncludeEntry)
 
         # if not os.path.isfile(repo_cmake_lists):
         # logging.error(f"{repository["name"]} {repository["current repo path"]} repo_cmake_lists {repo_cmake_lists}")
@@ -660,8 +659,12 @@ def __SetupCMake(repositories):
             "TESTS_INCLUDES":    '\n'.join(test_headers),
             "LINK_DEPENDENCIES": '\n'.join(temp_objects_to_link),
         } | GetRepositoryVariables(repository)
+        try:
+            SetupTemplate("repository/CMakeLists.txt", repo_cmake_lists, repo_vars)
+        except FileNotFoundError:
+            logging.error(f"Warning. Repo {repository["name"]} does not have a CMake file. If this is expected, please add the `no auto build` to the configs")
 
-        SetupTemplate("repository/CMakeLists.txt", repo_cmake_lists, repo_vars)
+        repos_to_build.append(IncludeEntry)
 
     project_vars = {"INCLUDE_REPOSITORY_CMAKELISTS":'\n'.join(repos_to_build)} | GetProjectVariables()
     SetupTemplate("project/CMakeLists.txt", JoinPaths(Settings["paths"]["build env"], "CMakeLists.txt"), project_vars)
