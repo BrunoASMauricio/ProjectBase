@@ -160,7 +160,7 @@ class PROJECT(dict):
 Project = PROJECT()
 
 def GetRelevantPath(path):
-    return path.replace(Project.paths["project code"], "")
+    return path.replace(Settings["paths"]["project code"], "")
 
 def UserChooseProject():
     """
