@@ -31,4 +31,4 @@ def load_json_file(path, error_value=None, variable_substitutions={}):
 
 def dump_json_file(json_data, path):
     with open(path, 'w') as file:
-        json.dump(json_data, file)
+        json.dump(json_data, file, indent=4)
