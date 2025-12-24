@@ -67,6 +67,11 @@ def CreateDirs(paths):
     for path in paths:
         CreateDirectory(path)
 
+# Create all parent directories in the `paths` list provided
+def CreateParentDirs(paths):
+    for path in paths:
+        CreateParentDirectory(path)
+
 def ReplaceLine(path, number, content):
     with open(path, 'r') as file:
         lines = file.readlines()
