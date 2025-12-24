@@ -1,20 +1,6 @@
 import os
-import random
-import string
-from pathlib import Path
 
-def GetCurrentFolderName(path_to_child):
-    return path_to_child.split("/")[-2]
-
-def GetParentFolderName(path_to_child):
-    return path_to_child.split("/")[-2]
-
-def GetParentPath(path_to_child):
-    return '/'.join(path_to_child.split("/")[:-1])
-
-def CreateParentPath(path_to_child):
-    parent_path = GetParentPath(path_to_child)
-    Path(parent_path).mkdir(parents=True, exist_ok=True)
+from processes.filesystem import JoinPaths
 
 # Assume scripts is on the base folder
 def GetProjectBasePath():
@@ -86,21 +72,3 @@ def GetProjectPaths(project_name):
     paths["data"]        = paths["project main"]+"/data"
 
     return paths
-
-def JoinPaths(*paths):
-    final_path = []
-    for path in paths:
-        final_path.append(path)
-
-    final_path = '/'.join(final_path)
-
-    while "//" in final_path:
-        final_path = final_path.replace("//", "/")
-    return final_path
-
-def GetNewTemporaryPath(paths):
-    while True:
-        random_name = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
-        path = JoinPaths(paths["temporary"], random_name)
-        if not os.path.exists(path):
-            return path
