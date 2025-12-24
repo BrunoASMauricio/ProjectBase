@@ -50,7 +50,7 @@ class SETTINGS(dict):
                             help = "Do not run PB in multiple threads",
                             default=False, required=False, action=argparse.BooleanOptionalAction)
 
-        parser.add_argument("-e", "--exit", action='store_true', help = "Exit after running command line arguments", default=False, required=False)
+        parser.add_argument("-e", "--exit", action='store_true', help = "Exit after running command line arguments. Performs early exit in case one of the operations ends in error", default=False, required=False)
 
         parser.add_argument("-d", "--debug", action='store_true', help = "Increase log verbosity to debug ProjectBase", default=False, required=False)
 

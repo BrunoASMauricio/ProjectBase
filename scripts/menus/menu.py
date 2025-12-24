@@ -242,6 +242,10 @@ class Menu():
                 msg = f"A thread errored out, operation canceled: {ex}"
                 logging.error(msg)
                 print(f"\n{msg}")
+
+                if Settings["exit"] == True:
+                    print("\nEarly exit")
+                    raise ex
             except EOFError:
                 # Ctrl+D
                 print("\nBye :)")
