@@ -4,10 +4,11 @@ import os
 import sys
 import logging
 
-from data.common import Abort, GetNow
+from data.common import Abort, GetNow, ValueNotEmpty, Formatter
 from data.settings import Settings
 from processes.project import Project, UserChooseProject
-from data.common import ValueNotEmpty, Formatter
+from data.paths import GetBasePaths
+from processes.filesystem import CreateDirs
 
 if __name__ != "__main__":
     Abort("This script is not meant to be imported, please run directly")
@@ -23,7 +24,6 @@ else:
     else:
         out = open(Settings["out_file"], "a", encoding="utf-8")
 
-# sys.__stdout__ = out
 sys.stdout = out
 
 # Configure logging
@@ -41,6 +41,10 @@ if False == ValueNotEmpty(Settings, "url"):
     Settings["url"] = UserChooseProject()
 
 Settings.start()
+
+# Make sure all base paths exist before we start
+CreateDirs(GetBasePaths().values())
+
 Project.init()
 
 # Include here so paths are already ready in settings
