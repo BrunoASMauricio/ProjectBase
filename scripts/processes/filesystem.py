@@ -66,3 +66,23 @@ def GetNewTemporaryPath(paths):
 def CreateDirs(paths):
     for path in paths:
         CreateDirectory(path)
+
+def ReplaceLine(path, number, content):
+    with open(path, 'r') as file:
+        lines = file.readlines()
+
+    lines[number] = content
+
+    with open(path, 'w') as file:
+        file.writelines(lines)
+
+def WriteFile(path, content):
+    with open(path, 'w') as file:
+        file.write(content)
+    return content
+
+
+def ReadFile(path):
+    with open(path, 'r') as file:
+        content = file.read()
+    return content
