@@ -13,9 +13,9 @@ from processes.repository     import LoadRepositories, Setup, Build
 from processes.process        import LaunchProcess, LaunchVerboseProcess
 from data.colors              import ColorFormat, Colors
 from processes.git_operations import GetRepositoryUrl
-from processes.process     import GetEnvVarExports
+from processes.process        import GetEnvVarExports
 from processes.run_linter     import CleanLinterFiles
-
+from processes.filesystem     import CreateParentDirs
 """
 Performs operations on a project
 Each project is built from a single repository
@@ -40,6 +40,10 @@ class PROJECT(dict):
         # Setup project specific paths
         ## Cache
         Settings["cache file"]  = JoinPaths(Settings["paths"]["caches"], Settings["ProjectName"])
+
+        # Setup all folders
+        CreateParentDirs(Settings["paths"])
+
         ## root url for automatic project detection
         DumpToFile(JoinPaths(Settings["paths"]["project main"], "root_url.txt"), Settings["url"])
 
