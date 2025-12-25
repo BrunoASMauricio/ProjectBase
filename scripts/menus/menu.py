@@ -199,7 +199,9 @@ class Menu():
 
         while True:
             try:
-                ResetTerminal()
+                # If we are piping into a file, don't attempt to reset terminal
+                if len(Settings["out_file"]) == 0:
+                    ResetTerminal()
 
                 # Newline is useful in general here
                 print()
