@@ -22,7 +22,7 @@ else:
     if os.path.isfile(Settings["out_file"]):
         out = open(Settings["out_file"], "a", encoding="utf-8")
     else:
-        out = open(Settings["out_file"], "a", encoding="utf-8")
+        out = open(Settings["out_file"], "w", encoding="utf-8")
 
 sys.stdout = out
 
