@@ -55,4 +55,8 @@ Settings.load_persistent_settings()
 
 MainMenu.HandleInput()
 
+# After exit, clean stdout and stderr just in case
+sys.stdout = sys.__stdout__
+sys.stderr = sys.__stderr__
+
 sys.exit(0)
