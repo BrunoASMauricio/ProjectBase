@@ -25,6 +25,7 @@ else:
         out = open(Settings["out_file"], "w", encoding="utf-8")
 
 sys.stdout = out
+sys.stderr = out
 
 # Configure logging
 logging.basicConfig(filename=Settings["log_file"],
