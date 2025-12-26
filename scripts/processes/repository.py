@@ -663,6 +663,7 @@ def __SetupCMake(repositories):
             SetupTemplate("repository/CMakeLists.txt", repo_cmake_lists, repo_vars)
         except FileNotFoundError:
             logging.error(f"Warning. Repo {repository["name"]} does not have a CMake file. If this is expected, please add the `no auto build` to the configs")
+            continue
 
         repos_to_build.append(IncludeEntry)
 
