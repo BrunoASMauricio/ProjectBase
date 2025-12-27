@@ -5,17 +5,22 @@ import string
 import pathlib
 import shutil
 
-def Remove(target):
-    os.remove(target)
+def Remove(path):
+    if os.path.isfile(path):
+        os.remove(path)
 
 def RemoveDirectory(path):
-    shutil.rmtree(path)
+    if os.path.isdir(path):
+        shutil.rmtree(path)
 
 def CreateDirectory(path):
-    pathlib.Path(path).mkdir(parents=True, exist_ok=True)
+    if not os.path.isdir(path):
+        pathlib.Path(path).mkdir(parents=True, exist_ok=True)
 
 def CreateParentDirectory(path_to_child):
-    CreateDirectory(GetParentPath(path_to_child))
+    path = GetParentPath(path_to_child)
+    if not os.path.isdir(path):
+        CreateDirectory(path)
 
 def GetCurrentFolderName(path_to_child):
     return path_to_child.split("/")[-2]
