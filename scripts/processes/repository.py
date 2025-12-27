@@ -7,7 +7,7 @@ from data.settings import Settings
 from data.json import dump_json_file, load_json_file
 from processes.repository_configs import LoadConfigs, MergeConfigs, ParseConfigs, UpdateState
 from data.common import GetValueOrDefault
-from processes.filesystem import CreateDirectory, FindFiles
+from processes.filesystem import CreateDirectory, CreateParentDirectory, FindFiles
 from processes.progress_bar import PrintProgressBar
 from threading import Lock
 from data.paths import JoinPaths
@@ -567,6 +567,7 @@ def __SetupCMake(repositories):
             IncludeEntry = 'include("' + JoinPaths(repository["build path"], "CMakeLists.txt") + '")'
 
         repo_cmake_lists = JoinPaths(repository["build path"], "CMakeLists.txt")
+        CreateParentDirectory(repo_cmake_lists)
 
         # Only import headers that are direct and/or indirect dependencies
         # Only link objects that are direct dependencies
