@@ -208,9 +208,6 @@ def UserChooseProject():
         except Exception as Ex:
             # Not an Index, assume URL
             RemoteRepoUrl = UserInput
-            import sys
-            print(f"{__file__}")
-            sys.exit(0)
             break
 
     return RemoteRepoUrl
