@@ -10,6 +10,7 @@ from menus.analyze import AnalysisMenu
 from menus.clean import CleanMenu
 from menus.version import VersioningMenu
 from menus.kconfig import RunMenuConfig
+from menus.ci import CIMenu
 
 def main_description():
     ActiveSettings = Settings["active"]
@@ -49,5 +50,6 @@ MainMenu.AddSubmenuEntry("Run", RunMenu)
 MainMenu.AddSubmenuEntry("Analyze", AnalysisMenu)
 MainMenu.AddSubmenuEntry("Versioning", VersioningMenu)
 MainMenu.AddSubmenuEntry("Clean", CleanMenu)
+MainMenu.AddSubmenuEntry("CI", CIMenu)
 MainMenu.AddCallbackEntry("Configure Project", RunMenuConfig)
 MainMenu.AddSubmenuEntry("ProjectBase settings", SettingsMenu)
