@@ -35,8 +35,8 @@ def RunCIScratch():
     Run a CI scratch environment:
     - Create a temporary folder
     - Clone the ProjectBase repo into it
-    - Generate worktreeFile.json (placeholder)
-    - Run load/build/test commands
+    - Generate worktreeFile.json 
+    - Run load/pull/build/test commands using local project as root
     """
     # 1. Create a temporary directory
     tmp_dir = tempfile.mkdtemp(prefix="ci_scratch_")
@@ -94,6 +94,7 @@ def RunCIScratch():
         return 2
    
     print("[CI] Scratch CI run completed successfully!")
+    return 0
 
 
 

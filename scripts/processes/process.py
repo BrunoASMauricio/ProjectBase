@@ -114,6 +114,8 @@ def ThreadWrapper(run_callback, run_arg):
         raise ex
     except ProcessError as ex:
         return_val = False
+        # ProcessError happened return error code on Settings
+        Settings.return_code = 1
         AddTothreadLog(str(ex))
 
     except Exception as ex:
