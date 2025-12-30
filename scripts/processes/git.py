@@ -165,6 +165,23 @@ def SetupBareData(repo_url):
             ex.RaiseIfNotInOutput("already exists")
         bare_git = JoinPaths(bare_gits, bare_tree_name)
 
+        # Setup some configs
+        msg = "New branches track the remote of the current local branch"
+        LaunchGitCommandAt("git config branch.autoSetupMerge always", bare_git, msg)
+
+        msg = "Configuring branch.autoSetupMerge"
+        LaunchGitCommandAt("git config push.default upstream", bare_git, msg)
+
+        msg = "Pull will rebase instead of merge"
+        LaunchGitCommandAt("git config pull.rebase true", bare_git, msg)
+
+        msg = "Auto stash before pull and apply afterwards"
+        LaunchGitCommandAt("git config rebase.autoStash true", bare_git, msg)
+
+        LaunchGitCommandAt("git config --add remote.origin.fetch \"+refs/heads/*:refs/remotes/origin/*\"", bare_git, "Setup worktree to get all references")
+        # Ensure we are fetching all branches of the remote
+        LaunchGitCommandAt(f"git fetch --all", bare_git, f"Fetch all branches")
+
         if False == os.path.isdir(bare_git):
             print("Bare git " + bare_git + " could not be pulled")
             exit(-1)
@@ -222,19 +239,8 @@ def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
         remote = GetRepoRemote(bare_path)
 
         LaunchGitCommandAt(f"git worktree add {new_repo_path}", bare_path, "Adding git branch worktree")
-        # New branches track the remote of the current local branch
-        LaunchGitCommandAt("git config branch.autoSetupMerge always", new_repo_path, "Configuring branch.autoSetupMerge to always")
-        # 
-        LaunchGitCommandAt("git config push.default upstream", new_repo_path, "Configuring branch.autoSetupMerge")
-        # Pull will rebase instead of merge
-        LaunchGitCommandAt("git config pull.rebase true", new_repo_path, "Configuring pull.rebase to true")
 
-        # Auto stash before pull and apply afterwards
-        LaunchGitCommandAt("git config rebase.autoStash true", new_repo_path, "Configuring pull.rebase to true")
-
-        # Ensure we are fetching all branches of the remote
-        LaunchGitCommandAt("git config remote.origin.fetch \"+refs/heads/*:refs/remotes/origin/*\"", new_repo_path, "Configuring pull.rebase to true")
-
+        LaunchGitCommandAt(f"git fetch --all", new_repo_path, f"Fetch all branches")
         LaunchGitCommandAt(f"git checkout -b {local_branch_name}", new_repo_path, f"Following branch {branch_to_follow}")
         LaunchGitCommandAt(f"git branch --set-upstream-to=origin/{branch_to_follow} {local_branch_name}", new_repo_path)
 
