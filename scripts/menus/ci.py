@@ -42,7 +42,7 @@ def RunCIScratch():
 
         # Command 1: clean load + pull
         cmd1 = [
-            "python", "scripts/run_ci.py",
+            "./run.sh",
             "--commitJsonPath", str(worktree_json_path),
             "--url", str(system_textformatter_path),
             "5", "3", "1","-e"
@@ -52,7 +52,7 @@ def RunCIScratch():
 
         # Command 2: build and run all tests
         cmd2 = [
-            "python", "scripts/run_ci.py",
+            "./run.sh",
             "--commitJsonPath", str(worktree_json_path),
             "--url", str(system_textformatter_path),
             "2", "3", "3", "-e"
