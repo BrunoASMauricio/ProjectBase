@@ -59,21 +59,27 @@ def JoinPaths(*paths):
 def NewRandomName():
     return ''.join(random.choices(string.ascii_letters + string.digits, k=12))
 
-
-def GetNewTemporaryPath(paths):
+def GetTemporaryPath(base_path):
     while True:
         random_name = NewRandomName()
-        path = JoinPaths(paths["temporary"], random_name)
+        path = JoinPaths(base_path, random_name)
         if not os.path.exists(path):
             return path
 
+def GetNewTemporaryPath(paths):
+    return GetTemporaryPath(paths["temporary"])
+
 # Create all directories in the `paths` list provided
 def CreateDirs(paths):
+    if(type(paths) == type("")):
+        raise Exception("Invalid types "+str(type(paths)))
     for path in paths:
         CreateDirectory(path)
 
 # Create all parent directories in the `paths` list provided
 def CreateParentDirs(paths):
+    if(type(paths) == type("")):
+        raise Exception("Invalid types "+str(type(paths)))
     for path in paths:
         CreateParentDirectory(path)
 
