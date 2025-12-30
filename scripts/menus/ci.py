@@ -45,7 +45,7 @@ def RunCIScratch():
             "./run.sh",
             "--commitJsonPath", str(worktree_json_path),
             "--url", str(system_textformatter_path),
-            "5", "3", "1","-e"
+            "1", "5", "3", "1","-e"
         ]
         print(f"[CI] Running load/pull command: {' '.join(cmd1)}")
         subprocess.run(cmd1, check=True, cwd=clone_path)
@@ -55,7 +55,7 @@ def RunCIScratch():
             "./run.sh",
             "--commitJsonPath", str(worktree_json_path),
             "--url", str(system_textformatter_path),
-            "2", "3", "3", "-e"
+            "1", "2", "3", "3", "-e"
         ]
 
         print(f"[CI] Running build/test command: {' '.join(cmd2)}")
