@@ -215,7 +215,8 @@ def LoadConfigs(current_repo_path):
                     paths.append(path + header)
 
             __FindRepoFolders(current_repo_path, configs, key, paths)
-        configs[key] = paths
+        else:
+            configs[key] = paths
 
     __CheckHeaders("public headers",  configs, [], ["code/", ""])
     __CheckHeaders("private headers", configs, ["code/", "code/source"], ["execs/"])
