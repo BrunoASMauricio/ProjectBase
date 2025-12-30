@@ -23,7 +23,12 @@ def create_content_for_worktree_json(work_tree_path : Path):
     with open(work_tree_path, "w", encoding="utf-8") as f:
         json.dump(map_uid_source, f, indent=2, sort_keys=True)
 
-
+def run_cmd(cmd, cwd, label):
+    print(f"[CI] Running {label}: {' '.join(cmd)}")
+    res = subprocess.run(cmd, cwd=cwd)
+    if res.returncode != 0:
+        print(f"[CI] {label} failed with exit code {res.returncode}")
+    return res.returncode
 
 def RunCIScratch():
     """
@@ -35,8 +40,7 @@ def RunCIScratch():
     """
     # 1. Create a temporary directory
     tmp_dir = tempfile.mkdtemp(prefix="ci_scratch_")
-    print(f"[CI] Temporary CI folder created at {tmp_dir}")
-
+    print(f"[CI] Temporary CI folder kept at {tmp_dir} for inspection (remove manually if desired)")
     if(repo.repositories is None):
         raise ValueError("Repositores are empty, this should only be called after a load")
     
@@ -74,8 +78,9 @@ def RunCIScratch():
             "--url", str(system_textformatter_path),
             "1","5", "3", "1","-e"
         ]
-    print(f"[CI] Running load/pull command: {' '.join(cmd1)}")
-    subprocess.run(cmd1, check=True, cwd=clone_path)
+    
+    if run_cmd(cmd1, clone_path, "load/pull") != 0:
+        return 1
 
     # Command 2: build and run all tests
     cmd2 = [
@@ -84,12 +89,11 @@ def RunCIScratch():
             "--url", str(system_textformatter_path),
             "1","2", "3", "3", "-e"
         ]
-
-    print(f"[CI] Running build/test command: {' '.join(cmd2)}")
-    subprocess.run(cmd2, check=True, cwd=clone_path)
-
+    
+    if run_cmd(cmd2, clone_path, "build/test") != 0:
+        return 2
+   
     print("[CI] Scratch CI run completed successfully!")
-    print(f"[CI] Temporary folder kept at {tmp_dir} for inspection (remove manually if desired)")
 
 
 

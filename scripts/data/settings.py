@@ -17,6 +17,7 @@ class SETTINGS(dict):
     def init(self):
         # Initialize parser
         self.parse_arguments()
+        self.return_code = 0
 
     def start(self):
         # Commit or branch

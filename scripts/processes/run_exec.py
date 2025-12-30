@@ -1,4 +1,5 @@
 import os
+import sys
 from data.settings import Settings
 from data.common import StringIsNumber
 from data.colors import *
@@ -199,6 +200,10 @@ def RunAllTests():
     if len(errors) == 0:
         print(ColorFormat(Colors.Green, "All "+str(len(all_outputs))+" tests successful!"))
         return
+
+    if(len(errors) > 0):
+        Settings.return_code = len(errors)
+        sys.exit(Settings.return_code)
 
     print(ColorFormat(Colors.Red, f"\nErrors reported {len(errors)}\n" + ("="*40)+"\n" + '\n'.join(errors) + "\n" + ("="*40)))
     print(ColorFormat(Colors.Green, "Successes: ["+str(len(all_outputs) - len(errors))+"]"))

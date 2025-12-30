@@ -199,6 +199,10 @@ class Menu():
 
         while True:
             try:
+                if Settings["exit"] and Settings.return_code != 0:
+                    print("\nLast thing failed to run :)")
+                    sys.exit(Settings.return_code)
+
                 ResetTerminal()
 
                 # Newline is useful in general here
@@ -214,7 +218,8 @@ class Menu():
                 try:
                     next_input_str = GetNextOption()
                     if (MenuExit(next_input_str) == True):
-                        return
+                        return Settings.return_code
+                    
                     next_input = int(next_input_str)
                     previous_invalid = False
                 except ValueError:
@@ -240,11 +245,14 @@ class Menu():
             except SlimError:
                 # An error has already been printed, stop here
                 logging.error("A thread errored out, canceling operation")
-                print("\nThere was an error, operation canceled")
+                print("\nThere was an error, operation canceled")                
+                if Settings["exit"]:
+                    sys.exit(-1)
+
             except EOFError:
                 # Ctrl+D
                 print("\nBye :)")
-                sys.exit(0)
+                sys.exit(Settings.return_code)
             except SystemExit as sys_ex:
                 raise sys_ex
             except Exception as exception:
