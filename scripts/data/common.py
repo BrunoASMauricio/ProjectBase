@@ -23,6 +23,39 @@ class SlimError(Exception):
         # Call the base class constructor with the parameters it needs
         super().__init__(f"Message:{Message}")
 
+def get_full_traceback(exc):
+    tb = exc.__traceback__
+    msg = "Traceback (most recent call last):"
+    while tb:
+        frame = tb.tb_frame
+        lineno = tb.tb_lineno
+        code = frame.f_code
+        func_name = code.co_name
+        filename = code.co_filename
+
+        # Basic location
+        msg += f'  File "{filename}", line {lineno}, in {func_name}'
+
+        # Get argument values
+        arg_info = inspect.getargvalues(frame)
+        args = arg_info.args
+        locals_ = arg_info.locals
+
+        # Print args with their values
+        if args:
+            arg_strs = []
+            for arg in args:
+                # repr to avoid huge dumps
+                val = locals_.get(arg, '<no value>')
+                arg_strs.append(f"{arg}={val!r}")
+            msg += f"    Arguments: {', '.join(arg_strs)}"
+
+        tb = tb.tb_next
+
+    # Finally show exception type and message
+    msg += f"{type(exc).__name__}: {exc!r}"
+    return msg
+
 class INDENT_FORMATTER(logging.Formatter):
     def __init__(self, style='%'):
         super().__init__('%(asctime)s,%(msecs)d %(levelname)s %(message)s', '%H:%M:%S', style)
@@ -67,7 +100,7 @@ Formatter = INDENT_FORMATTER()
 def ErrorCheckLogs(exception):
     print("ERROR: Check logs at /tmp/project_base.log for more information")
     logging.error(f"Uncaught exception: {type(exception)} {exception}")
-    logging.error(traceback.format_exc())
+    logging.error(get_full_traceback(exception))
 
 def RemoveDuplicates(lst):
     return list(set(lst))
