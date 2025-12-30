@@ -233,8 +233,11 @@ def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
         # Auto stash before pull and apply afterwards
         LaunchGitCommandAt("git config rebase.autoStash true", new_repo_path, "Configuring pull.rebase to true")
 
+        # Ensure we are fetching all branches of the remote
+        LaunchGitCommandAt("git config remote.origin.fetch \"+refs/heads/*:refs/remotes/origin/*\"", new_repo_path, "Configuring pull.rebase to true")
+
         LaunchGitCommandAt(f"git checkout -b {local_branch_name}", new_repo_path, f"Following branch {branch_to_follow}")
-        LaunchGitCommandAt(f"git branch --set-upstream-to={branch_to_follow} {local_branch_name}", new_repo_path)
+        LaunchGitCommandAt(f"git branch --set-upstream-to=origin/{branch_to_follow} {local_branch_name}", new_repo_path)
 
     if not os.path.isdir(new_repo_path):
         raise Exception(f"Could not add worktree for {repo_url} at {target_path} from bare git at {bare_path}")
