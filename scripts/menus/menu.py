@@ -199,7 +199,9 @@ class Menu():
 
         while True:
             try:
-                ResetTerminal()
+                # If we are piping into a file, don't attempt to reset terminal
+                if len(Settings["out_file"]) == 0:
+                    ResetTerminal()
 
                 # Newline is useful in general here
                 print()
@@ -237,10 +239,13 @@ class Menu():
             except KeyboardInterrupt:
                 print("\nCtrl+C interrupts running operations and enter goes to the previous menu. Press Ctrl+D to back out of ProjectBase")
                 continue
-            except SlimError:
+            except SlimError as ex:
                 # An error has already been printed, stop here
                 logging.error("A thread errored out, canceling operation")
                 print("\nThere was an error, operation canceled")
+                if Settings["exit"] == True:
+                    print("\nEarly exit")
+                    raise ex
             except EOFError:
                 # Ctrl+D
                 print("\nBye :)")

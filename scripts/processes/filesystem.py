@@ -1,17 +1,35 @@
 import os
 import glob
+import random
+import string
+import pathlib
+import shutil
 
-from processes.process import LaunchProcess
-from data.paths import GetParentPath
+def Remove(path):
+    if os.path.isfile(path):
+        os.remove(path)
 
-def Remove(target):
-    LaunchProcess(f'rm -rf {target}')
+def RemoveDirectory(path):
+    if os.path.isdir(path):
+        shutil.rmtree(path)
 
 def CreateDirectory(path):
-    LaunchProcess(f'mkdir -p "{path}"')
+    if not os.path.isdir(path):
+        pathlib.Path(path).mkdir(parents=True, exist_ok=True)
 
-def CcreateParentDirectory(path_to_child):
-    CreateDirectory(GetParentPath(path_to_child))
+def CreateParentDirectory(path_to_child):
+    path = GetParentPath(path_to_child)
+    if not os.path.isdir(path):
+        CreateDirectory(path)
+
+def GetCurrentFolderName(path_to_child):
+    return path_to_child.split("/")[-2]
+
+def GetParentFolderName(path_to_child):
+    return path_to_child.split("/")[-2]
+
+def GetParentPath(path_to_child):
+    return '/'.join(path_to_child.split("/")[:-1])
 
 def FindInodeByPattern(directory, pattern):
     if directory[-1] != "/":
@@ -26,3 +44,61 @@ def FindFiles(search_path, filename):
         if filename in files:
             result.append(os.path.join(root, filename))
     return result
+
+def JoinPaths(*paths):
+    final_path = []
+    for path in paths:
+        final_path.append(path)
+
+    final_path = '/'.join(final_path)
+
+    while "//" in final_path:
+        final_path = final_path.replace("//", "/")
+    return final_path
+
+def NewRandomName():
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+
+def GetTemporaryPath(base_path):
+    while True:
+        random_name = NewRandomName()
+        path = JoinPaths(base_path, random_name)
+        if not os.path.exists(path):
+            return path
+
+def GetNewTemporaryPath(paths):
+    return GetTemporaryPath(paths["temporary"])
+
+# Create all directories in the `paths` list provided
+def CreateDirs(paths):
+    if(type(paths) == type("")):
+        raise Exception("Invalid types "+str(type(paths)))
+    for path in paths:
+        CreateDirectory(path)
+
+# Create all parent directories in the `paths` list provided
+def CreateParentDirs(paths):
+    if(type(paths) == type("")):
+        raise Exception("Invalid types "+str(type(paths)))
+    for path in paths:
+        CreateParentDirectory(path)
+
+def ReplaceLine(path, number, content):
+    with open(path, 'r') as file:
+        lines = file.readlines()
+
+    lines[number] = content
+
+    with open(path, 'w') as file:
+        file.writelines(lines)
+
+def WriteFile(path, content):
+    with open(path, 'w') as file:
+        file.write(content)
+    return content
+
+
+def ReadFile(path):
+    with open(path, 'r') as file:
+        content = file.read()
+    return content

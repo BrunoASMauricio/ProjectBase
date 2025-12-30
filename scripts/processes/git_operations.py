@@ -95,9 +95,9 @@ def RepoFetch(path = None):
 
 def RepoPull(path = None):
     if GetRepoLocalBranch(path) != "HEAD":
+        ParseGitResult("git pull origin --rebase", path)
+        ParseGitResult("git fetch --all", path)
         ParseGitResult("git rebase", path)
-        ParseGitResult("git pull", path)
-        ParseGitResult("git pull origin", path)
 
 def RepoPush(path = None):
     # Push to bare git

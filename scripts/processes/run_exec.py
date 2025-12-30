@@ -1,8 +1,9 @@
+import sys
 import os
 from data.settings import Settings
 from data.common import StringIsNumber
 from data.colors import *
-from processes.process import RunExecutable, PrepareExecEnvironment
+from processes.process import RunExecutable, SetupLocalEnvVars
 from processes.process import LaunchSilentProcess, ProcessError, RunInThreadsWithProgress
 from menus.menu import GetNextOption, MenuExit
 from data.paths import JoinPaths
@@ -72,7 +73,7 @@ def __LocateExecutable(user_input, executables_available):
 
 def ExecuteMenu(PathToScan):
     # Allow python scripts to use ProjectBase scripts
-    PrepareExecEnvironment()
+    SetupLocalEnvVars()
 
     while True:
         executables_available = __GetAvailableExecutables(PathToScan)
@@ -129,6 +130,12 @@ def ExecuteMenu(PathToScan):
             full_command = path_to_exec + " " + arguments
             if prefix != "":
                 full_command = prefix + " " + full_command
+
+            if path_to_exec.endswith(".py"):
+                # Specify venvs' python executable, to keep the same Venv
+                #  across python executables (i.e. pip installations and modules available)
+                full_command = f"{sys.executable} {full_command}"
+
             print("Running: \"" + full_command + "\"")
 
             try:
@@ -160,7 +167,7 @@ def _RunAllTests(Prefix=""):
 
     print("Running " + str(len(tests)) + " tests in " + Settings["paths"]["tests"].replace(Settings["paths"]["project base"], ""))
     # Allow python scripts to use ProjectBase scripts
-    PrepareExecEnvironment()
+    SetupLocalEnvVars()
 
     def Run(TestPath):
         Command = Prefix + " " + TestPath

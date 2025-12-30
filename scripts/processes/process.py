@@ -249,20 +249,23 @@ class ProcessError(Exception):
             return
         raise self
 
-"""
-Changes to the given directory, launches the Command in a forked process and
-returns the { "stdout": "..." , "code": "..."  } dictionary
-"""
-def LaunchProcess(command, path=None, to_print=False):
-    """
-    Launch new process
+def GetEnvVars():
+    return {
+        "PYTHONPATH":       Settings["paths"]["scripts"],
+        "PB_ROOT_NAME":     Settings["name"],
+        "PB_ROOT_URL":      Settings["url"],
+    }
 
-    to_print: whether to print the output (process thinks it is in a TY)
+# Setup necessary/useful environment variables
+def SetupLocalEnvVars():
+    # PYTHONPATH enables a script to import modules
+    for var, val in GetEnvVars().items():
+        AppendToEnvVariable(var, val)
 
-    Returns:
-        _type_: {"stdout":"<stdout>", "code": return code}
-    """
+def GetEnvVarExports():
+    return "; ".join(f"export {var}='{val}'" for var, val in GetEnvVars().items())
 
+def _LaunchCommand(command, path=None, to_print=False):
     if path == None:
         path = os.getcwd()
     else:
@@ -272,7 +275,7 @@ def LaunchProcess(command, path=None, to_print=False):
     returned = {
         "stdout": "",
         "stderr": "",
-        "code": "",
+        "code": -1,
         "path": path,
         "command": command
     }
@@ -280,10 +283,7 @@ def LaunchProcess(command, path=None, to_print=False):
     if command == "":
         return returned
 
-    # Need to cd for each git, because doing os.chdir changes the cwd for ALL threads
     command = f"cd '{path}'; {command}"
-    
-    command = f"set -e; {command}"
 
     if to_print == True:
         print(ColorFormat(Colors.Blue, command))
@@ -329,6 +329,31 @@ def LaunchProcess(command, path=None, to_print=False):
                 returned["stderr"] = result.stderr
 
         returned["code"]    = int(result.returncode)
+    return returned
+
+"""
+Changes to the given directory, launches the Command in a forked process and
+returns the { "stdout": "..." , "code": "..."  } dictionary
+"""
+def LaunchProcess(command, path=None, to_print=False):
+    """
+    Launch new process
+
+    to_print: whether to print the output (process thinks it is in a TY)
+
+    Returns:
+        _type_: {"stdout":"<stdout>", "code": return code}
+    """
+
+    # Setup relevant environment variables
+    command = f"{GetEnvVarExports()}; {command}"
+    # Fail on first error
+    command = f"set -e; {command}"
+
+    returned = _LaunchCommand(command, path, to_print)
+
+    if returned["code"] == -1:
+        return returned
 
     if returned["code"] != 0:
         message  = f"\n\t========================= Process failed (start) ({GetNow()}) =========================\n"
@@ -394,7 +419,3 @@ def AssertProcessRun(Process, ExpectedCode, ExpectedOutput):
         Message += "="*30 + "\n>"+ExpectedOutput+"<"
         Abort(Message)
 
-def PrepareExecEnvironment():
-    AppendToEnvVariable("PYTHONPATH",       Settings["paths"]["scripts"])
-    AppendToEnvVariable("PB_ROOT_NAME",     Settings["name"])
-    AppendToEnvVariable("PB_ROOT_URL",      Settings["url"])

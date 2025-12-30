@@ -64,9 +64,8 @@ ENDMACRO()
 
 ### Copy file over to tests folder
 MACRO(SETUP_FILE PATH_TYPE FILE_TYPE FILE_PATH)
-message("Setting up ${FILE_PATH} as a ${FILE_TYPE} file in the ${PATH_TYPE} folder")
 execute_process (
-    COMMAND python ${PROJECT_BASE_SCRIPT_PATH}/handle_script_setup.py ${PROJ_NAME} ${PATH_TYPE} ${FILE_TYPE} ${FILE_PATH}
+    COMMAND python ${PROJECT_BASE_SCRIPT_PATH}/setup_helper.py ${PROJ_NAME} ${PATH_TYPE} ${FILE_TYPE} ${FILE_PATH}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 ENDMACRO()

@@ -2,12 +2,12 @@ import logging
 from pprint import pformat
 from data.git import GetRepoNameFromURL
 from processes.git import *
-from data.common import SetupTemplateScript
+from data.common import SetupTemplate
 from data.settings import Settings
 from data.json import dump_json_file, load_json_file
 from processes.repository_configs import LoadConfigs, MergeConfigs, ParseConfigs, UpdateState
 from data.common import GetValueOrDefault
-from processes.filesystem import CreateDirectory, FindFiles
+from processes.filesystem import CreateDirectory, CreateParentDirectory, FindFiles
 from processes.progress_bar import PrintProgressBar
 from threading import Lock
 from data.paths import JoinPaths
@@ -263,6 +263,7 @@ def LoadRepository(imposed_configs):
 
     imposed_configs["name"] = GetRepoNameFromURL(imposed_configs["url"])
     repo_id = GetRepoId(imposed_configs)
+    imposed_configs["repo id"] = repo_id
 
     imposed_configs["bare path"] = SetupBareData(imposed_configs["url"])
 
@@ -482,6 +483,30 @@ def DependencyOf(repo, target):
     # logging.error(f"{target["name"]} is not a dependency of {repo["name"]}")
     return False
 
+def GetProjectVariables():
+    return {
+        "AUTOGEN_HEADERS_PATH": Settings["paths"]["autogened headers"],
+        "PROJ_NAME": Settings["ProjectName"],
+        "PROJ_PATH": Settings["paths"]["project main"],
+        "PROJ_BUILD_PATH":   Settings["paths"]["build"],
+        "PROJ_BIN_PATH":     Settings["paths"]["binaries"],
+        "PROJ_LIB_PATH":     Settings["paths"]["libraries"],
+        "PROJ_OBJS_PATH":    Settings["paths"]["objects"],
+        "PROJ_EXECS_PATH":   Settings["paths"]["executables"],
+        "PROJ_TESTS_PATH":   Settings["paths"]["tests"]
+    }
+
+def GetRepositoryVariables(repository):
+    return {
+        "REPO_NAME":       repository["repo name"],
+        "REPO_ID":         repository["repo id"],
+        "REPO_SRC_PATH":   repository["repo source"],
+        "REPO_BUILD_PATH": repository["build path"],
+        "REPO_EXEC_PATH":  repository["executables"],
+        "REPO_TESTS_PATH": repository["tests"],
+        "REPO_LIB_PATH":   repository["libraries"]
+    }
+
 def __FetchAllPublicHeaders(repositories):
     public_header_folders = {}
     objects_to_link = {}
@@ -542,6 +567,7 @@ def __SetupCMake(repositories):
             IncludeEntry = 'include("' + JoinPaths(repository["build path"], "CMakeLists.txt") + '")'
 
         repo_cmake_lists = JoinPaths(repository["build path"], "CMakeLists.txt")
+        CreateParentDirectory(repo_cmake_lists)
 
         # Only import headers that are direct and/or indirect dependencies
         # Only link objects that are direct dependencies
@@ -623,37 +649,27 @@ def __SetupCMake(repositories):
             if can_delete:
                 os.unlink(repo_cmake_lists)
 
-        repos_to_build.append(IncludeEntry)
 
         # if not os.path.isfile(repo_cmake_lists):
         # logging.error(f"{repository["name"]} {repository["current repo path"]} repo_cmake_lists {repo_cmake_lists}")
-        SetupTemplateScript("repository/CMakeLists.txt", repo_cmake_lists, {
+        repo_vars  = {
             "ADD_LIBRARY_TYPE": "",
             "TARGET_INCLUDE_TYPE": "PUBLIC",
             "PUBLIC_INCLUDES":   '\n'.join(public_headers),
             "PRIVATE_INCLUDES":  '\n'.join(private_headers),
             "TESTS_INCLUDES":    '\n'.join(test_headers),
             "LINK_DEPENDENCIES": '\n'.join(temp_objects_to_link),
-            "REPO_NAME":       repository["repo name"],
-            "REPO_SRC_PATH":   repository["repo source"],
-            "REPO_BUILD_PATH": repository["build path"],
-            "REPO_EXEC_PATH":  repository["executables"],
-            "REPO_TESTS_PATH": repository["tests"],
-            "REPO_LIB_PATH":   repository["libraries"]
-        })
+        } | GetRepositoryVariables(repository)
+        try:
+            SetupTemplate("repository/CMakeLists.txt", repo_cmake_lists, repo_vars)
+        except FileNotFoundError:
+            logging.error(f"Warning. Repo {repository["name"]} does not have a CMake file. If this is expected, please add the `no auto build` to the configs")
+            continue
 
-    SetupTemplateScript("project/CMakeLists.txt", JoinPaths(Settings["paths"]["build env"], "CMakeLists.txt"), {
-        "INCLUDE_REPOSITORY_CMAKELISTS":'\n'.join(repos_to_build),
-        "AUTOGEN_HEADERS_PATH": Settings["paths"]["autogened headers"],
-        "PROJ_NAME": Settings["ProjectName"],
-        "PROJ_PATH": Settings["paths"]["project main"],
-        "PROJ_BUILD_PATH":   Settings["paths"]["build"],
-        "PROJ_BIN_PATH":     Settings["paths"]["binaries"],
-        "PROJ_LIB_PATH":     Settings["paths"]["libraries"],
-        "PROJ_OBJS_PATH":    Settings["paths"]["objects"],
-        "PROJ_EXECS_PATH":   Settings["paths"]["executables"],
-        "PROJ_TESTS_PATH":   Settings["paths"]["tests"]
-    })
+        repos_to_build.append(IncludeEntry)
+
+    project_vars = {"INCLUDE_REPOSITORY_CMAKELISTS":'\n'.join(repos_to_build)} | GetProjectVariables()
+    SetupTemplate("project/CMakeLists.txt", JoinPaths(Settings["paths"]["build env"], "CMakeLists.txt"), project_vars)
 
 
 def Setup(repositories):

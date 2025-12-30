@@ -35,6 +35,8 @@ class SETTINGS(dict):
 
         # Adding optional argument
         parser.add_argument("-u", "--url", help = "Root repository's URL", default=None, required=False)
+        parser.add_argument("-o", "--out_file", help = "Output to file", default="", required=False)
+        parser.add_argument("-l", "--log_file", help = "Pipe internal logs to file", default="/tmp/project_base.log", required=False)
 
         parser.add_argument("-c", "--commit",
                             help = "Root repository's commit",
@@ -48,7 +50,7 @@ class SETTINGS(dict):
                             help = "Do not run PB in multiple threads",
                             default=False, required=False, action=argparse.BooleanOptionalAction)
 
-        parser.add_argument("-e", "--exit", action='store_true', help = "Exit after running command line arguments", default=False, required=False)
+        parser.add_argument("-e", "--exit", action='store_true', help = "Exit after running command line arguments. Performs early exit in case one of the operations ends in error", default=False, required=False)
 
         parser.add_argument("-d", "--debug", action='store_true', help = "Increase log verbosity to debug ProjectBase", default=False, required=False)
 
@@ -56,6 +58,8 @@ class SETTINGS(dict):
 
         project_args, action_args = parser.parse_known_args()
 
+        self["log_file"]      = project_args.log_file
+        self["out_file"]      = project_args.out_file
         self["url"]           = project_args.url
         self["commit"]        = project_args.commit
         self["branch"]        = project_args.branch

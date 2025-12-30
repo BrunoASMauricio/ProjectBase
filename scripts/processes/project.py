@@ -13,9 +13,9 @@ from processes.repository     import LoadRepositories, Setup, Build
 from processes.process        import LaunchProcess, LaunchVerboseProcess
 from data.colors              import ColorFormat, Colors
 from processes.git_operations import GetRepositoryUrl
-from processes.filesystem     import CreateDirectory
+from processes.process        import GetEnvVarExports
 from processes.run_linter     import CleanLinterFiles
-
+from processes.filesystem     import CreateParentDirs
 """
 Performs operations on a project
 Each project is built from a single repository
@@ -35,28 +35,29 @@ class PROJECT(dict):
     def init(self):
         self.ResetRepositories()
 
-        self.name = GetRepoNameFromURL(Settings["url"])
-        self.paths = GetProjectPaths(self.name)
+        Settings["ProjectName"] = GetRepoNameFromURL(Settings["url"])
+        Settings["paths"]  = GetProjectPaths(Settings["ProjectName"])
+        # Setup project specific paths
+        ## Cache
+        Settings["cache file"]  = JoinPaths(Settings["paths"]["caches"], Settings["ProjectName"])
 
-        # Check and generate project structure if necessary
-        for path_name in self.paths:
-            path = self.paths[path_name]
-            # There are relative empty paths that symbolize "here"
-            if path != "":
-                LaunchProcess('mkdir -p "'+self.paths[path_name]+'"')
+        # Setup all folders
+        CreateParentDirs(Settings["paths"].values())
 
-        DumpToFile(JoinPaths(self.paths["project main"], "root_url.txt"), Settings["url"])
-
-        Settings["ProjectName"] = self.name
-        Settings["paths"]       = self.paths
-        self.repo_cache_path = JoinPaths(Settings["paths"]["configs"], "project_cache", "repositories")
-        Settings["paths"]["cache path"] = JoinPaths(self.repo_cache_path, self.name)
-        CreateDirectory(self.repo_cache_path)
+        ## root url for automatic project detection
+        DumpToFile(JoinPaths(Settings["paths"]["project main"], "root_url.txt"), Settings["url"])
 
     def load(self):
         logging.info("Loading repositories")
         # Reset configs state
         ResetConfigsState()
+
+        # Check and generate project structure if necessary
+        for path_name in Settings["paths"]:
+            path = Settings["paths"][path_name]
+            # There are relative empty paths that symbolize "here"
+            if path != "":
+                LaunchProcess('mkdir -p "'+Settings["paths"][path_name]+'"')
 
         # Build root repo configs from CLI
         self.root_repo_base_config = {"url": Settings["url"]}
@@ -72,7 +73,7 @@ class PROJECT(dict):
         else:
             self.root_repo_base_config["commitish"] = None
 
-        self.repositories = LoadRepositories(self.root_repo_base_config, Settings["paths"]["cache path"])
+        self.repositories = LoadRepositories(self.root_repo_base_config, Settings["cache file"])
         print("Project loaded")
 
     def setup(self):
@@ -87,19 +88,20 @@ class PROJECT(dict):
         logging.info("Building project")
         repositories = self.GetRepositories()
 
-        CMakeCommand =  'cmake -DCMAKE_BUILD_TYPE=Debug'
+        CMakeCommand = f'{GetEnvVarExports()}; '
+        CMakeCommand += 'cmake -DCMAKE_BUILD_TYPE=Debug'
         # Dont complain about unused -D parameters, they are not mandatory
         CMakeCommand += ' --no-warn-unused-cli'
         # Add compile.json for better IDE support
         CMakeCommand += ' -DCMAKE_EXPORT_COMPILE_COMMANDS=1'
         # Include generated configuration
         # CMakeCommand += f' -I{self.paths["project configs"]}/.config'
-        CMakeCommand += f' -S {self.paths["build env"]}'
-        CMakeCommand += f' -B {self.paths["build cache"]}'
+        CMakeCommand += f' -S {Settings["paths"]["build env"]}'
+        CMakeCommand += f' -B {Settings["paths"]["build cache"]}'
         # CMakeCommand += ' -DBUILD_MODE='+ActiveSettings["Mode"]
-        CMakeCommand += f' -DPROJECT_NAME={self.name}'
-        CMakeCommand += f' -DPROJECT_BASE_SCRIPT_PATH={self.paths["scripts"]}'
-        CMakeCommand += f' && cmake --build {self.paths["build cache"]}'
+        CMakeCommand += f' -DPROJECT_NAME={Settings["ProjectName"]}'
+        CMakeCommand += f' -DPROJECT_BASE_SCRIPT_PATH={Settings["paths"]["scripts"]}'
+        CMakeCommand += f' && cmake --build {Settings["paths"]["build cache"]}'
         # Enable multi process
         CMakeCommand += ' -- -j $(nproc) -k'
 
@@ -120,7 +122,7 @@ class PROJECT(dict):
     def GetRepositories(self):
         # See if saved cache exist 
         base_path = "configs/project_cache/"
-        load_file = base_path + self.name + "_load_project.pkl"
+        load_file = base_path + Settings["ProjectName"] + "_load_project.pkl"
         if(Settings["active"]["Speed"] == "Fast"):
             if os.path.exists(load_file):
                 with open(load_file, "rb") as f:
@@ -158,7 +160,7 @@ class PROJECT(dict):
 Project = PROJECT()
 
 def GetRelevantPath(path):
-    return path.replace(Project.paths["project code"], "")
+    return path.replace(Settings["paths"]["project code"], "")
 
 def UserChooseProject():
     """
@@ -230,6 +232,15 @@ def DeleteProject():
 
 def CleanPBCache():
     global Project
-    LaunchVerboseProcess(f"rm -rf {Settings["paths"]["cache path"]}")
+    LaunchVerboseProcess(f"rm -rf {Settings["cache file"]}")
     LaunchVerboseProcess(f"rm -rf {Settings["paths"]["temporary"]}/*")
     Project.DeleteRepositories()
+
+def PurgePB():
+    global Project
+    LaunchVerboseProcess(f"rm -rf {Settings["cache file"]}")
+    LaunchVerboseProcess(f"rm -rf {Settings["paths"]["temporary"]}/*")
+
+    Project.DeleteRepositories()
+    LaunchVerboseProcess(f"rm -rf {Settings["paths"]["project base"]}/projects/*")
+    LaunchVerboseProcess(f"rm -rf {Settings["paths"]["bare gits"]}/*")
