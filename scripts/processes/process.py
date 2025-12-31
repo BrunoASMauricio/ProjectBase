@@ -237,7 +237,13 @@ def RunOnFolders(paths, callback, arguments={}):
     return operation_status
 
 def RunExecutable(command_string):
-    return subprocess.run(command_string, shell=True)
+    ret = subprocess.run(command_string,
+                            shell=True,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT,
+                            text=True)
+    print(ret.stdout)
+    return ret
 
 class ProcessError(Exception):
     def __init__(self, message, returned):
