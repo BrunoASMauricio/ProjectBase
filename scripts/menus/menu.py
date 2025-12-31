@@ -257,7 +257,9 @@ class Menu():
                 raise sys_ex
             except Exception as exception:
                 ErrorCheckLogs(exception)
-                __CheckException()
+                __CheckException()      
+                if Settings["exit"]:
+                    sys.exit(-1)
 
             # Always reset directory after running an operation
             os.chdir(current_dir)

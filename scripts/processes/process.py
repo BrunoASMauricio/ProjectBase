@@ -115,7 +115,6 @@ def ThreadWrapper(run_callback, run_arg):
     except ProcessError as ex:
         return_val = False
         # ProcessError happened return error code on Settings
-        Settings.return_code = 1
         AddTothreadLog(str(ex))
 
     except Exception as ex:
@@ -333,6 +332,7 @@ def LaunchProcess(command, path=None, to_print=False):
         returned["code"]    = int(result.returncode)
 
     if returned["code"] != 0:
+        Settings.return_code = returned["code"]
         message  = f"\n\t========================= Process failed (start) ({GetNow()}) =========================\n"
         message += "\t\tProcess returned failure (" + ColorFormat(Colors.Yellow, str(returned["code"])) + "):\n"
         message += ColorFormat(Colors.Yellow, f"at {path}\n")
