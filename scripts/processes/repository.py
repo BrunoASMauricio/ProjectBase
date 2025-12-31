@@ -681,7 +681,9 @@ def Build(repositories, build_command):
         __RunRepoCommands(f"before build ({repository['name']})", repository["before build"])
 
     logging.info(f"Building project with {build_command}")
-    LaunchVerboseProcess(build_command)
+    returned = LaunchVerboseProcess(build_command)
+    if(returned["code"] != 0):
+        Settings.return_code = 1
 
     for repo_id in repositories:
         repository = repositories[repo_id]
