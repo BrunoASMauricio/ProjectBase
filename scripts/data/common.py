@@ -99,7 +99,7 @@ Formatter = INDENT_FORMATTER()
 
 def ErrorCheckLogs(exception):
     print("ERROR: Check logs at /tmp/project_base.log for more information")
-    logging.error(f"Uncaught exception: {type(exception)} {exception}")
+    logging.error(f"Exception: {type(exception)} {exception}")
     logging.error(get_full_traceback(exception))
 
 def RemoveDuplicates(lst):
