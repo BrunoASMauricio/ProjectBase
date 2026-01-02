@@ -94,10 +94,16 @@ def RepoFetch(path = None):
     ParseGitResult("git fetch origin '*:*'", path)
 
 def RepoPull(path = None):
-    if GetRepoLocalBranch(path) != "HEAD":
-        ParseGitResult("git pull origin --rebase", path)
-        ParseGitResult("git fetch --all", path)
-        ParseGitResult("git rebase", path)
+    try:
+        if GetRepoLocalBranch(path) != "HEAD":
+            ParseGitResult("git pull origin --rebase", path)
+            ParseGitResult("git fetch --all", path)
+            ParseGitResult("git rebase", path)
+    except ProcessError as ex:
+        status = GetRepoStatus(path)
+        if "both modified" in status:
+            print(f"WARNING: Code needs merge in {path}")
+        raise ex
 
 def RepoPush(path = None):
     # Push to bare git
