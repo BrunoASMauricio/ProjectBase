@@ -116,7 +116,7 @@ def ThreadWrapper(run_callback, run_arg):
     except ProcessError as ex:
         return_val = False
         AddTothreadLog(str(ex))
-        print(str(ex))
+        print(str(ex.simple_message))
     except Exception as ex:
         # Store exception in log, but don't print it just yet
         # Ctrl+C will create exceptions on all threads, so those logs must be cleared and not printed
@@ -212,7 +212,7 @@ def __RunOnFoldersThreadWrapper(callback, path, arguments = None):
         operation_lock.release()
     except ProcessError as exception:
         ErrorCheckLogs(exception)
-        AddTothreadLog(str(exception))
+        AddTothreadLog(str(exception.simple_message))
     except Exception as exception:
         ErrorCheckLogs(exception)
 
