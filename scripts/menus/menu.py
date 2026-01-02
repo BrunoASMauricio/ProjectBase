@@ -18,6 +18,21 @@ class EntryType(Enum):
     MENU     = 2
     DYNAMIC  = 3
 
+def PeekNextOption(prompt=None):
+    if len(Settings["action"]) != 0:
+        # Next automated action
+        next_input = Settings["action"][0]
+    else:
+        next_input = None
+    return next_input
+
+def PopNextOption():
+    next_input = None
+    if len(Settings["action"]) != 0:
+        next_input = Settings["action"][0]
+        del Settings["action"][0]
+    return next_input
+
 def GetNextOption(prompt = "[<] ", single_string = False):
     global ProjectArgs
 
