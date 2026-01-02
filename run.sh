@@ -1,3 +1,3 @@
 #!/bin/bash
 
-python3 scripts/run.py $@
+python3 scripts/run.py "$@"

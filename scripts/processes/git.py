@@ -65,7 +65,6 @@ def FindGitRepo(base_path, repo_url, repo_commitish = None, depth=-1):
         logging.warning("Folder disappeared during operation")
         return None
 
-    # TODO: Is this really the better option?? Just blindly assume the flipped url is valid
     url_base_path = GetRepositoryUrl(base_path)
     if SameUrl(repo_url,  url_base_path ):
         if repo_commitish != None:

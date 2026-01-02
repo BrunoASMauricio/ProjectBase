@@ -246,8 +246,10 @@ class Menu():
                 continue
             except SlimError as ex:
                 # An error has already been printed, stop here
-                logging.error("A thread errored out, canceling operation")
-                print("\nThere was an error, operation canceled")
+                msg = f"A thread errored out, operation canceled: {ex}"
+                logging.error(msg)
+                print(f"\n{msg}")
+
                 if Settings["exit"] == True:
                     print("\nEarly exit")
                     raise ex

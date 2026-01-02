@@ -1,4 +1,5 @@
 import os
+import sys
 import pty
 import logging
 import traceback
@@ -116,7 +117,7 @@ def ThreadWrapper(run_callback, run_arg):
         return_val = False
         # ProcessError happened return error code on Settings
         AddTothreadLog(str(ex))
-
+        print(str(ex.simple_message))
     except Exception as ex:
         # Store exception in log, but don't print it just yet
         # Ctrl+C will create exceptions on all threads, so those logs must be cleared and not printed
@@ -210,6 +211,9 @@ def __RunOnFoldersThreadWrapper(callback, path, arguments = None):
         operation_lock.acquire()
         operation_status[path] = result
         operation_lock.release()
+    except ProcessError as exception:
+        ErrorCheckLogs(exception)
+        AddTothreadLog(str(exception.simple_message))
     except Exception as exception:
         ErrorCheckLogs(exception)
 
@@ -238,13 +242,24 @@ def RunOnFolders(paths, callback, arguments={}):
     return operation_status
 
 def RunExecutable(command_string):
-    return subprocess.run(command_string, shell=True)
+    ret = subprocess.run(command_string,
+                            shell=True,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT,
+                            text=True)
+    print(ret.stdout)
+    return ret
 
 class ProcessError(Exception):
-    def __init__(self, message, returned):
+    def __init__(self, simple_message, trace_message, returned):
         # Call the base class constructor with the parameters it needs
+        message  = f"\n\t========================= Process failed (start) ({GetNow()}) =========================\n"
+        message += f"{simple_message}\nTrace:\n{trace_message}"
+        message += "\n\t========================= Process failed (end) =========================\n"
+
         super().__init__(f"Message:{message}\nReturned: {returned}")
         self.returned = returned
+        self.simple_message = simple_message
     def RaiseIfNotInOutput(self, data):
         if data in self.returned["stdout"] or data in self.returned["stderr"]:
             return
@@ -292,6 +307,10 @@ def _LaunchCommand(command, path=None, to_print=False):
         def read(fd):
             Data = os.read(fd, 1024)
             output_bytes.append(Data)
+            # If stdout changed, the spawned process will not have the same stdout
+            # Need to explicitly print the data into the scripts stdout
+            if sys.stdout != sys.__stdout__:
+                print(Data.decode('utf-8'), end='')
             return Data
 
         # Remove all types of whitespace repetitions `echo  \t  a` -> `echo a`
@@ -357,14 +376,14 @@ def LaunchProcess(command, path=None, to_print=False):
         return returned
 
     if returned["code"] != 0:
-        message  = f"\n\t========================= Process failed (start) ({GetNow()}) =========================\n"
-        message += "\t\tProcess returned failure (" + ColorFormat(Colors.Yellow, str(returned["code"])) + "):\n"
-        message += ColorFormat(Colors.Yellow, f"at {path}\n")
-        message += ColorFormat(Colors.Cyan,   f"{command}\n")
-        message += ColorFormat(Colors.Blue,   f"stdout: {returned["stdout"]}\n")
-        message += ColorFormat(Colors.Red,    f"stderr: {returned["stderr"]}\n")
-        message += "Current stack:\n"
+        simple_message = "\t\tProcess returned failure (" + ColorFormat(Colors.Yellow, str(returned["code"])) + "):\n"
+        simple_message += ColorFormat(Colors.Yellow, f"at {path}\n")
+        simple_message += ColorFormat(Colors.Cyan,   f"{command}\n")
+        simple_message += ColorFormat(Colors.Blue,   f"stdout: {returned["stdout"]}\n")
+        simple_message += ColorFormat(Colors.Red,    f"stderr: {returned["stderr"]}\n")
+        simple_message += "Current stack:\n"
 
+        trace_message = ""
         trace = traceback.format_stack()[:-1]
         for Line in trace:
             Pieces = Line.strip().split("\n")
@@ -373,11 +392,10 @@ def LaunchProcess(command, path=None, to_print=False):
                 function  = file.split(" in ")[-1]
                 # Line NUMBER, .. # Get NUMBER, .. # Remove .. # Remove ,
                 file_Line = file.lower().split(" line ")[-1].split(" ")[0][:-1]
-                message += function + "() Line " + str(file_Line) + "\n" +ColorFormat(Colors.Green, callback) + "\n"
+                trace_message += function + "() Line " + str(file_Line) + "\n" +ColorFormat(Colors.Green, callback) + "\n"
             else:
-                message += Line
-        message += "\n\t========================= Process failed (end) =========================\n"
-        raise ProcessError(message, returned)
+                trace_message += Line
+        raise ProcessError(simple_message, trace_message, returned)
 
     return returned
 
