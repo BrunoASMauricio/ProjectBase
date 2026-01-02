@@ -109,7 +109,7 @@ def ExecuteMenu(PathToScan):
         print("[![G|V|S]]<INDEX [0-9]+> [Space separated argument list]")
         print("exit or Ctr+D to exit")
         try:
-            og_user_input = GetNextOption()
+            og_user_input = GetNextOption(single_string=True)
             # No input (Enter pressed)
             if len(og_user_input) == 0:
                 print("No input")
