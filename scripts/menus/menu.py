@@ -199,8 +199,12 @@ class Menu():
 
         while True:
             try:
-                # If we are piping into a file, don't attempt to reset terminal
-                if len(Settings["out_file"]) == 0:
+                if Settings["exit"] and Settings.return_code != 0:
+                    print("\nLast thing failed to run :)")
+                    sys.exit(Settings.return_code)
+                   # If we are piping into a file, don't attempt to reset terminal
+                
+                if len(Settings["out_file"]) == 0:    
                     ResetTerminal()
 
                 # Newline is useful in general here
@@ -216,7 +220,8 @@ class Menu():
                 try:
                     next_input_str = GetNextOption()
                     if (MenuExit(next_input_str) == True):
-                        return
+                        return Settings.return_code
+                    
                     next_input = int(next_input_str)
                     previous_invalid = False
                 except ValueError:
@@ -249,12 +254,14 @@ class Menu():
             except EOFError:
                 # Ctrl+D
                 print("\nBye :)")
-                sys.exit(0)
+                sys.exit(Settings.return_code)
             except SystemExit as sys_ex:
                 raise sys_ex
             except Exception as exception:
                 ErrorCheckLogs(exception)
-                __CheckException()
+                __CheckException()      
+                if Settings["exit"]:
+                    sys.exit(-1)
 
             # Always reset directory after running an operation
             os.chdir(current_dir)

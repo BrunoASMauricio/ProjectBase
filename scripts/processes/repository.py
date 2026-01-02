@@ -292,12 +292,18 @@ def LoadRepository(imposed_configs):
     try:
         for dependency in configs["dependencies"]:
             base_dependency = configs["dependencies"][dependency]
+
             if "configs" in base_dependency:
                 dependency_configs = base_dependency["configs"].copy()
             else:
                 dependency_configs = {}
 
             dependency_configs["url"] = GetValueOrDefault(base_dependency, "url", dependency)
+            if(Settings["isCI"]):
+                if(dependency_configs["url"] in Settings["commitJson"]):
+                    # This means that settings should use the path ont he file system that has commits not in the remote in CI build
+                    dependency_configs["url"] = Settings["commitJson"][dependency_configs["url"]]
+
             dependency_configs["reloaded"] = False
             if "commit" in base_dependency and base_dependency["commit"] != None:
                 dependency_configs["commitish"] = {}
@@ -691,7 +697,9 @@ def Build(repositories, build_command):
         __RunRepoCommands(f"before build ({repository['name']})", repository["before build"])
 
     logging.info(f"Building project with {build_command}")
-    LaunchVerboseProcess(build_command)
+    returned = LaunchVerboseProcess(build_command)
+    if(returned["code"] != 0):
+        Settings.return_code = 1
 
     for repo_id in repositories:
         repository = repositories[repo_id]

@@ -4,7 +4,7 @@ from data.common import *
 from data.json import *
 from data.git import GetRepoNameFromURL
 from enum import Enum
-
+import json 
 class CLONE_TYPE(Enum):
     HTTPS = "https"
     SSH   = "ssh"
@@ -17,6 +17,7 @@ class SETTINGS(dict):
     def init(self):
         # Initialize parser
         self.parse_arguments()
+        self.return_code = 0
 
     def start(self):
         # Commit or branch
@@ -56,6 +57,11 @@ class SETTINGS(dict):
 
         parser.add_argument("-f", "--fast", action='store_true', help = "Cache Repositories in pickle and do not consider config changes, deactivate to consider if needed", default=False, required=False)
 
+        # Configurations for CI infrastructure 
+        parser.add_argument("-ci", "--commitJsonPath", help = "JSON Information with all the repos that have commit changes, that have to be commit copied instead of usual by remote copy", default=None, required=False)
+
+
+
         project_args, action_args = parser.parse_known_args()
 
         self["log_file"]      = project_args.log_file
@@ -69,6 +75,17 @@ class SETTINGS(dict):
         self["fast"]          = project_args.fast
         # Trailing unknown arguments
         self["action"] = action_args
+
+        # CI Build options (they will mimick original options with extra commit Json option)
+        self["commitJsonPath"] = project_args.commitJsonPath
+        self["isCI"] = False
+        if(self["commitJsonPath"]):
+            self["isCI"] = True
+            with open(self["commitJsonPath"], "r") as f:
+               self["commitJson"] = json.load(f)
+
+            if(self["url"] is None):
+                raise ValueError("In CI Build, url should always be provided")
 
     def save_persisted_settings(self):
         dump_json_file(self["persisted"], self["paths"]["configs"] + "/project_cache/settings")
