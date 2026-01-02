@@ -6,7 +6,7 @@ from data.common import StringIsNumber
 from data.colors import *
 from processes.process import RunExecutable, SetupLocalEnvVars
 from processes.process import LaunchSilentProcess, ProcessError, RunInThreadsWithProgress
-from menus.menu import GetNextOption, MenuExit
+from menus.menu import GetNextOption, MenuExit, PeekNextOption, PopNextOption
 from data.paths import JoinPaths
 
 """
@@ -136,6 +136,15 @@ def ExecuteMenu(PathToScan):
                 # Specify venvs' python executable, to keep the same Venv
                 #  across python executables (i.e. pip installations and modules available)
                 full_command = f"{sys.executable} {full_command}"
+
+            next_inp = PeekNextOption()
+            if next_inp != None:
+                # There is an automated next command
+                arg_name = "--args="
+                if next_inp.startswith(arg_name):
+                    PopNextOption()
+                    args = next_inp.replace(arg_name, "")
+                    full_command = f"{full_command} {args}"
 
             print("Running: \"" + full_command + "\"")
 

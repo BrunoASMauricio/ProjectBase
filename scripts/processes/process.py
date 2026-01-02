@@ -243,14 +243,6 @@ def RunOnFolders(paths, callback, arguments={}):
     return operation_status
 
 def RunExecutable(command_string):
-    next_inp = PeekNextOption()
-    if next_inp != None:
-        # There is an automated next command
-        arg_name = "--args="
-        if next_inp.startswith(arg_name):
-            PopNextOption()
-            args = next_inp.replace(arg_name, "")
-            command_string = f"{command_string} {args}"
     ret = subprocess.run(command_string,
                             shell=True,
                             stdout=subprocess.PIPE,
