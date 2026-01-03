@@ -10,7 +10,8 @@ import json
 CIMenu = Menu("Ci Menu")
 
 def create_content_for_worktree_json(work_tree_path : Path):
-
+    # This function creates a json file with a dictionary mapping
+    # uid of projects ahead to their wortree on the local path
     #map_uid_to_source_worktree_of_commited_repos = {}
     map_uid_source: dict[str,str] = {}
     knownProjStat, unknownProjStat = getProjectStatusInfo()
@@ -45,8 +46,9 @@ def RunCIScratch():
         raise ValueError("Repositores are empty, this should only be called after a load")
     
     project_base_repo= Path(Settings["paths"]["project base"])
-    print(f"[CI] ProjectBase repo detected at {projectbase_repo}")
+    print(f"[CI] ProjectBase repo detected at {project_base_repo}")
 
+    # 2. Get parameters to call CI
     project_name: str = Settings["ProjectName"]
     project_folder: str = "projects/" + project_name + ".ProjectBase"
     root_url = "root_url.txt"
@@ -63,41 +65,40 @@ def RunCIScratch():
     subprocess.run(["git", "clone", str(project_base_repo), str(clone_path)], check=True)
     print(f"[CI] ProjectBase cloned to {clone_path}")
 
-    # 4. Generate worktreeFile.json (placeholder)
     worktree_json_path = Path(tmp_dir) / "worktreeFile.json"
     create_content_for_worktree_json(worktree_json_path)
     print(f"[CI] Mapper from url to projects with commit sources on file {worktree_json_path}")
 
     # 5. Run CI commands
-    # Adjust the paths according to your local setup
     system_textformatter_path = project_worktree_source
 
-    # Command 1: clean load + pull   
-    cmd1 = [
+    cmd = [
             "./run.sh",
             "--commitJsonPath", str(worktree_json_path),
             "--url", str(system_textformatter_path),
-            "1","5", "3", "1","-e"
+            "1","5", "3", "1","-1","1","2","3","3","-e"
         ]
+    # Steps
+    # 1 Load
+    # 5 Versioning
+    # 3 Sync
+    # 1 Pull data from remote
+
+    # - 1 go previous menu
+    # 1 Load (some config could have changed)
+    # 2 Build
+    # 3 Run
+    # 3 Run all tests
     
-    if run_cmd(cmd1, clone_path, "load/pull") != 0:
+    if run_cmd(cmd, clone_path, "load/pull remote/load/build/run/tests all") != 0:
         return 1
 
-    # Command 2: build and run all tests
-    cmd2 = [
-            "./run.sh",
-            "--commitJsonPath", str(worktree_json_path),
-            "--url", str(system_textformatter_path),
-            "1","2", "3", "3", "-e"
-        ]
-    
-    if run_cmd(cmd2, clone_path, "build/test") != 0:
-        return 2
-   
     print("[CI] Scratch CI run completed successfully!")
     return 0
 
 
 
 
-CIMenu.AddCallbackEntry("Run CI From blank state", RunCIScratch)
+CIMenu.AddCallbackEntry("Run CI For Top Project", RunCIScratch)
+#CIMenu.AddCallbackEntry("Run CI For All ahead Repositories (inclusive top)", RunCIScratch)
+#CIMenu.AddCallbackEntry("Run CI For All Repositories", RunCIScratch)
