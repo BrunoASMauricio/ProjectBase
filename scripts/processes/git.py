@@ -178,7 +178,8 @@ def SetupBareData(repo_url):
         msg = "Auto stash before pull and apply afterwards"
         LaunchGitCommandAt("git config rebase.autoStash true", bare_git, msg)
 
-        LaunchGitCommandAt("git config --add remote.origin.fetch \"+refs/heads/*:refs/remotes/origin/*\"", bare_git, "Setup worktree to get all references")
+        remote = GetRepoRemote(bare_git)
+        LaunchGitCommandAt(f"git config --add remote.{remote}.fetch \"+refs/heads/*:refs/remotes/{remote}/*\"", bare_git, "Setup worktree to get all references")
         # Ensure we are fetching all branches of the remote
         LaunchGitCommandAt(f"git fetch --all", bare_git, f"Fetch all branches")
 
@@ -225,7 +226,7 @@ def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
         worktree_command = "git worktree add --force --detach " + new_repo_path + " " + repo_commitish["commit"]
         LaunchGitCommandAt(worktree_command, bare_path)
         logging.debug("\tAdding git commit worktree with: " + worktree_command + " from bare at " + bare_path)
-    else:
+    else: # Branch comitish
         if repo_commitish == None:
             branch_to_follow = GetRepoDefaultBranch(bare_path)
             local_branch_name = generate_local_branch(branch_to_follow)
@@ -241,8 +242,8 @@ def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
         LaunchGitCommandAt(f"git worktree add {new_repo_path}", bare_path, "Adding git branch worktree")
 
         LaunchGitCommandAt(f"git fetch --all", new_repo_path, f"Fetch all branches")
-        LaunchGitCommandAt(f"git checkout -b {local_branch_name}", new_repo_path, f"Following branch {branch_to_follow}")
-        LaunchGitCommandAt(f"git branch --set-upstream-to=origin/{branch_to_follow} {local_branch_name}", new_repo_path)
+        LaunchGitCommandAt(f"git checkout -b {local_branch_name} {remote}/{branch_to_follow}", new_repo_path, f"Following branch {branch_to_follow}")
+        # LaunchGitCommandAt(f"git branch --set-upstream-to=origin/{branch_to_follow} {local_branch_name}", new_repo_path)
 
     if not os.path.isdir(new_repo_path):
         raise Exception(f"Could not add worktree for {repo_url} at {target_path} from bare git at {bare_path}")
