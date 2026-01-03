@@ -239,6 +239,9 @@ class Menu():
                     
                     next_input = int(next_input_str)
                     previous_invalid = False
+                    if(next_input == -1):
+                        # next input equal -1 goes to previous menu also                        return
+                        return
                 except ValueError:
                     # Empty enter goes to previous menu
                     if len(next_input_str) == 0:
