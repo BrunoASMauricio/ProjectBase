@@ -1,0 +1,10 @@
+{
+    "setup" : {
+        "disable executables": {
+            "condition to proceed":"true",
+            "command list":[
+                "pip install GitPython"
+            ]
+        }
+    }
+}
