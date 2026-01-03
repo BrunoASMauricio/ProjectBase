@@ -5,6 +5,7 @@ from pathlib import Path
 from data.settings import Settings
 import processes.repository as repo
 from processes.versioning import getProjectStatusInfo
+from processes.process import LaunchProcess
 import json
 
 CIMenu = Menu("Ci Menu")
@@ -26,7 +27,7 @@ def create_content_for_worktree_json(work_tree_path : Path):
 
 def run_cmd(cmd, cwd, label):
     print(f"[CI] Running {label}: {' '.join(cmd)}")
-    res = subprocess.run(cmd, cwd=cwd)
+    res = subprocess.run(cmd, cwd=cwd, shell=True)
     if res.returncode != 0:
         print(f"[CI] {label} failed with exit code {res.returncode}")
     return res.returncode
@@ -67,16 +68,21 @@ def RunCIScratch():
 
     worktree_json_path = Path(tmp_dir) / "worktreeFile.json"
     create_content_for_worktree_json(worktree_json_path)
-    print(f"[CI] Mapper from url to projects with commit sources on file {worktree_json_path}")
+    print(f"[CI] Mapper from url to projects with commit sources on file {worktree_json_path}\n")
 
     # 5. Run CI commands
     system_textformatter_path = project_worktree_source
 
     cmd = [
+            "source",
+            "./setup.sh",
+            ";",
             "./run.sh",
             "--commitJsonPath", str(worktree_json_path),
             "--url", str(system_textformatter_path),
-            "1","5", "3", "1","-1","1","2","3","3","-e"
+            "--log_file", "/tmp/project_base_ci_error.log",
+            "--out_file", "/tmp/project_base_ci_out.log",
+            "1","5", "3", "1","out","1","2","3","3","-e"
         ]
     # Steps
     # 1 Load
@@ -89,10 +95,12 @@ def RunCIScratch():
     # 2 Build
     # 3 Run
     # 3 Run all tests
-    
-    if run_cmd(cmd, clone_path, "load/pull remote/load/build/run/tests all") != 0:
+    run_cmd = ' '.join(cmd)
+    print(f"[CI] Running: {run_cmd}")
+    ret = LaunchProcess(" ".join(cmd), clone_path,False)
+    if(ret["code"] != 0):
         return 1
-
+    
     print("[CI] Scratch CI run completed successfully!")
     return 0
 
