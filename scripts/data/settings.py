@@ -45,7 +45,7 @@ class SETTINGS(dict):
 
         parser.add_argument("-b", "--branch",
                             help = "Root repository's branch",
-                            default=None, required=False, type=str, nargs=1)
+                            default=None, required=False, type=str)
 
         parser.add_argument("-s", "--single_thread",
                             help = "Do not run PB in multiple threads",
