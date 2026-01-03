@@ -99,7 +99,7 @@ All without sacrificing:
 
 Example Project Diagram:
 
-![Example Project Diagram](./images/ProjectBase_ProjectDiagram.jpg)
+![Example Project Diagram](./docs/images/ProjectBase_ProjectDiagram.jpg)
 
 Interested in how to start using ProjectBase? Checkout some [workflows](https://gitlab.com/brunoasmauricio/ProjectBase/-/wikis/workflows)!
 
