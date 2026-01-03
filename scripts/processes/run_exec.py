@@ -152,9 +152,9 @@ def ExecuteMenu(PathToScan):
                 print(result["stdout"])
 
                 if result["code"] != 0:
-                    print(ColorFormat(Colors.Red, '"' + full_command + '" returned code = '+str(result.returncode)))
+                    print(ColorFormat(Colors.Red, '"' + full_command + '" returned code = '+str(result["code"])))
                 else:
-                    print(ColorFormat(Colors.Green, '"' + full_command + '" returned code = '+str(result.returncode)))
+                    print(ColorFormat(Colors.Green, '"' + full_command + '" returned code = '+str(result["code"])))
                 return
             except KeyboardInterrupt:
                 print("Keyboard Interrupt")
