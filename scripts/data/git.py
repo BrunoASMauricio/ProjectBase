@@ -2,7 +2,7 @@ import re
 
 from data.common import GetNow
 
-def generate_local_branch(branch):
+def GenerateLocalBranchName(branch):
     now = GetNow().replace(" ", "_").replace(":","_").replace(".","_").replace("-","_")
     return branch + "_ProjectBase_" + now
 """

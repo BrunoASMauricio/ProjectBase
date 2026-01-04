@@ -229,11 +229,11 @@ def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
     else: # Branch comitish
         if repo_commitish == None:
             branch_to_follow = GetRepoDefaultBranch(bare_path)
-            local_branch_name = generate_local_branch(branch_to_follow)
+            local_branch_name = GenerateLocalBranchName(branch_to_follow)
         # If branch is defined, create a new random branch and make it follow the remote (it will be updated)
         elif repo_commitish["type"] == "branch":
             branch_to_follow = repo_commitish["branch"]
-            local_branch_name = generate_local_branch(branch_to_follow)
+            local_branch_name = GenerateLocalBranchName(branch_to_follow)
         else:
             raise Exception("Invalid commitish: "+str(repo_commitish))
 
