@@ -6,6 +6,7 @@ from data.settings import Settings
 import processes.repository as repo
 from processes.versioning import getProjectStatusInfo
 from processes.process import LaunchProcess
+from processes.process import ProcessError
 import json
 
 CIMenu = Menu("Ci Menu")
@@ -133,6 +134,25 @@ def RunCIScratch(runCiType : RunCIType):
     all_passed = True
     for path in tqdm(paths_to_run, desc="Running CI", unit="repo"):
         # 5. Run CI commands
+
+        # TODO DOing like this the repositories are used for the entire run the same 
+        # Projectbase what probably is better less time cloning but for now is breaking 
+        # for isntances: 
+        #ricostynha@nobara-pc:/tmp/ci_scratch_qubc2ltb/ProjectBase$ ./run.sh 
+        #Installed projects:
+        #        [0] Scheduler : /home/ricostynha/Desktop/myth/ProjectBase/projects/textformatter.ProjectBase/code/Core/Scheduler
+        #        [1] tree-sitter : /home/ricostynha/Desktop/myth/ProjectBase/projects/textformatter.ProjectBase/code/External/Libraries/tree-sitter
+        #        [2] keyboard : /home/ricostynha/Desktop/myth/ProjectBase/projects/textformatter.ProjectBase/code/Application/keyboard
+        # Tree sitter that was the first to be created works great the others the load fails like so
+        #72 unloaded dependencies found
+        #Finished dependency round
+        #74 unloaded dependencies found
+        #Starting... |---Process returned failure (128):----------------------------------------------------------------------------------------------| 0.0% 0/2
+        #at /tmp/ci_scratch_qubc2ltb/ProjectBase/configs/bare_gits/gitlab.com/p4nth30n/Core/Scheduler.git
+        #set -e; export PYTHONPATH='/tmp/ci_scratch_qubc2ltb/ProjectBase/scripts'; export PB_ROOT_NAME='keyboard'; git worktree move /tmp/ci_scratch_qubc2ltb/ProjectBase/configs/temporary/ZseJAnaVtYXI/Scheduler /tmp/ci_scratch_qubc2ltb/ProjectBase/projects/keyboard.ProjectBase/code/Core
+        #stdout: 
+        #stderr: fatal: '/tmp/ci_scratch_qubc2ltb/ProjectBase/projects/keyboard.ProjectBase/code/Core/Scheduler' already exists
+
         cmd = [
                 "source",
                 "./setup.sh",
@@ -157,17 +177,19 @@ def RunCIScratch(runCiType : RunCIType):
         # 3 Run all tests
         run_cmd = ' '.join(cmd)
         print(f"[CI] Testing {path} Running: {run_cmd}")
-        ret = LaunchProcess(" ".join(cmd), clone_path,False)
-        if(ret["code"] != 0):
+        try:
+            ret = LaunchProcess(" ".join(cmd), clone_path,False)
+            #retcode = int(ret["code"])
+        except ProcessError as p:
+            #simple_message, trace_message, returned = p.args
+            #retcode = int(returned)
             all_passed = False
-            print(f"[CI] Testing Fail {path}")
-        
+            print(f"[CI] Test Failed : {path}")
+
     if(all_passed):
         print("[CI] Scratch CI run completed successfully!")
-        return 0
     else:
         print("[CI] Scratch CI Failed!")
-        return 1
 
 
 
