@@ -125,12 +125,12 @@ Assemble a string based on the table (2D list) provided.
 Each column is aligned to its' largest member
 """
 
-def AssembleTable(rows):
+def AssembleTable(rows, sep="|"):
     msg = ""
     # Use `RemoveAllNonPrintable` and  direct padding to avoid color characters and such to be counted in padding
     widths = [max(len(RemoveAllNonPrintable(x)) for x in col) for col in zip(*rows)]
     for row in rows:
-        msg += " ".join((val + " " * (width - len(RemoveAllNonPrintable(val))) for val, width in zip(row, widths)))+"\n"
+        msg += sep.join((val + " " * (width - len(RemoveAllNonPrintable(val))) for val, width in zip(row, widths)))+"\n"
     return msg
 
 def CLICenterString(string, pad=" "):
@@ -158,8 +158,6 @@ def RemoveControlCharacters(str):
 def RemoveTerminalColorCodes(text):
     # return re.sub(r'\x1b\[[0-9;]*m', '', text)
     return re.sub(r'\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', text)
-
-
 
 def RemoveNonAscii(str):
     return ''.join(char for char in str if ord(char) < 128)

@@ -105,6 +105,7 @@
   - [ ] object
   - [ ] module
   - [ ] globally
+- [ ] Add support for any linter system (not just clang-tidy)
 - [ ] Add support for a configuration system (i.e. Kconfig)
 - [ ] Add support for a hardware description language (i.e. devicetree)
 - [ ] Investigate necessity/feasibility of sending strings into code

@@ -12,13 +12,14 @@ from processes.auto_completer import CustomCompleter
 from data.settings import Settings
 from data.common import RemoveNonAlfanumeric, ResetTerminal
 from data.paths import JoinPaths
+from data.common import AssembleTable
 
 class EntryType(Enum):
     CALLBACK = 1
     MENU     = 2
     DYNAMIC  = 3
 
-def PeekNextOption(prompt=None):
+def PeekNextOption():
     if len(Settings["action"]) != 0:
         # Next automated action
         next_input = Settings["action"][0]
@@ -74,13 +75,14 @@ class Menu():
     If stay_in_menu is True, entry completion will reprint the menu, and
      not return to previous menu
     """
-    def __init__(self, name=None, stay_in_menu=False):
+    def __init__(self, name=None, stay_in_menu=False, help=None):
         self.entries      = []
         self.prologue     = None
         self.epilogue     = None
         self.stay_in_menu = stay_in_menu
         self.history_file = None
         self.completer = None
+        self.help = help
         # Make sure menus don't have colliding names
         if name != None:
             name = RemoveNonAlfanumeric(name)
@@ -89,11 +91,11 @@ class Menu():
             self.completer = CustomCompleter(self.history_file, [])
             all_menu_names.append(name)
 
-    def AddCallbackEntry(self, entry, Callback):
-        self.entries.append([entry, EntryType.CALLBACK, Callback])
+    def AddCallbackEntry(self, entry, Callback, help=None):
+        self.entries.append([entry, EntryType.CALLBACK, Callback, help])
     
-    def AddSubmenuEntry(self, entry, menu):
-        self.entries.append([entry, EntryType.MENU, menu])
+    def AddSubmenuEntry(self, entry, menu, help=None):
+        self.entries.append([entry, EntryType.MENU, menu, help])
 
     """
     A function will run during menu selection and return the entries to show
@@ -107,11 +109,12 @@ class Menu():
     """
     Return string with menu data
     """
-    def GetMenu(self, depth):
+    def GetMenu(self, depth, help=False):
         index = 1
         menu = GetText(self.prologue)
         menu += ColorFormat(Colors.Yellow, f"({GetTime()})({GetHost()})\n")
 
+        table_entries = []
         for entry in self.entries:
             if entry[1] == EntryType.DYNAMIC:
                 # Remove previously generated entries
@@ -122,16 +125,30 @@ class Menu():
                     entry.append(GetText(entry[2]))
                 else:
                     for new_entry in entries:
-                        menu  += ("| " * depth) + str(index)+" ) " + new_entry[0] + "\n"
+                        table_entry = [("| " * depth) + str(index)+" ) " + new_entry[0], ""]
+                        table_entries.append(table_entry)
                         index += 1
                     # Store generated entries in dynamic entry
                 entry.append(entries)
             else:
+                table_entry = []
+                text = ("| " * depth) + str(index)+") "
                 if entry[1] == EntryType.MENU:
-                    menu  += ("| " * depth) + str(index)+">) " + GetText(entry[0]) + "\n"
+                    text += "(Menu) "
                 elif entry[1] == EntryType.CALLBACK:
-                    menu  += ("| " * depth) + str(index)+" ) " + GetText(entry[0]) + "\n"
+                    pass
+                text += GetText(entry[0])
+                table_entry.append(text)
                 index += 1
+
+                # Print help information
+                if help == True and len(entry) == 4 and entry[3] != None:
+                    table_entry.append(f" {ColorFormat(Colors.Green, entry[3])}")
+                else:
+                    table_entry.append("")
+                table_entries.append(table_entry)
+
+        menu += AssembleTable(table_entries, " ")
 
         menu += GetText(self.epilogue)
 
@@ -170,6 +187,10 @@ class Menu():
         else:
             dynamic_entry = picked_entry[3][picked_index]
             dynamic_entry[1](**dynamic_entry[2])
+
+    def PrintHelp(self):
+        pass
+
     """
     Print menu and handle input from user
     """
@@ -211,7 +232,7 @@ class Menu():
             else:
                 __ResetException()
 
-
+        help = False
         while True:
             try:
                 if Settings["exit"] and Settings.return_code != 0:
@@ -225,7 +246,8 @@ class Menu():
                 # Newline is useful in general here
                 print()
                 # Show menu
-                print(self.GetMenu(depth))
+                print(self.GetMenu(depth, help))
+                help = False
                 if previous_command != None:
                     print("Previous command: " +str(previous_command))
 
@@ -246,6 +268,11 @@ class Menu():
                     # Empty enter goes to previous menu
                     if len(next_input_str) == 0:
                         return
+                    # Print help
+                    if next_input_str == "?" or next_input_str == "help":
+                        help = True
+                        continue
+
                     if previous_invalid == False:
                         print("Invalid input")
                         previous_invalid = True

@@ -25,6 +25,10 @@ options:
                         JSON Information with all the repos that have commit changes, that have to be commit copied instead of usual by remote copy
 ```
 
+## Help
+
+On any menu, inputting '?' or 'help' prints the help for the entries in that menu
+
 ## Navigation
 
 PB has a standardized menu navigation scheme where each entry can be selected by inputting the index printed next to it.

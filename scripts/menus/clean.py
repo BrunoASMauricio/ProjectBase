@@ -4,7 +4,7 @@ from processes.run_linter import CleanLinterFiles
 
 CleanMenu = Menu("Clean Menu")
 
-CleanMenu.AddCallbackEntry("Clean all (all bellow + CMake cache)", CleanAll)
-CleanMenu.AddCallbackEntry("Clean objects (libraries), executables and tests", CleanCompiled)
-CleanMenu.AddCallbackEntry("Clean executables and tests", CleanRunnables)
-CleanMenu.AddCallbackEntry("Clean linter files", CleanLinterFiles)
+CleanMenu.AddCallbackEntry("Clean all", CleanAll, "All below plus cleans build artifacts")
+CleanMenu.AddCallbackEntry("Clean objects", CleanCompiled, "Clean objects like libraries, executables and tests")
+CleanMenu.AddCallbackEntry("Clean executables and tests", CleanRunnables, "Clean just the executables and tests")
+CleanMenu.AddCallbackEntry("Clean linter files", CleanLinterFiles, "Clear linter files")

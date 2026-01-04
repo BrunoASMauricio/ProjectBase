@@ -39,17 +39,17 @@ def main_description():
 """ ) + f"{BuildBanner} \n({Settings["url"]})\n({CloneType} - {SpeedType})\n({Settings["paths"]["project main"]})\n"
 
 def generate_project_description():
-    return "Load project (" + str(len(Project.repositories)) + " loaded repositories)"
+    return "Load project (" + str(len(Project.repositories)) + " loaded)"
 
 MainMenu = Menu("Main Menu", True)
 MainMenu.prologue = main_description
 MainMenu.epilogue = ColorFormat(Colors.Green, "Ctrl + D to exit")
-MainMenu.AddCallbackEntry(generate_project_description, Project.setup)
-MainMenu.AddCallbackEntry("Build project (launches the build environment for this purpose)", Project.build)
-MainMenu.AddSubmenuEntry("Run", RunMenu)
-MainMenu.AddSubmenuEntry("Analyze", AnalysisMenu)
-MainMenu.AddSubmenuEntry("Versioning", VersioningMenu)
-MainMenu.AddSubmenuEntry("Clean", CleanMenu)
-MainMenu.AddSubmenuEntry("CI", CIMenu)
-MainMenu.AddCallbackEntry("Configure Project", RunMenuConfig)
-MainMenu.AddSubmenuEntry("ProjectBase settings", SettingsMenu)
+MainMenu.AddCallbackEntry(generate_project_description, Project.setup, "Download and setup the project")
+MainMenu.AddCallbackEntry("Build project", Project.build, "Launch build (CMake). Craete executables and tests")
+MainMenu.AddSubmenuEntry("Run", RunMenu, "Run an executable or test")
+MainMenu.AddSubmenuEntry("Analyze", AnalysisMenu, "Run linter (clang-tidy)")
+MainMenu.AddSubmenuEntry("Versioning", VersioningMenu, "Version manager menu")
+MainMenu.AddSubmenuEntry("Clean", CleanMenu, "Clean project state (binaries, objects, artifacts, etc)")
+MainMenu.AddSubmenuEntry("CI", CIMenu, "Launch CI")
+MainMenu.AddCallbackEntry("Configure Project", RunMenuConfig, "Launch configs")
+MainMenu.AddSubmenuEntry("ProjectBase settings", SettingsMenu, "Configure ProjectBase for the current project")

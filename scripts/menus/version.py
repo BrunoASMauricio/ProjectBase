@@ -7,9 +7,9 @@ from data.colors import ColorFormat, Colors
 
 #       Save Menu
 SaveMenu = Menu("Save Menu")
-SaveMenu.AddCallbackEntry("Create global commit (squashes previous temporary commits)", GlobalFixedCommit)
-SaveMenu.AddCallbackEntry("Create global temporary commit", GlobalTemporaryCommit)
-SaveMenu.AddCallbackEntry("View current temporary commits", GetCurrentTemporaryCommits)
+SaveMenu.AddCallbackEntry("Create global commit", GlobalFixedCommit, "Squash previous temporary commits into new commit")
+SaveMenu.AddCallbackEntry("Create temporary commit", GlobalTemporaryCommit, "Auto commit which can be squashed automatically later")
+SaveMenu.AddCallbackEntry("View current temporary commits", GetCurrentTemporaryCommits, "Get amount of temporary commits on each repo")
 # GlobalSave
 # SaveMenu.AddCallbackEntry("Stash global state", None)
 # SaveMenu.AddCallbackEntry("See global stash", None)
@@ -18,21 +18,21 @@ SaveMenu.AddCallbackEntry("View current temporary commits", GetCurrentTemporaryC
 SyncMenu = Menu("Sync Menu")
 # SyncMenu.AddCallbackEntry("Fetch data from remote", FetchAll)
 # SyncMenu.AddCallbackEntry("Merge local data with fetched data", PullAll)
-SyncMenu.AddCallbackEntry("Pull data from remote", PullAll)
-SyncMenu.AddCallbackEntry("Push data to remote", PushAll)
+SyncMenu.AddCallbackEntry("Pull data from remote", PullAll, "Pull data from remote (might lead to conflicts)")
+SyncMenu.AddCallbackEntry("Push data to remote", PushAll, "Push data to remote (might fail if there are conflicts)")
 
 #       Reset Menu
 BranchMenu = Menu("Branch Menu")
-BranchMenu.AddCallbackEntry("See checked out state", PrintCheckedoutState)
-BranchMenu.AddCallbackEntry("Checkout branch", None)
+BranchMenu.AddCallbackEntry("See checked out state", PrintCheckedoutState, "Get current branches (local and the remotes)")
+BranchMenu.AddCallbackEntry("Checkout branch", None, "Checkout a branch on all clean, managed repos")
 
 #       Reset Menu
 ResetMenu = Menu("Reset Menu")
 ResetMenu.AddCallbackEntry("Clean unsaved files and folders", CleanAllUnsaved)
-ResetMenu.AddCallbackEntry("Undo changes", UndoChanges)
+ResetMenu.AddCallbackEntry("Undo changes", UndoChanges, "Remove all changes that are not committed")
 # ResetMenu.AddCallbackEntry("Soft reset to latest tagged save (dont remove changes)", None)
 # ResetMenu.AddCallbackEntry("Hard reset to latest tagged save (remove changes)", None)
-ResetMenu.AddCallbackEntry("Reset files to latest sync", ResetToLatestSync)
+ResetMenu.AddCallbackEntry("Reset files to latest sync", ResetToLatestSync, "Reset changes to the state of the upstream branch")
 # ResetMenu.AddCallbackEntry(ColorFormat(Colors.Red, ">> !!Delete Project!! <<"), DeleteProject)
 
 #       Direct repo manipulation
@@ -44,11 +44,11 @@ VersioningMenu = Menu("Version Menu", stay_in_menu=True)
 
 VersioningMenu.prologue = ColorFormat(Colors.Yellow, ">> Versioning control <<\n")
 # Get status of the repositories
-VersioningMenu.AddCallbackEntry("Project Status", PrintProjectStatus)
+VersioningMenu.AddCallbackEntry("Project Status", PrintProjectStatus, "Show local vs remote status per repo")
 # Print the merged commit history of the managed repositories in the project in a pager program, via a temporary file (maybe a pipe to ProjectBase?)
 # VersioningMenu.AddCallbackEntry("Get project commit history", None)
 # Normal add + commit
-VersioningMenu.AddSubmenuEntry("Save changes", SaveMenu)
+VersioningMenu.AddSubmenuEntry("Save changes", SaveMenu, "Select how to save changes (locally)")
 # Save all changes and auto commit them
 # VersioningMenu.AddCallbackEntry("Temporary save (automatic commit)", None)
 # Squash current changes with previous automatic commits, and commit with a message
@@ -56,11 +56,11 @@ VersioningMenu.AddSubmenuEntry("Save changes", SaveMenu)
 
 # Get all information from the server (do not merge/pull, only fetch)
 # Should print what changed (X branch has new changes, Y branch is new, Z branch has a conflict)
-VersioningMenu.AddSubmenuEntry("Sync", SyncMenu)
-VersioningMenu.AddSubmenuEntry("Branches", BranchMenu)
+VersioningMenu.AddSubmenuEntry("Sync", SyncMenu, "Synchronize changes between remote and local")
+VersioningMenu.AddSubmenuEntry("Branches", BranchMenu, "Manage branch state across all of the project")
 # 
-VersioningMenu.AddSubmenuEntry("Reset", ResetMenu)
+VersioningMenu.AddSubmenuEntry("Reset", ResetMenu, "Reset changes (saved, unsaved, etc)")
 # Spawn a console on the repository's directory
-VersioningMenu.AddSubmenuEntry("Manage single repository (spawn console)", DirectSingleRepoManageMenu)
+VersioningMenu.AddSubmenuEntry("Manage single repository (spawn console)", DirectSingleRepoManageMenu, "Spawn terminal on specific repo")
 # Use above menu for a single repository
 # VersioningMenu.AddCallbackEntry("Manage single repository (via ProjectBase)", None)

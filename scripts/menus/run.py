@@ -3,7 +3,7 @@ from processes.run_exec import RunSingleTest, RunSingleExecutable, RunAllTests, 
 
 RunMenu = Menu("Run Menu")
 
-RunMenu.AddCallbackEntry("Run project executable", RunSingleExecutable)
-RunMenu.AddCallbackEntry("Run single test", RunSingleTest)
-RunMenu.AddCallbackEntry("Run all tests", RunAllTests)
-RunMenu.AddCallbackEntry("Run all tests (with valgrind)", RunAllTestsWithValgrind)
+RunMenu.AddCallbackEntry("Run project executable", RunSingleExecutable, "Run single executable")
+RunMenu.AddCallbackEntry("Run single test", RunSingleTest, "Run single test")
+RunMenu.AddCallbackEntry("Run all tests", RunAllTests, "Run all tests")
+RunMenu.AddCallbackEntry("Run all tests (with valgrind)", RunAllTestsWithValgrind, "Run all tests with valgrind")
