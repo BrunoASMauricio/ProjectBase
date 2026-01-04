@@ -137,7 +137,7 @@ def Test1(branch):
     except CommandExecutionError as e:
         message = e.message
         ret_code = e.return_code
-        raise ValueError(f"CI Failed, as it returned a non 0 return value")
+        raise ValueError(f"CI Failed, as it returned a non 0 return value:\n val :{ret_code} message: {message}")
 
 """
 Add a change on a commit that will break the build
