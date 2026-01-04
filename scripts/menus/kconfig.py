@@ -6,6 +6,9 @@ from menus.menu import Menu
 from data.settings import Settings
 from data.colors import ColorFormat, Colors
 from processes.repository import ConvertKconfigToHeader
+import sys
+import kconfiglib
+
 
 def find_kconfig_tool(tool_name):
     """Find a kconfig tool in common locations."""
@@ -20,51 +23,51 @@ def find_kconfig_tool(tool_name):
     return None
 
 def EnsureKConfigTools():
-    """Check if required Kconfig tools are available."""
-    required_tools = ['kconfig-conf', 'kconfig-mconf']
-    missing_tools = []
-    
-    for tool in required_tools:
-        if not find_kconfig_tool(tool):
-            missing_tools.append(tool)
-    
-    if missing_tools:
-        logging.error(f"Error: Missing required tools: {', '.join(missing_tools)}")
-        logging.error("Please install kconfig-frontends package.")
-        return False
     return True
 
+
+
 def RunMenuConfig():
-    """Run Kconfig menuconfig interface."""
-    if not EnsureKConfigTools():
+    """Run Kconfig interactive menu."""
+    project_configs = Settings["paths"]["project configs"]
+    root_kconfig = JoinPaths(project_configs, "Kconfig")
+    config_file  = JoinPaths(project_configs, ".config")
+    
+    # Ensure the root file exists before running
+    if not os.path.isfile(root_kconfig):
+        logging.error(f"Root Kconfig not found at {root_kconfig}")
         return
 
-    mconf_tool = find_kconfig_tool('kconfig-mconf')
-    project_root = Settings["paths"]["project configs"]
-    # kconfig_path = os.path.join(project_root, "Kconfig")
+    # Setup Environment
+    env = os.environ.copy()
+    env["KCONFIG_CONFIG"] = config_file
     
-    # Run menuconfig
+    # Setting srctree to the project configs folder makes the UI 
+    # show simpler paths, but ensure your 'source' paths are absolute 
+    # or correctly relative to this root.
+    env["srctree"] = project_configs 
+
+    # Command: python -m menuconfig path/to/Kconfig
+    # This is the standard way to invoke kconfiglib's menuconfig
+    cmd = [sys.executable, "-m", "menuconfig", root_kconfig]
+    
+    print(f"Running: {' '.join(cmd)}")
+    
     try:
-        command = f'{mconf_tool}  {JoinPaths(project_root, "Kconfig")}'
-        command = f'cd {Settings["paths"]["project configs"]}; {command}'
-        logging.error(command)
-        subprocess.run(command, shell=True)
-        ConvertKconfigToHeader()
-        # subprocess.run([mconf_tool, kconfig_path], check=True)
+        subprocess.run(
+            cmd,
+            cwd=project_configs,
+            check=True,
+            env=env,
+        )
+        # After menuconfig closes, we should regenerate headers
+        ConvertKconfigToHeader() 
         
-        # Generate CMake and header files after configuration
-        # build_dir = os.path.join(project_root, "build")
-        # subprocess.run([
-        #     "python",
-        #     os.path.join(project_root, "scripts/kconfig_handler.py"),
-        #     project_root,
-        #     os.path.join(project_root, ".config"),
-        #     build_dir
-        # ], check=True)
-        
-        logging.error(ColorFormat(Colors.Green, "Configuration saved and processed successfully"))
     except subprocess.CalledProcessError as e:
-        logging.error(ColorFormat(Colors.Red, f"Error running menuconfig: {e}"))
+        logging.error(f"Menuconfig exited with error: {e}")
+    except Exception as e:
+        logging.error(f"Failed to launch menuconfig: {e}")
+
 
 # def save_config():
 #     """Save current configuration as default."""

@@ -11,6 +11,7 @@ from processes.filesystem import CreateDirectory, CreateParentDirectory, FindFil
 from processes.progress_bar import PrintProgressBar
 from threading import Lock
 from data.paths import JoinPaths
+import kconfiglib
 
 repositories_lock = Lock()
 dependencies = {}
@@ -402,6 +403,48 @@ def __GenerateKConfigs(config_dict, menu_path=""):
     for key, value in config_dict.items():
         current_path = JoinPaths(menu_path, key)
         file_path = JoinPaths(Settings["paths"]["project configs"], current_path)
+        
+        # Ensure directory exists
+        os.makedirs(file_path, exist_ok=True)
+        
+        target_kconfig = JoinPaths(file_path, "Kconfig")
+
+        if isinstance(value, str):
+            # TRAMPOLINE METHOD:
+            # Instead of symlinking, write a Kconfig that sources the absolute path.
+            # This ensures relative includes INSIDE the repo's Kconfig resolve correctly.
+            with open(target_kconfig, "w") as f:
+                # 'value' is the absolute path to the repo Kconfig (from __GenerateFullMenu)
+                f.write(f'source "{value}"\n')
+                
+        elif isinstance(value, dict):
+            # Create Kconfig submenu
+            with open(target_kconfig, "w") as f:
+                f.write(f'menu "{key}"\n\n')
+                for subkey in value:
+                    # Calculate relative path to the child Kconfig
+                    # Because we are strictly controlling the structure, we can just use the subkey
+                    # structure we are about to generate.
+                    
+                    # NOTE: source paths in Kconfig are relative to $srctree if set, 
+                    # or relative to the current file if not. 
+                    # To be safe and consistent, we use the generated path structure.
+                    
+                    sub_kconfig_path = JoinPaths(file_path, subkey, "Kconfig")
+                    
+                    # We write the source path relative to the generated root or absolute.
+                    # Using absolute paths for 'source' is the safest way to prevent context errors.
+                    f.write(f'source "{sub_kconfig_path}"\n')
+                    
+                f.write(f'\nendmenu\n')
+            
+            # Recurse into submenus
+            __GenerateKConfigs(value, current_path)
+
+def __GenerateKConfigsold(config_dict, menu_path=""):
+    for key, value in config_dict.items():
+        current_path = JoinPaths(menu_path, key)
+        file_path = JoinPaths(Settings["paths"]["project configs"], current_path)
 
         if isinstance(value, str):
             # Link Kconfig
@@ -426,6 +469,24 @@ def __GenerateKConfigs(config_dict, menu_path=""):
             __GenerateKConfigs(value, current_path)
 
 def __CreateRootKConfig(menus):
+    root_kconfig_path = JoinPaths(Settings["paths"]["project configs"], "Kconfig")
+    with open(root_kconfig_path, "w") as f:
+        f.write(f'mainmenu "{Settings["ProjectName"]}"\n\n')
+        
+        # Add a dummy invisible symbol to ensure the configuration is never "Empty"
+        # This helps distinguish between "Broken Paths" and "No Configs"
+        f.write('config PROJECT_BASE_ROOT\n')
+        f.write('    bool\n')
+        f.write('    default y\n\n')
+
+        for src in menus:
+            f.write(f'menu "{src}"\n')
+            # Source the intermediate Kconfig generated in __GenerateKConfigs
+            f.write(f'    source "{Settings["paths"]["project configs"]}/{src}/Kconfig"\n')
+            f.write(f'endmenu\n\n')
+
+            
+def __CreateRootKConfigOld(menus):
     root_kconfig_path = JoinPaths(Settings["paths"]["project configs"], "Kconfig")
     with open(root_kconfig_path, "w") as f:
         for src in menus:
@@ -467,10 +528,36 @@ def ConvertKconfigToHeader():
 
 def __GenerateDefaultKconfig():
     # kconfig is to be removed it is an unmaitained project that is very hard to download
-    #if not os.path.isfile(JoinPaths(Settings["paths"]["project configs"], ".config")):
-    #    LaunchProcess("kconfig-conf --alldefconfig Kconfig", Settings["paths"]["project configs"])
-    #ConvertKconfigToHeader()
-    pass
+    """Create .config from the root Kconfig using kconfiglib (alldefconfig semantics)."""
+    config_dir = Settings["paths"]["project configs"]
+    root_kconfig = JoinPaths(config_dir, "Kconfig")
+    config_file = JoinPaths(config_dir, ".config")
+
+    if not os.path.isfile(config_file):
+        try:
+            # Load Kconfig tree and write a config with defaults applied
+            kconf = kconfiglib.Kconfig(root_kconfig)
+            # start from an empty config so defaults are applied
+            kconf.load_config(None)
+            kconf.write_config(config_file)
+            logging.info(f"Generated default .config at {config_file} via kconfiglib")
+        except Exception as e:
+            logging.error(f"Failed to generate .config via kconfiglib: {e}")
+            return
+
+    # Try to generate autogen header using kconfiglib if available
+    try:
+        kconf = kconfiglib.Kconfig(root_kconfig)
+        kconf.load_config(config_file)   # populate symbol values from .config
+        header_path = JoinPaths(Settings["paths"]["autogened headers"], "autogen.h")
+        # kconfiglib provides write_autoconf(header_path) which writes the C header
+        kconf.write_autoconf(header_path)
+        logging.info(f"Wrote autoconf header via kconfiglib to {header_path}")
+
+    except Exception as e:
+        logging.error(f"kconfiglib autoconf generation failed: {e}")
+        logging.error("Falling back to ConvertKconfigToHeader()")
+        ConvertKconfigToHeader()
 
 def __SetupKConfig(repositories):
     logging.info("Setting up KConfig")
