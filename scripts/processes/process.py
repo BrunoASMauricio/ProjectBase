@@ -204,6 +204,9 @@ def __RunOnFoldersThreadWrapper(callback, path, arguments = None):
             del arguments[0]
             arguments = separate_arguments
             print(arguments)
+        elif type(arguments) != dict:
+            arguments = [arguments]
+            raise Exception(f"Invalid arguments type of {type(arguments)}, must be dictionary")
 
         arguments["path"] = path
 
