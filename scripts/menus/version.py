@@ -1,6 +1,6 @@
 from menus.menu import Menu
 from processes.versioning import DirectlyManageSingleRepository, PrintProjectStatus, CleanAllUnsaved, ResetToLatestSync, UndoChanges
-from processes.versioning import FetchAll, PullAll, PushAll, PrintCheckedoutState
+from processes.versioning import FetchAll, PullAll, PushAll, PrintCheckedoutState, CheckoutBranch
 from processes.versioning import GlobalFixedCommit, GlobalTemporaryCommit, GetCurrentTemporaryCommits
 from processes.project import DeleteProject
 from data.colors import ColorFormat, Colors
@@ -24,7 +24,7 @@ SyncMenu.AddCallbackEntry("Push data to remote", PushAll, "Push data to remote (
 #       Reset Menu
 BranchMenu = Menu("Branch Menu")
 BranchMenu.AddCallbackEntry("See checked out state", PrintCheckedoutState, "Get current branches (local and the remotes)")
-BranchMenu.AddCallbackEntry("Checkout branch", None, "Checkout a branch on all clean, managed repos")
+BranchMenu.AddCallbackEntry("Checkout branch", CheckoutBranch, "Checkout a branch on all clean, managed repos")
 
 #       Reset Menu
 ResetMenu = Menu("Reset Menu")

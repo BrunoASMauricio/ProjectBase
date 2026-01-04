@@ -1,7 +1,7 @@
 from data.settings     import Settings
 from data.colors       import ColorFormat, Colors
 from data.common import RemoveEmpty, CLICenterString, RemoveSequentialDuplicates, AssembleTable
-from data.git import GetRepoNameFromURL, FlipUrl
+from data.git import GetRepoNameFromURL, IsValidGitBranch
 from processes.project import Project, GetRelevantPath
 from processes.process import OpenBashOnDirectoryAndWait, RunOnFolders
 from processes.git_operations import RepoPull, RepoPush, RepoFetch, GetRepoStatus, GetRepositoryUrl
@@ -11,7 +11,7 @@ from menus.menu import GetNextOption
 from processes.repository import __RepoHasFlagSet, GetRepoIdFromURL
 from processes.git     import GetAllGitRepos, GetRepoNameFromPath
 from processes.git     import CheckIfStatusIsClean, CheckIfStatusIsDiverged, CheckIfStatusIsAhead, CheckIfStatusIsBehind, CheckIfStatusIsUpToDate
-from processes.git     import GetAllCommits
+from processes.git     import GetAllCommits, GitCheckoutBranch
 
 from processes.repository import __RepoHasSomeFlagSet
 
@@ -34,11 +34,9 @@ def GetKnownAndUnknownGitRepos(flags_to_include=[],flags_to_exclude=[]):
     for repo in repos:
         # Ignore if the repo does not contain an expected flag
         if len(flags_to_include) != 0 and not __RepoHasSomeFlagSet(repos[repo], flags_to_include):
-            print("Ignored 1 "+str(repo))
             continue
         # Ignore if the repo contains a flag to ignore
         if len(flags_to_exclude) != 0 and __RepoHasSomeFlagSet(repos[repo], flags_to_exclude):
-            print("Ignored 2 "+str(repo))
             continue
         known_paths.append(repos[repo]["repo source"])
 
@@ -177,8 +175,18 @@ def __AssembleReposStatusMessage(statuses)-> ProjectStatusInfo:
         messages = status_message,
     )
 
+def CheckoutBranch():
+    branch = GetNextOption("New branch name:")
+    while IsValidGitBranch(branch) == False:
+        print("Invalid git branch")
+        branch = GetNextOption("New branch name:")
+
+    repo_states = RunOnAllManagedRepos(GitCheckoutBranch, {"branch": branch})
+    print(repo_states)
+
+
 def PrintCheckedoutState():
-    repo_states = RunOnAllRepos(GetCheckoutState)
+    repo_states = RunOnAllManagedRepos(GetCheckoutState)
     print(CLICenterString(" Repository state ", ColorFormat(Colors.Yellow, "=")))
     rows = []
     for repo, state in repo_states.items():

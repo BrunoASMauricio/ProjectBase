@@ -45,10 +45,31 @@ def GetGitTopLevel(path = None):
 
 def GetCheckoutState(path = None):
     return {
-        "local": ParseGitResult("git branch", path),
+        "local": ParseGitResult("git branch --all", path),
         "remote": ParseGitResult("git branch -r", path),
         "status": ParseGitResult("git status", path)
     }
+
+def GitCheckoutBranch(path = None, branch=None):
+    branches = GetRepoBranches(path)
+    exists = False
+    for existing_branch in branches.split('\n'):
+        # Clean branch name
+        print(branch)
+        print(existing_branch)
+        if branch == existing_branch[2:]:
+            exists = True
+            break
+    if exists:
+        return ParseGitResult(f"git switch {branch}", path)
+    else:
+        return ParseGitResult(f"git switch --create {branch}", path)
+
+    # return ParseGitResult("git rev-parse HEAD", path)
+    # if branch in branches:
+    print("RAA")
+    print(branches)
+    print(branch)
 
 def GetRepoLocalCommit(path = None):
     return ParseGitResult("git rev-parse HEAD", path)
@@ -58,6 +79,9 @@ def GetRepoLocalBranch(path = None):
 
 def GetRepoRemoteCommit(path = None):
     return ParseGitResult("git rev-parse `git branch -r --sort=committerdate | tail -1`", path)
+
+def GetRepoBranches(path = None):
+    return ParseGitResult("git branch --all", path)
 
 def GetRepoStatus(path = None):
     return ParseGitResult("git status", path)
