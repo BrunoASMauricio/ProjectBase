@@ -1,12 +1,12 @@
 from data.settings     import Settings
 from data.colors       import ColorFormat, Colors
-from data.common import RemoveEmpty, CLICenterString, RemoveSequentialDuplicates
+from data.common import RemoveEmpty, CLICenterString, RemoveSequentialDuplicates, AssembleTable
 from data.git import GetRepoNameFromURL, FlipUrl
 from processes.project import Project, GetRelevantPath
 from processes.process import OpenBashOnDirectoryAndWait, RunOnFolders
 from processes.git_operations import RepoPull, RepoPush, RepoFetch, GetRepoStatus, GetRepositoryUrl
 from processes.git_operations import RepoCleanUntracked, RepoSaveChanges, RepoResetToLatestSync, RepoHardReset
-from processes.git_operations import SquashUntilSpecifiedCommit
+from processes.git_operations import SquashUntilSpecifiedCommit, GetCheckoutState
 from menus.menu import GetNextOption
 from processes.repository import __RepoHasFlagSet, GetRepoIdFromURL
 from processes.git     import GetAllGitRepos, GetRepoNameFromPath
@@ -177,6 +177,27 @@ def __AssembleReposStatusMessage(statuses)-> ProjectStatusInfo:
         messages = status_message,
     )
 
+def PrintCheckedoutState():
+    repo_states = RunOnAllRepos(GetCheckoutState)
+    print(CLICenterString(" Repository state ", ColorFormat(Colors.Yellow, "=")))
+    rows = []
+    for repo, state in repo_states.items():
+        local_branches = state["local"].split("\n")
+        local_branch = next(s for s in local_branches if s.startswith("* "))
+        # Remove initial "* " and color the branch
+        local_branch = ColorFormat(Colors.Cyan, local_branch[2:])
+
+        remote_branches = state["remote"].split("\n")
+        remote_branch = next(s for s in remote_branches if " -> " in s)
+        # Remove the current commit and " -> ", and color it
+        remote_branch = ColorFormat(Colors.Magenta, remote_branch[remote_branch.index(" -> ")+4:])
+
+        repo_name    = ColorFormat(Colors.Yellow, GetRepoNameFromURL(repo))
+
+        # msg += "{: >20}: {: >20} -> {: >20}\n".format(repo_name, local_branch, remote_branch)
+        rows.append([repo_name, local_branch, remote_branch])
+
+    print(AssembleTable(rows))
 
 # Returns 
 def getProjectStatusInfo():

@@ -43,6 +43,11 @@ def GetGitTopLevel(path = None):
             top_level = path
     return top_level
 
+def GetCheckoutState(path = None):
+    return {
+        "local": ParseGitResult("git branch", path),
+        "remote": ParseGitResult("git branch -r", path)
+    }
 
 def GetRepoLocalCommit(path = None):
     return ParseGitResult("git rev-parse HEAD", path)

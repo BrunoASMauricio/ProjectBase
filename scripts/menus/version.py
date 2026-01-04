@@ -1,6 +1,6 @@
 from menus.menu import Menu
 from processes.versioning import DirectlyManageSingleRepository, PrintProjectStatus, CleanAllUnsaved, ResetToLatestSync, UndoChanges
-from processes.versioning import FetchAll, PullAll, PushAll
+from processes.versioning import FetchAll, PullAll, PushAll, PrintCheckedoutState
 from processes.versioning import GlobalFixedCommit, GlobalTemporaryCommit, GetCurrentTemporaryCommits
 from processes.project import DeleteProject
 from data.colors import ColorFormat, Colors
@@ -20,6 +20,11 @@ SyncMenu = Menu("Sync Menu")
 # SyncMenu.AddCallbackEntry("Merge local data with fetched data", PullAll)
 SyncMenu.AddCallbackEntry("Pull data from remote", PullAll)
 SyncMenu.AddCallbackEntry("Push data to remote", PushAll)
+
+#       Reset Menu
+BranchMenu = Menu("Branch Menu")
+BranchMenu.AddCallbackEntry("See checked out state", PrintCheckedoutState)
+BranchMenu.AddCallbackEntry("Checkout branch", None)
 
 #       Reset Menu
 ResetMenu = Menu("Reset Menu")
@@ -52,6 +57,7 @@ VersioningMenu.AddSubmenuEntry("Save changes", SaveMenu)
 # Get all information from the server (do not merge/pull, only fetch)
 # Should print what changed (X branch has new changes, Y branch is new, Z branch has a conflict)
 VersioningMenu.AddSubmenuEntry("Sync", SyncMenu)
+VersioningMenu.AddSubmenuEntry("Branches", BranchMenu)
 # 
 VersioningMenu.AddSubmenuEntry("Reset", ResetMenu)
 # Spawn a console on the repository's directory
