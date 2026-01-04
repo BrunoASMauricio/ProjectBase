@@ -192,10 +192,13 @@ def PrintCheckedoutState():
         # Remove the current commit and " -> ", and color it
         remote_branch = ColorFormat(Colors.Magenta, remote_branch[remote_branch.index(" -> ")+4:])
 
-        repo_name    = ColorFormat(Colors.Yellow, GetRepoNameFromURL(repo))
+        status = ""
+        if not CheckIfStatusIsClean(state["status"]):
+            status = ColorFormat(Colors.Red, "DIRTY")
 
-        # msg += "{: >20}: {: >20} -> {: >20}\n".format(repo_name, local_branch, remote_branch)
-        rows.append([repo_name, local_branch, remote_branch])
+        repo_name = ColorFormat(Colors.Yellow, GetRepoNameFromURL(repo))
+
+        rows.append([status, repo_name, local_branch, remote_branch])
 
     print(AssembleTable(rows))
 

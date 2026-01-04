@@ -124,11 +124,13 @@ def PrintableCharacterLength(string):
 Assemble a string based on the table (2D list) provided.
 Each column is aligned to its' largest member
 """
+
 def AssembleTable(rows):
     msg = ""
-    widths = [max(map(len, col)) for col in zip(*rows)]
+    # Use `RemoveAllNonPrintable` and  direct padding to avoid color characters and such to be counted in padding
+    widths = [max(len(RemoveAllNonPrintable(x)) for x in col) for col in zip(*rows)]
     for row in rows:
-        msg += "  ".join((val.ljust(width) for val, width in zip(row, widths)))+"\n"
+        msg += " ".join((val + " " * (width - len(RemoveAllNonPrintable(val))) for val, width in zip(row, widths)))+"\n"
     return msg
 
 def CLICenterString(string, pad=" "):
@@ -142,6 +144,9 @@ def GetTextDiff(Text1, Text2):
     diff = difflib.ndiff(Text1.split("\n"), Text2.split("\n"))
     return ''.join(diff)
 
+def RemoveAllNonPrintable(str):
+    return RemoveControlCharacters(RemoveTerminalColorCodes(RemoveNonAscii(str)))
+
 def RemoveControlCharacters(str):
     """
     Removes control characters. Keeps \\n except if trailing
@@ -149,6 +154,12 @@ def RemoveControlCharacters(str):
     allowed_CCs = ['\n', '\t']
     new_str = "".join(ch for ch in str if (unicodedata.category(ch)[0] != "C" or ch in allowed_CCs))
     return new_str.rstrip()
+
+def RemoveTerminalColorCodes(text):
+    # return re.sub(r'\x1b\[[0-9;]*m', '', text)
+    return re.sub(r'\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', text)
+
+
 
 def RemoveNonAscii(str):
     return ''.join(char for char in str if ord(char) < 128)
