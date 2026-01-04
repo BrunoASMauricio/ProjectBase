@@ -1,3 +1,5 @@
+import re
+
 from data.common import GetNow
 
 def generate_local_branch(branch):
@@ -56,6 +58,26 @@ def FlipUrl(url):
     else:
         return url
         # raise Exception(f"Cannot convert: {url}")
+
+# Compiled once for efficiency
+_GIT_BRANCH_RE = re.compile(
+    r"""
+    ^                       # start
+    (?![/.])                # cannot start with . or /
+    (?!.*\.\.)              # no ..
+    (?!.*//)                # no //
+    (?!.*@\{)               # no @{
+    (?!.*\.lock$)           # cannot end with .lock
+    (?!.*[ \x00-\x1F\x7F~^:?*\[\\])  # no forbidden chars / control chars / space
+    [^/]+(?:/[^/]+)*        # slash-separated components
+    (?<![/.])               # cannot end with . or /
+    $                       # end
+    """,
+    re.VERBOSE,
+)
+
+def IsValidGitBranch(name):
+    return isinstance(name, str) and bool(_GIT_BRANCH_RE.match(name))
 
 
 def GetRepoNameFromURL(url):
