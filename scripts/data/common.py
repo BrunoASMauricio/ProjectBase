@@ -124,7 +124,7 @@ def CLICenterString(string, pad=" "):
     # Color characters count for length :()
     string_len = PrintableCharacterLength(string)
     cols, _ = shutil.get_terminal_size(fallback=(string_len, 1))
-    padding_len = int((cols - string_len) / 2)
+    padding_len = int((cols - string_len) / 2) - 1
     return pad * padding_len + string + pad * padding_len
 
 def GetTextDiff(Text1, Text2):
