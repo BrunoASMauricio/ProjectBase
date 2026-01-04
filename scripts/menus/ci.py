@@ -1,4 +1,5 @@
 from menus.menu import Menu
+import sys
 import subprocess
 import tempfile
 from pathlib import Path
@@ -204,6 +205,9 @@ def RunCIScratch(runCiType : RunCIType):
         Settings.return_code = 1
         message = "[CI] Scratch CI run Failed!"
         logging_and_print(message, isError=True)
+        if(Settings["exit"]):
+            sys.exit(1)
+
 
 
 
