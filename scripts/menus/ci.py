@@ -25,6 +25,8 @@ def create_content_for_worktree_json(work_tree_path : Path):
     with open(work_tree_path, "w", encoding="utf-8") as f:
         json.dump(map_uid_source, f, indent=2, sort_keys=True)
 
+    return map_uid_source
+
 def run_cmd(cmd, cwd, label):
     print(f"[CI] Running {label}: {' '.join(cmd)}")
     res = subprocess.run(cmd, cwd=cwd, shell=True)
@@ -32,15 +34,23 @@ def run_cmd(cmd, cwd, label):
         print(f"[CI] {label} failed with exit code {res.returncode}")
     return res.returncode
 
-def RunCIScratch():
+
+from dataclasses import dataclass
+@dataclass
+class ProjectCIInfo:
+    pb_temp_path: Path
+    worktree_file: Path
+    top_project_worktree_local: str 
+    top_project_uid : str
+    ahead_repos_uid : dict[str,str]  # for ahead repos key: uid, value: global path of worktree
+
+def SetupCI() -> ProjectCIInfo:
     """
     Run a CI scratch environment:
     - Create a temporary folder
     - Clone the ProjectBase repo into it
     - Generate worktreeFile.json 
-    - Run load/pull/build/test commands using local project as root
     """
-    # 1. Create a temporary directory
     tmp_dir = tempfile.mkdtemp(prefix="ci_scratch_")
     print(f"[CI] Temporary CI folder kept at {tmp_dir} for inspection (remove manually if desired)")
     if(repo.repositories is None):
@@ -58,7 +68,8 @@ def RunCIScratch():
         project_top_uid = f.read()
     project_top_uid = repo.url_SSH_to_HTTPS(project_top_uid)
     project_top_info = repo.repositories[project_top_uid]
-    project_worktree_source =  project_top_info['repo source']
+    project_worktree_source: str =  project_top_info['repo source']
+
         
 
     # 3. Clone ProjectBase into the temporary folder
@@ -67,46 +78,99 @@ def RunCIScratch():
     print(f"[CI] ProjectBase cloned to {clone_path}")
 
     worktree_json_path = Path(tmp_dir) / "worktreeFile.json"
-    create_content_for_worktree_json(worktree_json_path)
-    print(f"[CI] Mapper from url to projects with commit sources on file {worktree_json_path}\n")
+    ahead_repos_uid = create_content_for_worktree_json(worktree_json_path)
 
-    # 5. Run CI commands
-    system_textformatter_path = project_worktree_source
+    # if top project has changes do not use the url toot, but use locar worktree when running CI
 
-    cmd = [
-            "source",
-            "./setup.sh",
-            ";",
-            "./run.sh",
-            "--commitJsonPath", str(worktree_json_path),
-            "--url", str(system_textformatter_path),
-            "--log_file", "/tmp/project_base_ci_error.log",
-            "--out_file", "/tmp/project_base_ci_out.log",
-            "1","5", "3", "1","out","1","2","3","3","-e"
-        ]
-    # Steps
-    # 1 Load
-    # 5 Versioning
-    # 3 Sync
-    # 1 Pull data from remote
+    return ProjectCIInfo( pb_temp_path=clone_path, 
+                          worktree_file= worktree_json_path, 
+                          top_project_worktree_local=project_worktree_source,
+                          top_project_uid = project_top_uid,
+                          ahead_repos_uid =ahead_repos_uid)
 
-    # - 1 go previous menu
-    # 1 Load (some config could have changed)
-    # 2 Build
-    # 3 Run
-    # 3 Run all tests
-    run_cmd = ' '.join(cmd)
-    print(f"[CI] Running: {run_cmd}")
-    ret = LaunchProcess(" ".join(cmd), clone_path,False)
-    if(ret["code"] != 0):
-        return 1
+from enum import Enum
+class RunCIType(Enum):
+    TOP = 1
+    AheadRepos = 2
+    AllRepos = 3
+
+def resolve_path(repo_uid : str, pinfo : ProjectCIInfo ) -> str:
+    # If top modified use local sourcetree else use uid from remote
+    if repo_uid == pinfo.top_project_uid:
+        return pinfo.top_project_worktree_local if pinfo.top_project_uid in pinfo.ahead_repos_uid else pinfo.top_project_uid
+    else:
+        if(repo_uid in pinfo.ahead_repos_uid):
+            return pinfo.ahead_repos_uid[repo_uid]
+        else:
+            return repo_uid
     
-    print("[CI] Scratch CI run completed successfully!")
-    return 0
+from tqdm import tqdm
+def RunCIScratch(runCiType : RunCIType):
+    """
+    Run a CI scratch environment:
+    - Setup CI
+    - Run load/pull/build/test commands using local project as root
+    """
+    # 1 - SetupCI
+    p = SetupCI()
+    worktree_json_path = p.worktree_file
+    top_uid = p.top_project_uid
+    clone_path = p.pb_temp_path
+
+    paths_to_run: list[str] = []
+
+    if(runCiType == RunCIType.TOP):
+        paths_to_run.append(resolve_path(top_uid, p))
+    
+    if(runCiType == RunCIType.AheadRepos):
+        for repo_uid in p.ahead_repos_uid:
+            paths_to_run.append(resolve_path(repo_uid, p))
+
+    if(runCiType == RunCIType.AllRepos):
+        for repo_uid in repo.repositories:
+            paths_to_run.append(resolve_path(repo_uid, p))
+
+    all_passed = True
+    for path in tqdm(paths_to_run, desc="Running CI", unit="repo"):
+        # 5. Run CI commands
+        cmd = [
+                "source",
+                "./setup.sh",
+                ";",
+                "./run.sh",
+                "--commitJsonPath", str(worktree_json_path),
+                "--url", str(path),
+                "--log_file", "/tmp/project_base_ci_error.log",
+                "--out_file", "/tmp/project_base_ci_out.log",
+                "1","5", "3", "1","out","1","2","3","3","-e"
+            ]
+        # Steps
+        # 1 Load
+        # 5 Versioning
+        # 3 Sync
+        # 1 Pull data from remote
+
+        # - 1 go previous menu
+        # 1 Load (some config could have changed)
+        # 2 Build
+        # 3 Run
+        # 3 Run all tests
+        run_cmd = ' '.join(cmd)
+        print(f"[CI] Testing {path} Running: {run_cmd}")
+        ret = LaunchProcess(" ".join(cmd), clone_path,False)
+        if(ret["code"] != 0):
+            all_passed = False
+            print(f"[CI] Testing Fail {path}")
+        
+    if(all_passed):
+        print("[CI] Scratch CI run completed successfully!")
+        return 0
+    else:
+        print("[CI] Scratch CI Failed!")
+        return 1
 
 
 
-
-CIMenu.AddCallbackEntry("Run CI For Top Project", RunCIScratch)
-#CIMenu.AddCallbackEntry("Run CI For All ahead Repositories (inclusive top)", RunCIScratch)
-#CIMenu.AddCallbackEntry("Run CI For All Repositories", RunCIScratch)
+CIMenu.AddCallbackEntry("Run CI For Top Project", lambda: RunCIScratch(RunCIType.TOP))
+CIMenu.AddCallbackEntry("Run CI For All ahead Repositories (inclusive top)",lambda: RunCIScratch(RunCIType.AheadRepos))
+CIMenu.AddCallbackEntry("Run CI For All Repositories (inclusive ahead and top)", lambda: RunCIScratch(RunCIType.AllRepos))
