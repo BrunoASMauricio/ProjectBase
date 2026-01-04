@@ -130,7 +130,7 @@ def AssembleTable(rows, sep="|"):
     # Use `RemoveAllNonPrintable` and  direct padding to avoid color characters and such to be counted in padding
     widths = [max(len(RemoveAllNonPrintable(x)) for x in col) for col in zip(*rows)]
     for row in rows:
-        msg += sep.join((val + " " * (width - len(RemoveAllNonPrintable(val))) for val, width in zip(row, widths)))+"\n"
+        msg += f" {sep} ".join((val + " " * (width - len(RemoveAllNonPrintable(val))) for val, width in zip(row, widths)))+"\n"
     return msg
 
 def CLICenterString(string, pad=" "):
