@@ -8,8 +8,16 @@ from processes.versioning import getProjectStatusInfo
 from processes.process import LaunchProcess
 from processes.process import ProcessError
 import json
+import logging
 
 CIMenu = Menu("Ci Menu")
+def logging_and_print(message, isError = False):
+    if(isError):
+        logging.error(message)
+    else:
+        logging.info(message)
+    print(message)
+
 
 def create_content_for_worktree_json(work_tree_path : Path):
     # This function creates a json file with a dictionary mapping
@@ -29,10 +37,12 @@ def create_content_for_worktree_json(work_tree_path : Path):
     return map_uid_source
 
 def run_cmd(cmd, cwd, label):
-    print(f"[CI] Running {label}: {' '.join(cmd)}")
+    message = f"[CI] Running {label}: {' '.join(cmd)}"
+    logging_and_print(message)
     res = subprocess.run(cmd, cwd=cwd, shell=True)
     if res.returncode != 0:
-        print(f"[CI] {label} failed with exit code {res.returncode}")
+        message = f"[CI] {label} failed with exit code {res.returncode}"
+        logging_and_print(message,isError=True)
     return res.returncode
 
 
@@ -53,13 +63,13 @@ def SetupCI() -> ProjectCIInfo:
     - Generate worktreeFile.json 
     """
     tmp_dir = tempfile.mkdtemp(prefix="ci_scratch_")
-    print(f"[CI] Temporary CI folder kept at {tmp_dir} for inspection (remove manually if desired)")
+    message = f"[CI] Temporary CI folder kept at {tmp_dir} for inspection (remove manually if desired)"
+    logging_and_print(message)
     if(repo.repositories is None):
         raise ValueError("Repositores are empty, this should only be called after a load")
     
     project_base_repo= Path(Settings["paths"]["project base"])
-    print(f"[CI] ProjectBase repo detected at {project_base_repo}")
-
+    
     # 2. Get parameters to call CI
     project_name: str = Settings["ProjectName"]
     project_folder: str = "projects/" + project_name + ".ProjectBase"
@@ -76,7 +86,6 @@ def SetupCI() -> ProjectCIInfo:
     # 3. Clone ProjectBase into the temporary folder
     clone_path = Path(tmp_dir) / "ProjectBase"
     subprocess.run(["git", "clone", str(project_base_repo), str(clone_path)], check=True)
-    print(f"[CI] ProjectBase cloned to {clone_path}")
 
     worktree_json_path = Path(tmp_dir) / "worktreeFile.json"
     ahead_repos_uid = create_content_for_worktree_json(worktree_json_path)
@@ -176,7 +185,8 @@ def RunCIScratch(runCiType : RunCIType):
         # 3 Run
         # 3 Run all tests
         run_cmd = ' '.join(cmd)
-        print(f"[CI] Testing {path} Running: {run_cmd}")
+        message = f"[CI] Testing {path} Running: {run_cmd}"
+        logging_and_print(message)
         try:
             ret = LaunchProcess(" ".join(cmd), clone_path,False)
             #retcode = int(ret["code"])
@@ -184,12 +194,16 @@ def RunCIScratch(runCiType : RunCIType):
             #simple_message, trace_message, returned = p.args
             #retcode = int(returned)
             all_passed = False
-            print(f"[CI] Test Failed : {path}")
+            message = f"[CI] Test Failed : {path}"
+            logging_and_print(message, isError=True)
 
     if(all_passed):
-        print("[CI] Scratch CI run completed successfully!")
+        message = "[CI] Scratch CI run completed successfully!"
+        logging_and_print(message)
     else:
-        print("[CI] Scratch CI Failed!")
+        Settings.return_code = 1
+        message = "[CI] Scratch CI run Failed!"
+        logging_and_print(message, isError=True)
 
 
 
