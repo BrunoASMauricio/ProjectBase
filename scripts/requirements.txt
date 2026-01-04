@@ -3,3 +3,4 @@ networkx
 matplotlib
 pyyaml
 jsonshcema
+tqdm
