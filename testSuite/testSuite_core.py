@@ -261,46 +261,47 @@ def Test4(branch):
     RunPB(repo_a.url, "1 3 2 0", branch)
     TestInFile(["PRINTING RepoA", data_to_print_1, data_to_print_2], PB_out)
 
-tests = [
-    Test1,
-    Test2,
-    Test3,
-    Test4
-]
+if __name__ == "__main__":
+    tests = [
+        Test1,
+        Test2,
+        Test3,
+        Test4
+    ]
 
-if len(sys.argv) == 1:
-    branch = "main"
-else:
-    if len(sys.argv) > 2:
-        print("Only parameter acceptable is PB branch to test")
-        sys.exit(1)
-    branch = sys.argv[1]
+    if len(sys.argv) == 1:
+        branch = "main"
+    else:
+        if len(sys.argv) > 2:
+            print("Only parameter acceptable is PB branch to test")
+            sys.exit(1)
+        branch = sys.argv[1]
 
-print(f"Setting up tests for branch `{branch}` of PB")
+    print(f"Setting up tests for branch `{branch}` of PB")
 
-# Only clone if PB doesnt exist
-if not os.path.isdir("/tmp/PB"):
-    LaunchCommand(f"[ -d \"\" ] || git clone {PB_url} /tmp/PB")
-else:
-    # If it exists, make sure it is up to date
-    LaunchCommand(f"git -C /tmp/PB pull")
+    # Only clone if PB doesnt exist
+    if not os.path.isdir("/tmp/PB"):
+        LaunchCommand(f"[ -d \"\" ] || git clone {PB_url} /tmp/PB")
+    else:
+        # If it exists, make sure it is up to date
+        LaunchCommand(f"git -C /tmp/PB pull")
 
-try:
-    Reset()
-
-    for test_ind in range(len(tests)):
-        print(f"Running test {test_ind}")
-        test = tests[test_ind]
-        CreateBaseRepos()
-        test(branch)
+    try:
         Reset()
-    print(f"Successfully ran {len(tests)} tests")
-except Exception as ex:
-    log = GetTemporaryPath(tmp_path)
-    WriteFile(log, ReadFile(PB_log))
 
-    out = GetTemporaryPath(tmp_path)
-    WriteFile(out, ReadFile(PB_out))
+        for test_ind in range(len(tests)):
+            print(f"Running test {test_ind}")
+            test = tests[test_ind]
+            CreateBaseRepos()
+            test(branch)
+            Reset()
+        print(f"Successfully ran {len(tests)} tests")
+    except Exception as ex:
+        log = GetTemporaryPath(tmp_path)
+        WriteFile(log, ReadFile(PB_log))
 
-    print(f"Test {test_ind} failed!: {ex}")
-    sys.exit(1)
+        out = GetTemporaryPath(tmp_path)
+        WriteFile(out, ReadFile(PB_out))
+
+        print(f"Test {test_ind} failed!: {ex}")
+        sys.exit(1)

@@ -90,10 +90,20 @@ class GIT_COMMIT():
 #     with open(path, 'a') as file:
 #         file.write(content)
 
+class CommandExecutionError(Exception):
+    def __init__(self, message, return_code):
+        super().__init__(message)
+        self.message = message
+        self.return_code = return_code
+
 def LaunchCommand(command, path=None, to_print=False):
     result_code = _LaunchCommand(command, path, to_print)
     if result_code["code"] != 0:
-        raise Exception(f"Could not run '{command}'\nResult: {result_code}")
+        raise CommandExecutionError(
+            message=f"Could not run '{command}'",
+            return_code=result_code["code"]
+        )
+    return result_code
 
 def RepoInit(repo):
     # Create repo instance
@@ -331,7 +341,9 @@ def RunPB(url, commands, branch):
     WriteFile(PB_log, "")
     WriteFile(PB_out, "")
     LaunchCommand(f"git checkout {branch}", path=PB_path)
-    LaunchCommand(f"./run.sh --fast --log_file={PB_log} --out_file={PB_out} -e --url={url} {commands}", to_print=False, path=PB_path)
+    cmd = f"./run.sh --fast --log_file={PB_log} --out_file={PB_out} -e --url={url} {commands}"
+    return_info = LaunchCommand(cmd, to_print=False, path=PB_path)
+    return return_info
     # LaunchCommand(f". setup.sh; ./run.sh --fast --log_file={PB_log} --out_file={PB_out} -e --url={url} {commands}", to_print=False, path=PB_path)
 
 
