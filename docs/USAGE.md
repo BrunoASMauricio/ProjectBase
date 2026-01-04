@@ -1,5 +1,64 @@
 # Running
 
+## Invocation
+
+```shell
+usage: ./run.sh [-h] [-u URL] [-o OUT_FILE] [-l LOG_FILE] [-c COMMIT] [-b BRANCH] [-s | --single_thread | --no-single_thread] [-e] [-d] [-f] [-ci COMMITJSONPATH]
+
+Extra command line arguments are treated as commands for ProjectBase
+
+options:
+  -h, --help            show this help message and exit
+  -u, --url URL         Root repository's URL
+  -o, --out_file OUT_FILE
+                        Output to file
+  -l, --log_file LOG_FILE
+                        Pipe internal logs to file
+  -c, --commit COMMIT   Root repository's commit
+  -b, --branch BRANCH   Root repository's branch
+  -s, --single_thread, --no-single_thread
+                        Do not run PB in multiple threads
+  -e, --exit            Exit after running command line arguments. Performs early exit in case one of the operations ends in error
+  -d, --debug           Increase log verbosity to debug ProjectBase
+  -f, --fast            Cache Repositories in pickle and do not consider config changes, deactivate to consider if needed
+  -ci, --commitJsonPath COMMITJSONPATH
+                        JSON Information with all the repos that have commit changes, that have to be commit copied instead of usual by remote copy
+```
+
+## Navigation
+
+PB has a standardized menu navigation scheme where each entry can be selected by inputting the index printed next to it.
+
+```shell
+1 ) Load project (1 loaded repositories)
+2 ) Build project (launches the build environment for this purpose)
+3>) Run
+4>) Analyze
+5>) Versioning
+6>) Clean
+7>) CI
+8 ) Configure Project
+9>) ProjectBase settings
+Ctrl + D to exit
+Previous command: 7
+[<] 
+```
+
+### Menu return
+
+Menu entries that perform an operation, will return to the parent menu after the operation is concluded.
+The default behavior is for a menu that is returned this way to return to their parent as well, going up to either a parent that "holds" or to the main menu.
+
+### Going back
+
+The user can always press enter with an empty input, to go back, or Ctrl + D to exit PB on most menus.
+
+Some menus can "hold" execution until a certain key is pressed (these menus inform the user which key this is)
+
+### Automated return
+
+In most ocasions (i.e. command line invoction) it isn't useful or even possible to pass an empty argument. As such, 'out' can always be used to go to the previous menu, both during an interactive run and an automated run
+
 ## Automated runs
 
 Any parameters passed onto the run script is treated as menu input.
@@ -13,7 +72,7 @@ The `-e/--exit` argument stops execution after all arguments have been parsed
 
 If there is an exception running one of the arguments, PB will exit immediately even if there are more arguments
 
-## Arguments
+## Executable Arguments
 
 ### Automated arguments
 
@@ -22,7 +81,7 @@ For one of the arguments to contain spaces, use '' and surround that argument in
 
 Example for executing the first test with 3 arguments:
 ```shell
-./run.sh -e --url='your repo url 3 2 0 --args='arg1 arg2 "space separated arg"'
+./run.sh -e --url='your repo url' 3 2 0 --args='arg1 arg2 "space separated arg"'
 ```
 
 ### Interactive arguments

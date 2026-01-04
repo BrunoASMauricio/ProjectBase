@@ -4,7 +4,7 @@ import sys
 from data.settings import Settings
 from data.common import StringIsNumber
 from data.colors import *
-from processes.process import RunExecutable, SetupLocalEnvVars
+from processes.process import _LaunchCommand, SetupLocalEnvVars
 from processes.process import LaunchSilentProcess, ProcessError, RunInThreadsWithProgress
 from menus.menu import GetNextOption, MenuExit, PeekNextOption, PopNextOption
 from data.paths import JoinPaths
@@ -73,9 +73,6 @@ def __LocateExecutable(user_input, executables_available):
     return path_to_exec, input_list
 
 def ExecuteMenu(PathToScan):
-    # Allow python scripts to use ProjectBase scripts
-    SetupLocalEnvVars()
-
     while True:
         executables_available = __GetAvailableExecutables(PathToScan)
         if len(executables_available) == 0:
@@ -149,11 +146,15 @@ def ExecuteMenu(PathToScan):
             print("Running: \"" + full_command + "\"")
 
             try:
-                result = RunExecutable(full_command)
-                if result.returncode != 0:
-                    print(ColorFormat(Colors.Red, '"' + full_command + '" returned code = '+str(result.returncode)))
+                # Allow python scripts to use ProjectBase scripts
+                SetupLocalEnvVars()
+                result = _LaunchCommand(full_command, path=None, to_print=False)
+                print(result["stdout"])
+
+                if result["code"] != 0:
+                    print(ColorFormat(Colors.Red, '"' + full_command + '" returned code = '+str(result["code"])))
                 else:
-                    print(ColorFormat(Colors.Green, '"' + full_command + '" returned code = '+str(result.returncode)))
+                    print(ColorFormat(Colors.Green, '"' + full_command + '" returned code = '+str(result["code"])))
                 return
             except KeyboardInterrupt:
                 print("Keyboard Interrupt")
@@ -181,6 +182,11 @@ def _RunAllTests(Prefix=""):
 
     def Run(TestPath):
         Command = Prefix + " " + TestPath
+        if TestPath.endswith(".py"):
+            # Specify venvs' python executable, to keep the same Venv
+            #  across python executables (i.e. pip installations and modules available)
+            Command = f"{sys.executable} {Command}"
+
         try:
             Result = LaunchSilentProcess(Command)
         except ProcessError as ex:

@@ -331,7 +331,8 @@ def RunPB(url, commands, branch):
     WriteFile(PB_log, "")
     WriteFile(PB_out, "")
     LaunchCommand(f"git checkout {branch}", path=PB_path)
-    LaunchCommand(f". setup.sh; ./run.sh --fast --log_file={PB_log} --out_file={PB_out} -e --url={url} {commands}", to_print=False, path=PB_path)
+    LaunchCommand(f"./run.sh --fast --log_file={PB_log} --out_file={PB_out} -e --url={url} {commands}", to_print=False, path=PB_path)
+    # LaunchCommand(f". setup.sh; ./run.sh --fast --log_file={PB_log} --out_file={PB_out} -e --url={url} {commands}", to_print=False, path=PB_path)
 
 
 """

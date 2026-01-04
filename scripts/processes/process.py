@@ -242,15 +242,6 @@ def RunOnFolders(paths, callback, arguments={}):
 
     return operation_status
 
-def RunExecutable(command_string):
-    ret = subprocess.run(command_string,
-                            shell=True,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.STDOUT,
-                            text=True)
-    print(ret.stdout)
-    return ret
-
 class ProcessError(Exception):
     def __init__(self, simple_message, trace_message, returned):
         # Call the base class constructor with the parameters it needs
@@ -270,7 +261,8 @@ def GetEnvVars():
     return {
         "PYTHONPATH":       Settings["paths"]["scripts"],
         "PB_ROOT_NAME":     Settings["name"],
-        "PB_ROOT_URL":      Settings["url"],
+        # The ':' in `Settings["url"]` is creating serious issues. Commenting for now
+        # "PB_ROOT_URL":      Settings["url"],
     }
 
 # Setup necessary/useful environment variables
@@ -334,11 +326,14 @@ def _LaunchCommand(command, path=None, to_print=False):
     else:
         result = subprocess.run(['bash', '-c', command],
                                 stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
+                                stderr=subprocess.PIPE,
+                                text=True)
         returned["command"] = command
         try:
-            returned["stdout"]  = result.stdout.decode('utf-8')
-            returned["stderr"]  = result.stderr.decode('utf-8')
+            returned["stdout"]  = result.stdout
+            returned["stderr"]  = result.stderr
+            # returned["stdout"]  = result.stdout.decode('utf-8')
+            # returned["stderr"]  = result.stderr.decode('utf-8')
         except UnicodeDecodeError as Ex:
             print(f"Decoding error: {Ex}")
             try:
@@ -370,6 +365,8 @@ def LaunchProcess(command, path=None, to_print=False):
     command = f"{GetEnvVarExports()}; {command}"
     # Fail on first error
     command = f"set -e; {command}"
+    # Allow python scripts to use ProjectBase scripts
+    SetupLocalEnvVars()
 
     returned = _LaunchCommand(command, path, to_print)
 
