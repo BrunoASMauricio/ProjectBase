@@ -261,7 +261,8 @@ def GetEnvVars():
     return {
         "PYTHONPATH":       Settings["paths"]["scripts"],
         "PB_ROOT_NAME":     Settings["name"],
-        "PB_ROOT_URL":      Settings["url"],
+        # The ':' in `Settings["url"]` is creating serious issues. Commenting for now
+        # "PB_ROOT_URL":      Settings["url"],
     }
 
 # Setup necessary/useful environment variables
