@@ -185,7 +185,12 @@ def PrintCheckedoutState():
         local_branches = state["local"].split("\n")
         local_branch = next(s for s in local_branches if s.startswith("* "))
         # Remove initial "* " and color the branch
-        local_branch = ColorFormat(Colors.Cyan, local_branch[2:])
+        local_branch = local_branch[2:]
+        # Remove unique naming for managed branches
+        if "_ProjectBase_" in local_branch:
+            local_branch = local_branch.split("_ProjectBase_")[0]
+        local_branch = ColorFormat(Colors.Cyan, local_branch)
+
 
         remote_branches = state["remote"].split("\n")
         remote_branch = next(s for s in remote_branches if " -> " in s)
