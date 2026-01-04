@@ -198,15 +198,20 @@ def RunCIScratch(runCiType : RunCIType):
             message = f"[CI] Test Failed : {path}"
             logging_and_print(message, isError=True)
 
+
+    Settings.ci_was_runned = True
     if(all_passed):
         message = "[CI] Scratch CI run completed successfully!"
         logging_and_print(message)
+        Settings.ci_was_runned_and_passed = True
+        return 0
     else:
         Settings.return_code = 1
         message = "[CI] Scratch CI run Failed!"
         logging_and_print(message, isError=True)
         if(Settings["exit"]):
             sys.exit(1)
+        return 1
 
 
 

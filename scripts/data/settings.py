@@ -18,6 +18,8 @@ class SETTINGS(dict):
         # Initialize parser
         self.parse_arguments()
         self.return_code = 0
+        self.ci_was_runned_and_passed = False
+        self.ci_was_runned = False
 
     def start(self):
         # Commit or branch

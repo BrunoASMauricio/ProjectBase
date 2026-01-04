@@ -254,7 +254,30 @@ def FetchAll():
 def PullAll():
     RunOnAllRepos(RepoPull)
 
+from data.settings import Settings
+from menus.ci import RunCIScratch, RunCIType
+
 def PushAll():
+    
+    if(not Settings.ci_was_runned):
+        print("🔍 Running CI to check whether your changes break anything...")
+        val = RunCIScratch(RunCIType.TOP)
+        if(val != 0):
+            print(
+              "⚠️ CI checks failed. Push stopped.\n"
+              "Retrying from the menu will let you push anyway.\n"
+              "This is the part where you knowingly break CI.\n"
+              "No judgment. (Okay, some judgment.)"
+            )
+            return
+    if Settings.ci_was_runned_and_passed:
+        print("✅ CI passed. Pushing all managed repositories...")
+    else:
+        print(
+            "⚠️ CI did not pass, but the push was forced.\n"
+            "Proceeding to push all managed repositories.\n"
+            "May the CI gods forgive you."
+        )
     RunOnAllManagedRepos(RepoPush)
 
 TempCommitMessage = "==== Temporary ProjectBase save commit (to be squashed into a fixed commit) ===="
