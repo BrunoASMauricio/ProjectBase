@@ -120,6 +120,17 @@ def AppendToEnvVariable(env_variable, new_value):
 def PrintableCharacterLength(string):
     return len(RemoveAnsiEscapeCharacters(RemoveControlCharacters(string)))
 
+"""
+Assemble a string based on the table (2D list) provided.
+Each column is aligned to its' largest member
+"""
+def AssembleTable(rows):
+    msg = ""
+    widths = [max(map(len, col)) for col in zip(*rows)]
+    for row in rows:
+        msg += "  ".join((val.ljust(width) for val, width in zip(row, widths)))+"\n"
+    return msg
+
 def CLICenterString(string, pad=" "):
     # Color characters count for length :()
     string_len = PrintableCharacterLength(string)
