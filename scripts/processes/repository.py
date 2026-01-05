@@ -1,4 +1,6 @@
 import logging
+from enum import Enum
+
 from pprint import pformat
 from data.git import GetRepoNameFromURL
 from processes.git import *
@@ -16,6 +18,12 @@ repositories_lock = Lock()
 dependencies = {}
 repositories = None
 StateChangedDetected = False
+
+class RepoFlags(Enum):
+    NO_COMMIT = 1
+    INDEPENDENT_PROJ = 2
+    NO_AUTO_BUILD = 3
+    EXECS_ONLY = 4
 
 def SaveReposToCache(_repositories, path):
     global repositories
