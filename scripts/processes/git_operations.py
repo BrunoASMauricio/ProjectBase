@@ -3,7 +3,8 @@ import logging
 from data.settings import Settings
 from data.colors import ColorFormat, Colors
 from processes.process import ProcessError, ParseProcessResponse, LaunchProcess
-from data.common import IsEmpty
+from data.common import IsEmpty, RemoveEmpty
+from data.git import GenerateLocalBranchName
 
 def ParseGitResult(git_command, path):
     if path == None:
@@ -45,31 +46,41 @@ def GetGitTopLevel(path = None):
 
 def GetCheckoutState(path = None):
     return {
-        "local": ParseGitResult("git branch --all", path),
-        "remote": ParseGitResult("git branch -r", path),
-        "status": ParseGitResult("git status", path)
+        "local"   : GetRepoLocalBranches(path),
+        "remotes" : GetRepoRemoteBranches(path),
+        "status"  : GetRepoStatus(path),
+        "remote"  : GetRepoRemoteBranch(path)
     }
 
-def GitCheckoutBranch(path = None, branch=None):
-    branches = GetRepoBranches(path)
-    exists = False
-    for existing_branch in branches.split('\n'):
-        # Clean branch name
-        print(branch)
-        print(existing_branch)
-        if branch == existing_branch[2:]:
-            exists = True
-            break
-    if exists:
-        return ParseGitResult(f"git switch {branch}", path)
-    else:
-        return ParseGitResult(f"git switch --create {branch}", path)
+def GitCheckoutBranch(path = None, new_branch=None):
+    branches = GetRepoGetDetailedLocalBranches(path)
 
-    # return ParseGitResult("git rev-parse HEAD", path)
-    # if branch in branches:
-    print("RAA")
-    print(branches)
-    print(branch)
+    # Check if there is already a local branch for that remote branch
+    local_branch = None
+    for branch in branches.split('\n'):
+        parts = branch[2:].split(" ")
+        parts = RemoveEmpty(parts)
+
+        if len(parts) < 3:
+            continue
+
+        if f"[{new_branch}]" in parts[2]:
+            local_branch = parts[0]
+            break
+
+    if local_branch != None:
+        # There is a branch, just change to local branch
+        return ParseGitResult(f"git switch {local_branch}", path)
+    else:
+        local_branch_name = GenerateLocalBranchName(new_branch)
+        remote = GetRepoRemote(path)
+        return ParseGitResult(f"git switch --create {local_branch_name} && git push -u {remote} {local_branch_name}:{new_branch}", path)
+
+def GetRepoGetDetailedLocalBranches(path = None):
+    return ParseGitResult("git branch -vv", path)
+
+def GetRepoGetDetailedRemoteBranches(path = None):
+    return ParseGitResult("git branch -vv --remotes", path)
 
 def GetRepoLocalCommit(path = None):
     return ParseGitResult("git rev-parse HEAD", path)
@@ -77,10 +88,16 @@ def GetRepoLocalCommit(path = None):
 def GetRepoLocalBranch(path = None):
     return ParseGitResult("git rev-parse --abbrev-ref HEAD", path)
 
+def GetRepoRemoteBranch(path = None):
+    return ParseGitResult("git for-each-ref --format='%(upstream:short)' \"$(git symbolic-ref -q HEAD)\"", path)
+
 def GetRepoRemoteCommit(path = None):
     return ParseGitResult("git rev-parse `git branch -r --sort=committerdate | tail -1`", path)
 
-def GetRepoBranches(path = None):
+def GetRepoRemoteBranches(path = None):
+    return ParseGitResult("git branch --all --remotes", path)
+
+def GetRepoLocalBranches(path = None):
     return ParseGitResult("git branch --all", path)
 
 def GetRepoStatus(path = None):

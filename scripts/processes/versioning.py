@@ -199,11 +199,9 @@ def PrintCheckedoutState():
             local_branch = local_branch.split("_ProjectBase_")[0]
         local_branch = ColorFormat(Colors.Cyan, local_branch)
 
-
-        remote_branches = state["remote"].split("\n")
-        remote_branch = next(s for s in remote_branches if " -> " in s)
+        remote_branch = state["remote"]
         # Remove the current commit and " -> ", and color it
-        remote_branch = ColorFormat(Colors.Magenta, remote_branch[remote_branch.index(" -> ")+4:])
+        remote_branch = ColorFormat(Colors.Magenta, remote_branch)
 
         status = ""
         if not CheckIfStatusIsClean(state["status"]):
