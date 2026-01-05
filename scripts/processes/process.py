@@ -282,8 +282,8 @@ def _LaunchCommand(command, path=None, to_print=False):
             raise Exception(f"No such path ({path}) for executing command ({command}) ")
 
     returned = {
-        "stdout": "",
-        "stderr": "",
+        "stdout": "<UNINITIALIZED STDOUT>",
+        "stderr": "<UNINITIALIZED STDERR>",
         "code": -1,
         "path": path,
         "command": command

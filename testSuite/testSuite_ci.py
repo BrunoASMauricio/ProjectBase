@@ -12,6 +12,7 @@ Simple test
 Test CI no change
 """
 def Test1(branch):
+    repo_a, _, _, _ = CreateBaseRepos()
     try:
         RunPB(repo_a.url, "1 7 1", branch)
     except CommandExecutionError as e:
@@ -23,7 +24,7 @@ def Test1(branch):
 Add a change on a commit that will break the build
 """
 def Test2(branch):
-    global repo_a
+    repo_a, _, _, _ = CreateBaseRepos()
     inst_1 = repo_a.AddInstance(f"{test_path}/repo_a_1")
     data_to_print =  AddPrintToExecBreaking(inst_1.path, 0)
 
@@ -46,6 +47,7 @@ def Test2(branch):
 Test incompatible changes
 """
 def Test4(branch):
+    repo_a, _, _, _ = CreateBaseRepos()
     # Setup BP and "remote" instance
     inst_1 = repo_a.AddInstance(f"{test_path}/repo_a_1")
     RunPB(repo_a.url, "1 2 3 2 0", branch)

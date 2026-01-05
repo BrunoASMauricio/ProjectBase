@@ -15,6 +15,8 @@ Run basic tests
 TODO: Pass branch by parameter to the exec
 """
 def Test1(branch):
+    repo_a, _, _, _ = CreateBaseRepos()
+
     RunPB(repo_a.url, "1 2 3 3", branch)
     TestInFile("Built target RepoA_RepoA_Test", PB_out)
     TestInFile("Built target RepoB_RepoB_Test", PB_out)
@@ -39,6 +41,8 @@ def Test1(branch):
 Test changes and update
 """
 def Test2(branch):
+    repo_a, _, _, _ = CreateBaseRepos()
+
     RunPB(repo_a.url, "1 2", branch)
     TestInFile("Built target RepoA_RepoA_Test", PB_out)
     TestInFile("Built target RepoB_RepoB_Test", PB_out)
@@ -60,6 +64,8 @@ Non updated repo does not have this print
 Updated repo has this print
 """
 def Test3(branch):
+    repo_a, _, _, _ = CreateBaseRepos()
+
     # Setup new data to be printed
     inst_1 = repo_a.AddInstance(f"{test_path}/repo_a_1")
     data_to_print = AddPrintToExec(inst_1.path, 0)
@@ -78,6 +84,8 @@ def Test3(branch):
 Test incompatible changes
 """
 def Test4(branch):
+    repo_a, _, _, _ = CreateBaseRepos()
+
     # Setup BP and "remote" instance
     inst_1 = repo_a.AddInstance(f"{test_path}/repo_a_1")
     RunPB(repo_a.url, "1 2 3 2 0", branch)

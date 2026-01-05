@@ -117,12 +117,9 @@ def LazyAccepBothChanges(src_path):
         # print(line)
     WriteFile(path, '\n'.join(new_data))
 
+# The function needs to return repos
+# Imports might import the variables before they are initialized and copy by value
 def CreateBaseRepos():
-    global repo_a
-    global repo_b
-    global repo_c
-    global repo_d
-
     # Repo A depends on B and C
     # Repo B depends on C and D
     # Repo C and D don't have dependenciesot 
@@ -150,6 +147,8 @@ def CreateBaseRepos():
     repo_a.DelInstance(inst_a)
     repo_b.DelInstance(inst_b)
 
+    return repo_a, repo_b, repo_c, repo_d
+
 def RunTests(tests):
     if len(sys.argv) == 1:
         branch = "main"
@@ -172,9 +171,7 @@ def RunTests(tests):
         Reset()
 
         for test_ind in range(len(tests)):
-            print(f"Running test {test_ind}")
             test = tests[test_ind]
-            CreateBaseRepos()
             test(branch)
             Reset()
         print(f"Successfully ran {len(tests)} tests")

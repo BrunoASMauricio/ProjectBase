@@ -97,13 +97,13 @@ class CommandExecutionError(Exception):
         self.return_code = return_code
 
 def LaunchCommand(command, path=None, to_print=False):
-    result_code = _LaunchCommand(command, path, to_print)
-    if result_code["code"] != 0:
+    result = _LaunchCommand(command, path, to_print)
+    if result["code"] != 0:
         raise CommandExecutionError(
-            message=f"Could not run '{command}'",
-            return_code=result_code["code"]
+            message=f"Could not run '{command}' at {path}: {result["stdout"]}",
+            return_code=result["code"]
         )
-    return result_code
+    return result
 
 def RepoInit(repo):
     # Create repo instance
