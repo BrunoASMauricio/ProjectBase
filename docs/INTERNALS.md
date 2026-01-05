@@ -1,3 +1,24 @@
+# Internals
+
+## Developing in ProjectBase
+
+A good way to develop in PB is using it to test itself.
+
+```shell
+./run.sh -e --url=git@gitlab.com:brunoasmauricio/ProjectBase.git --branch=<branch to test>
+# Then in the menus:
+# Load the project
+1
+# Build (so the tests are placed appropriately)
+2
+# Commit and push
+
+# Run the tests in the appropriate a
+3 2 1 --args=BranchTests
+
+
+
+```
 
 ### Structure
 
