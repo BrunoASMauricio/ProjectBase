@@ -115,6 +115,7 @@
 
 ## Versioning
 
+- [ ] Improve how git is used (use by repo instead of by path)
 - [X] In status, warn if there are dirty repos that will not be commited (have the no commit flag set)
 - [X] Add information on sync status in getting repo status
 - [ ] Toggle between project wide and specific repository operations
