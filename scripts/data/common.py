@@ -125,8 +125,14 @@ Assemble a string based on the table (2D list) provided.
 Each column is aligned to its' largest member
 """
 
-def AssembleTable(rows, sep="|"):
+def AssembleTable(rows, sep="|", headers=None):
     msg = ""
+    if headers != None:
+        hdr_row = []
+        for header in headers:
+            hdr_row.append(ColorFormat(Colors.Grey, header))
+        rows.insert(0, hdr_row)
+
     # Use `RemoveAllNonPrintable` and  direct padding to avoid color characters and such to be counted in padding
     widths = [max(len(RemoveAllNonPrintable(x)) for x in col) for col in zip(*rows)]
     for row in rows:
