@@ -11,24 +11,30 @@ from menus.clean import CleanMenu
 from menus.version import VersioningMenu
 from menus.kconfig import RunMenuConfig
 from menus.ci import CIMenu
+from data.settings import GetBranch
 
 def main_description():
-    ActiveSettings = Settings["active"]
-    BuildBanner = ""
-    if ActiveSettings["Mode"] == "Release":
-        BuildBanner = ColorFormat(Colors.Blue, "Release build")
+    active_settings = Settings["active"]
+    if active_settings["Mode"] == "Release":
+        build_type = ColorFormat(Colors.Blue, "Release build")
     else:
-        BuildBanner = ColorFormat(Colors.Yellow, "Debug build")
+        build_type = ColorFormat(Colors.Yellow, "Debug build")
     
-    if ActiveSettings["Clone Type"] == CLONE_TYPE.SSH.value:
-        CloneType = ColorFormat(Colors.Magenta, "ssh access")
+    if active_settings["Clone Type"] == CLONE_TYPE.SSH.value:
+        clone_type = ColorFormat(Colors.Magenta, "ssh access")
     else:
-        CloneType = ColorFormat(Colors.Cyan, "http[s] access")
+        clone_type = ColorFormat(Colors.Cyan, "http[s] access")
     
-    if ActiveSettings["Speed"] == "Safe":
-        SpeedType = ColorFormat(Colors.Green, "Safe")
+    if active_settings["Speed"] == "Safe":
+        speed_type = ColorFormat(Colors.Green, "Safe")
     else:
-        SpeedType = ColorFormat(Colors.Yellow, "Fast")
+        speed_type = ColorFormat(Colors.Yellow, "Fast")
+
+    branch = GetBranch()
+    if branch != None:
+        checkedout_branch = ColorFormat(Colors.Magenta, branch)
+    else:
+        checkedout_branch = ColorFormat(Colors.Grey, "No project wide branch checkedout")
 
     return ColorFormat(Colors.Yellow, r"""
  ______              __              __   ______
@@ -36,7 +42,7 @@ def main_description():
 |    __/|   _|  _  ||  ||  -__|  __||   _|   __ <|  _  |__ --|  -__|
 |___|   |__| |_____||  ||_____|____||____|______/|___._|_____|_____|
                    |___|
-""" ) + f"{BuildBanner} \n({Settings["url"]})\n({CloneType} - {SpeedType})\n({Settings["paths"]["project main"]})\n"
+""" ) + f"{build_type} - {checkedout_branch}\n({Settings["url"]})\n({clone_type} - {speed_type})\n({Settings["paths"]["project main"]})\n"
 
 def generate_project_description():
     return "Load project (" + str(len(Project.repositories)) + " loaded)"

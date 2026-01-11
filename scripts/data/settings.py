@@ -13,6 +13,52 @@ class CLONE_TYPE(Enum):
 ActiveSettings ={}
 ActiveProjectName = ""
 
+def ToggleSpeed():
+    current_type = Settings["active"]["Speed"]
+    if Settings["active"]["Speed"] == "Fast":
+        Settings["active"]["Speed"] = "Safe"
+    else:
+        Settings["active"]["Speed"] = "Fast"
+
+    if current_type != Settings["active"]["Speed"]:
+        Settings.save_persisted_settings()
+
+def SetBranch(branch):
+    Settings["active"]["Branch"] = branch
+    Settings.save_persisted_settings()
+
+def GetBranch():
+    if "Branch" in Settings["active"].keys() and Settings["active"]["Branch"] != None:
+        return Settings["active"]["Branch"]
+    # No project-wide branch configured
+    return None
+
+def ToggleMode():
+    current_type = Settings["active"]["Mode"]
+    if Settings["active"]["Mode"] == "Release":
+        Settings["active"]["Mode"] = "Debug"
+    else:
+        Settings["active"]["Mode"] = "Release"
+
+    if current_type != Settings["active"]["Mode"]:
+        Settings.save_persisted_settings()
+
+"""
+Return True if the clone type changed
+"""
+def ToggleCloneType():
+    current_type = Settings["active"]["Clone Type"]
+    if current_type == CLONE_TYPE.HTTPS.value:
+        Settings["active"]["Clone Type"] = CLONE_TYPE.SSH.value
+    else:
+        Settings["active"]["Clone Type"] = CLONE_TYPE.HTTPS.value
+
+    if current_type != Settings["active"]["Clone Type"]:
+        Settings.save_persisted_settings()
+        # Change existing repositories' URL
+        return True
+    return False
+
 class SETTINGS(dict):
     def init(self):
         # Initialize parser
