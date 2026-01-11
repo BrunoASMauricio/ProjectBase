@@ -100,12 +100,14 @@ def DeleteLocalBranchRepo(path, branch_name):
 def DeleteLocalBranch(branch_name):
     repo_branches = RunOnAllManagedRepos(GetAllRepoBranches)
     repo_branches = GetBranches(repo_branches)["checkedout"]
-    if branch_name in repo_branches.keys():
-        print(f"\nBranch {branch_name} is already checked out in: ", end=" ")
-        for repo in repo_branches[branch_name]:
-            print(repo, end=" ")
-        print(ColorFormat(Colors.Red, "\nCannot delete. Please check out a different branch"))
-        return
+
+    for branch in repo_branches.keys():
+        if BranchesMatch(branch_name, branch):
+            print(f"\nBranch {branch_name} is already checked out in: ", end=" ")
+            for repo in repo_branches[branch_name]:
+                print(repo, end=" ")
+            print(ColorFormat(Colors.Red, "\nCannot delete. Please check out a different branch"))
+            return
 
     # Check if there is any repo with that branch currently checked out
     RunOnAllManagedRepos(DeleteLocalBranchRepo, {"branch_name": branch_name})

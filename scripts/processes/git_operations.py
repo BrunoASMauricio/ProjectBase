@@ -57,7 +57,7 @@ def GetAllRepoBranches(path = None):
     remote_branches = GetParsedRepoRemoteBranches(path)
 
     return {
-        "checkedout" : checked_out,
+        "checkedout" : [checked_out],
         "locals"     : local_branches,
         "remotes"    : remote_branches,
         "status"     : GetRepoStatus(path),
