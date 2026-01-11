@@ -92,7 +92,7 @@ def Test4(branch):
 
     # Setup data to print
     data_to_print_1 = AddPrintToExec(inst_1.path, 0)
-    pb_source_path = f"{PB_path}/projects/RepoA.ProjectBase/code/{inst_1.GetConfs()["local_path"]}/RepoA/"
+    pb_source_path = inst_1.GetPBPath(repo_a)
     data_to_print_2 = AddPrintToExec(pb_source_path, 0)
 
     # Sanity check that data doesnt exist originally
