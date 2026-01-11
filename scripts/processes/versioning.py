@@ -1,19 +1,13 @@
-from data.settings     import Settings
+from data.settings     import Settings, SetBranch
 from data.colors       import ColorFormat, Colors
 from data.common import RemoveEmpty, CLICenterString, RemoveSequentialDuplicates, AssembleTable
 from data.git import GetRepoNameFromURL, IsValidGitBranch
 from processes.project import Project, GetRelevantPath
 from processes.process import OpenBashOnDirectoryAndWait, RunOnFolders
-from processes.git_operations import RepoPull, RepoPush, RepoFetch, GetRepoStatus, GetRepositoryUrl
-from processes.git_operations import RepoCleanUntracked, RepoSaveChanges, RepoResetToLatestSync, RepoHardReset
-from processes.git_operations import SquashUntilSpecifiedCommit, GetCheckoutState
+from processes.git_operations import *
 from menus.menu import GetNextOption
-from processes.repository import __RepoHasFlagSet, GetRepoIdFromURL
-from processes.git     import GetAllGitRepos, GetRepoNameFromPath
-from processes.git     import CheckIfStatusIsClean, CheckIfStatusIsDiverged, CheckIfStatusIsAhead, CheckIfStatusIsBehind, CheckIfStatusIsUpToDate
-from processes.git     import GetAllCommits, GitCheckoutBranch
-
-from processes.repository import __RepoHasSomeFlagSet
+from processes.git     import *
+from processes.repository import __RepoHasFlagSet, GetRepoIdFromURL, __RepoHasSomeFlagSet
 
 from dataclasses import dataclass
 @dataclass
@@ -26,6 +20,31 @@ class ProjectStatusInfo:
     ahead_id: list[str]
     messages: list[str]
 
+
+"""
+Create a list of all unique branches from the provided per repository branches
+Effectively invert the dictionary. Instead of being branches per repo, make them repos per branch
+"""
+def GetBranches(repo_branches):
+    def AddReposToBranch(branches, repo, lst):
+        for branch in branches:
+            if branch not in lst:
+                lst[branch] = []
+            if repo not in lst[branch]:
+                lst[branch].append(repo)
+        return lst
+
+    branches = {}
+
+    for repo, state in repo_branches.items():
+        repo_name = ColorFormat(Colors.Yellow, GetRepoNameFromURL(repo))
+
+        for branch_type in state.keys():
+            repo_branches = state[branch_type]
+            if branch_type not in branches:
+                branches[branch_type] = {}
+            branches[branch_type] = AddReposToBranch(repo_branches, repo_name, branches[branch_type])
+    return branches
 
 # Flags are the flags to check for before adding, or to check for before ignoring
 def GetKnownAndUnknownGitRepos(flags_to_include=[],flags_to_exclude=[]):
@@ -55,6 +74,59 @@ def RunOnAllManagedRepos(callback, arguments={}):
     known_paths   = [repos[repo]["repo source"] for repo in repos if False == __RepoHasFlagSet(repos[repo], "no commit")]
 
     return RunOnFolders(known_paths, callback, arguments)
+
+
+def SelectBranch(prompt, branches, callback):
+    repo_branches = RunOnAllManagedRepos(GetAllRepoBranches)
+    repo_branches = GetBranches(repo_branches)[branches]
+
+    dynamic_entries = []
+    branch_names = list(repo_branches.keys())
+    for branch_name in branch_names:
+        new_entry = [branch_name, callback, {"branch_name":branch_name}]
+        dynamic_entries.append(new_entry)
+
+    return dynamic_entries
+
+def DeleteLocalBranchRepo(path, branch_name):
+    branches = GetRepoLocalBranches(path).split("\n")
+
+    # Delete all local check outs of the branch (... _ProjectBase_ ...)
+    for branch in branches:
+        branch = branch[2:]
+        if BranchesMatch(branch_name, branch):
+            GitDeleteLocalBranch(path, branch)
+
+def DeleteLocalBranch(branch_name):
+    repo_branches = RunOnAllManagedRepos(GetAllRepoBranches)
+    repo_branches = GetBranches(repo_branches)["checkedout"]
+    if branch_name in repo_branches.keys():
+        print(f"\nBranch {branch_name} is already checked out in: ", end=" ")
+        for repo in repo_branches[branch_name]:
+            print(repo, end=" ")
+        print(ColorFormat(Colors.Red, "\nCannot delete. Please check out a different branch"))
+        return
+
+    # Check if there is any repo with that branch currently checked out
+    RunOnAllManagedRepos(DeleteLocalBranchRepo, {"branch_name": branch_name})
+    
+def SelectLocalBranchToDelete():
+    return SelectBranch("Select the local branch to delete", "locals", DeleteLocalBranch)
+
+
+def DeleteRemoteBranch(branch_name):
+    print(branch_name)
+
+def SelectRemoteBranchToDelete():
+    return SelectBranch("Select the remote branch to delete", "remotes", DeleteRemoteBranch)
+
+
+def MergeBranch(branch_name):
+    print(branch_name)
+
+def SelectBranchToMerge():
+    return SelectBranch("Select the branch to merge", "locals", MergeBranch)
+
 
 def DirectlyManageSingleRepository():
     all_paths, known_paths, _ = GetKnownAndUnknownGitRepos()
@@ -181,26 +253,40 @@ def CheckoutBranch():
         print("Invalid git branch")
         branch = GetNextOption("New branch name:")
 
-    repo_states = RunOnAllManagedRepos(GitCheckoutBranch, {"branch": branch})
-    print(repo_states)
+    repo_branches = RunOnAllManagedRepos(GitCheckoutBranch, {"new_branch": branch})
+    SetBranch(branch)
+    print(repo_branches)
+
+def PrintAllBranches():
+    repo_branches = RunOnAllManagedRepos(GetAllRepoBranches)
+    # There is a high likelihood that the same branches will be present on multiple repos
+    # Print by branch and not by repo
+    repo_branches = GetBranches(repo_branches)
+    local  = repo_branches["locals"]
+    remote = repo_branches["remotes"]
+
+    def PrintBranches(branches):
+        for branch, repos in branches.items():
+            print(f"{branch}: {', '.join(sorted (repos))}")
+
+    print(CLICenterString(" Local branches ", ColorFormat(Colors.Blue, "=")))
+    PrintBranches(local)
+
+    print(CLICenterString(" Remote branches ", ColorFormat(Colors.Magenta, "=")))
+    PrintBranches(remote)
 
 
 def PrintCheckedoutState():
-    repo_states = RunOnAllManagedRepos(GetCheckoutState)
+    repo_branches = RunOnAllManagedRepos(GetAllRepoBranches)
     print(CLICenterString(" Repository state ", ColorFormat(Colors.Yellow, "=")))
+
     rows = []
-    for repo, state in repo_states.items():
-        local_branches = state["local"].split("\n")
-        local_branch = next(s for s in local_branches if s.startswith("* "))
-        # Remove initial "* " and color the branch
-        local_branch = local_branch[2:]
+    for repo, state in repo_branches.items():
+        local_branch = state["checkedout"]
         # Remove unique naming for managed branches
-        if "_ProjectBase_" in local_branch:
-            local_branch = local_branch.split("_ProjectBase_")[0]
         local_branch = ColorFormat(Colors.Cyan, local_branch)
 
         remote_branch = state["remote"]
-        # Remove the current commit and " -> ", and color it
         remote_branch = ColorFormat(Colors.Magenta, remote_branch)
 
         status = ""
@@ -211,7 +297,7 @@ def PrintCheckedoutState():
 
         rows.append([status, repo_name, local_branch, remote_branch])
 
-    print(AssembleTable(rows))
+    print(AssembleTable(rows, headers=["Status", "Repo", "Local", "Remote"]))
 
 # Returns 
 def getProjectStatusInfo():

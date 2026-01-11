@@ -2,6 +2,7 @@ from menus.menu import Menu
 from processes.versioning import DirectlyManageSingleRepository, PrintProjectStatus, CleanAllUnsaved, ResetToLatestSync, UndoChanges
 from processes.versioning import FetchAll, PullAll, PushAll, PrintCheckedoutState, CheckoutBranch
 from processes.versioning import GlobalFixedCommit, GlobalTemporaryCommit, GetCurrentTemporaryCommits
+from processes.versioning import SelectLocalBranchToDelete, SelectRemoteBranchToDelete, PrintAllBranches, SelectBranchToMerge
 from processes.project import DeleteProject
 from data.colors import ColorFormat, Colors
 
@@ -21,10 +22,27 @@ SyncMenu = Menu("Sync Menu")
 SyncMenu.AddCallbackEntry("Pull data from remote", PullAll, "Pull data from remote (might lead to conflicts)")
 SyncMenu.AddCallbackEntry("Push data to remote", PushAll, "Push data to remote (might fail if there are conflicts)")
 
+
+## Delete local branch
+DeleteLocalBranchMenu = Menu("Delete local branch:")
+DeleteLocalBranchMenu.AddDynamicEntries(SelectLocalBranchToDelete)
+
+## Delete remote branch
+DeleteRemoteBranchMenu = Menu("Delete remote branch:")
+DeleteRemoteBranchMenu.AddDynamicEntries(SelectRemoteBranchToDelete)
+
+## Merge branch to current
+MergeBranchToCurrentMenu = Menu("What merge to branch into the current one:")
+MergeBranchToCurrentMenu.AddDynamicEntries(SelectBranchToMerge)
+
 #       Reset Menu
 BranchMenu = Menu("Branch Menu")
 BranchMenu.AddCallbackEntry("See checked out state", PrintCheckedoutState, "Get current branches (local and the remotes)")
+BranchMenu.AddCallbackEntry("See all branches", PrintAllBranches, "Get current branches (local and the remotes)")
 BranchMenu.AddCallbackEntry("Checkout branch", CheckoutBranch, "Checkout a branch on all clean, managed repos")
+BranchMenu.AddSubmenuEntry("Merge", MergeBranchToCurrentMenu, "Select branch to merge into current")
+BranchMenu.AddSubmenuEntry("Delete local branch", DeleteLocalBranchMenu, "Delete a local branch")
+BranchMenu.AddSubmenuEntry("Delete remote branch", DeleteRemoteBranchMenu, "Delete a remote branch")
 
 #       Reset Menu
 ResetMenu = Menu("Reset Menu")

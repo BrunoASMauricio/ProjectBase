@@ -44,13 +44,28 @@ def GetGitTopLevel(path = None):
             top_level = path
     return top_level
 
-def GetCheckoutState(path = None):
+def GetAllRepoBranches(path = None):
+    checked_out = None
+
+    local = GetRepoLocalBranches(path)
+    local_branches = []
+    for branch in local.split("\n"):
+        if branch.startswith("* "):
+            checked_out = ParseBranch(branch)
+
+    local_branches = ParseBranches(local)
+    remote_branches = GetParsedRepoRemoteBranches(path)
+
     return {
-        "local"   : GetRepoLocalBranches(path),
-        "remotes" : GetRepoRemoteBranches(path),
-        "status"  : GetRepoStatus(path),
-        "remote"  : GetRepoRemoteBranch(path)
+        "checkedout" : checked_out,
+        "locals"     : local_branches,
+        "remotes"    : remote_branches,
+        "status"     : GetRepoStatus(path),
+        "remote"     : GetRepoRemoteBranch(path)
     }
+
+def GitDeleteLocalBranch(path=None, branch_name=None):
+    return ParseGitResult(f"git show-ref --verify --quiet \"refs/heads/{branch_name}\" && git branch -D {branch_name}", path)
 
 def GitCheckoutBranch(path = None, new_branch=None):
     branches = GetRepoGetDetailedLocalBranches(path)
@@ -94,11 +109,38 @@ def GetRepoRemoteBranch(path = None):
 def GetRepoRemoteCommit(path = None):
     return ParseGitResult("git rev-parse `git branch -r --sort=committerdate | tail -1`", path)
 
+def BranchesMatch(branchA, branchB):
+    if branchA == branchB:
+        return True
+    if branchB.startswith(f"{branchA}_ProjectBase_") or branchA.startswith(f"{branchB}_ProjectBase_"):
+        return True
+    return False
+
+def ParseBranch(branch):
+    branch = branch[2:]
+    if "_ProjectBase_" in branch:
+        branch = branch.split("_ProjectBase_")[0]
+    return branch
+
+def ParseBranches(branches):
+    new_branches = []
+    for branch in branches.split("\n"):
+        if " -> " in branch:
+            continue
+
+        branch = ParseBranch(branch)
+        new_branches.append(branch)
+    return new_branches
+
 def GetRepoRemoteBranches(path = None):
-    return ParseGitResult("git branch --all --remotes", path)
+    return ParseGitResult("git branch --remotes", path)
+def GetParsedRepoRemoteBranches(path = None):
+    return ParseBranches(GetRepoRemoteBranches(path))
 
 def GetRepoLocalBranches(path = None):
-    return ParseGitResult("git branch --all", path)
+    return ParseGitResult("git branch", path)
+def GetParsedLocalBranches(path = None):
+    return ParseBranches(GetRepoLocalBranches(path))
 
 def GetRepoStatus(path = None):
     return ParseGitResult("git status", path)
