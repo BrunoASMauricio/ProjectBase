@@ -4,15 +4,12 @@ import time
 import logging
 from enum import Enum
 
-from data.common import Formatter
+from data.common import Formatter, ErrorCheckLogs, SlimError, Assert, GetText, GetHost, GetTime
+from data.common import RemoveNonAlfanumeric, ResetTerminal, AssembleTable
 from data.colors import ColorFormat, Colors
-from data.common import ErrorCheckLogs, SlimError
-from data.common import Assert, GetText, GetHost, GetTime
-from processes.auto_completer import CustomCompleter
 from data.settings import Settings
-from data.common import RemoveNonAlfanumeric, ResetTerminal
 from data.paths import JoinPaths
-from data.common import AssembleTable
+from processes.auto_completer import CustomCompleter
 
 class EntryType(Enum):
     CALLBACK = 1
