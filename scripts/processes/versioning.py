@@ -91,7 +91,7 @@ def SelectBranch(prompt, branches, callback):
 def DeleteLocalBranchRepo(path, branch_name):
     branches = GetRepoLocalBranches(path).split("\n")
 
-    # Delete all local check outs of the branch (... _ProjectBase_ ...)
+    # Delete all local check outs of the branch
     for branch in branches:
         branch = branch[2:]
         if BranchesMatch(branch_name, branch):
@@ -116,8 +116,9 @@ def SelectLocalBranchToDelete():
     return SelectBranch("Select the local branch to delete", "locals", DeleteLocalBranch)
 
 
+
 def DeleteRemoteBranch(branch_name):
-    print(branch_name)
+    RunOnAllManagedRepos(GitDeleteRemoteBranch, {"branch_name": branch_name})
 
 def SelectRemoteBranchToDelete():
     return SelectBranch("Select the remote branch to delete", "remotes", DeleteRemoteBranch)

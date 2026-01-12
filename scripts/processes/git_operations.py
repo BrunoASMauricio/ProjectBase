@@ -64,8 +64,15 @@ def GetAllRepoBranches(path = None):
         "remote"     : GetRepoRemoteBranch(path)
     }
 
+def GitDeleteRemoteBranch(path=None, branch_name=None):
+    remote = f"{GetRepoRemote(path)}/"
+    if branch_name.startswith(remote):
+        branch_name = branch_name.replace(remote, "")
+
+    return ParseGitResult(f"git push origin :refs/heads/{branch_name}", path)
+
 def GitDeleteLocalBranch(path=None, branch_name=None):
-    return ParseGitResult(f"git show-ref --verify --quiet \"refs/heads/{branch_name}\" && git branch -D {branch_name}", path)
+    return ParseGitResult(f"git branch -D {branch_name}", path)
 
 def GitCheckoutBranch(path = None, new_branch=None):
     branches = GetRepoGetDetailedLocalBranches(path)
