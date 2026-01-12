@@ -258,10 +258,10 @@ def __AssembleReposStatusMessage(statuses)-> ProjectStatusInfo:
     )
 
 def CheckoutBranch():
-    branch = GetNextOption("New branch name:")
+    branch = GetNextOption("New branch name: ")
     while IsValidGitBranch(branch) == False:
         print("Invalid git branch")
-        branch = GetNextOption("New branch name:")
+        branch = GetNextOption("New branch name: ")
 
     repo_branches = RunOnAllManagedRepos(GitCheckoutBranch, {"new_branch": branch})
     SetBranch(branch)
