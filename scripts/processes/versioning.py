@@ -124,6 +124,13 @@ def SelectRemoteBranchToDelete():
     return SelectBranch("Select the remote branch to delete", "remotes", DeleteRemoteBranch)
 
 
+def SwitchBranch(branch_name):
+    repo_branches = RunOnAllManagedRepos(GitCheckoutBranch, {"new_branch": branch_name})
+
+def SelectBranchToCheckout():
+    return SelectBranch("Select the branch to checkout", "locals", SwitchBranch)
+
+
 def MergeBranch(branch_name):
     print(branch_name)
 
@@ -260,23 +267,25 @@ def CheckoutBranch():
     SetBranch(branch)
     print(repo_branches)
 
+
 def PrintAllBranches():
     repo_branches = RunOnAllManagedRepos(GetAllRepoBranches)
     # There is a high likelihood that the same branches will be present on multiple repos
     # Print by branch and not by repo
     repo_branches = GetBranches(repo_branches)
-    local  = repo_branches["locals"]
-    remote = repo_branches["remotes"]
 
     def PrintBranches(branches):
         for branch, repos in branches.items():
             print(f"{branch}: {', '.join(sorted (repos))}")
 
+    print(CLICenterString(" Checkedout branches ", ColorFormat(Colors.Blue, "=")))
+    PrintBranches(repo_branches["checkedout"])
+
     print(CLICenterString(" Local branches ", ColorFormat(Colors.Blue, "=")))
-    PrintBranches(local)
+    PrintBranches(repo_branches["locals"])
 
     print(CLICenterString(" Remote branches ", ColorFormat(Colors.Magenta, "=")))
-    PrintBranches(remote)
+    PrintBranches(repo_branches["remotes"])
 
 
 def PrintCheckedoutState():

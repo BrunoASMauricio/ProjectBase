@@ -86,7 +86,7 @@ def GitCheckoutBranch(path = None, new_branch=None):
         if len(parts) < 3:
             continue
 
-        if f"[{new_branch}]" in parts[2]:
+        if parts[2].startswith(f"[{new_branch}"):
             local_branch = parts[0]
             break
 

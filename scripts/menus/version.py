@@ -1,8 +1,8 @@
 from menus.menu import Menu
 from processes.versioning import DirectlyManageSingleRepository, PrintProjectStatus, CleanAllUnsaved, ResetToLatestSync, UndoChanges
-from processes.versioning import FetchAll, PullAll, PushAll, PrintCheckedoutState, CheckoutBranch
+from processes.versioning import FetchAll, PullAll, PushAll, PrintCheckedoutState, SwitchBranch, CheckoutBranch
 from processes.versioning import GlobalFixedCommit, GlobalTemporaryCommit, GetCurrentTemporaryCommits
-from processes.versioning import SelectLocalBranchToDelete, SelectRemoteBranchToDelete, PrintAllBranches, SelectBranchToMerge
+from processes.versioning import SelectLocalBranchToDelete, SelectRemoteBranchToDelete, PrintAllBranches, SelectBranchToMerge, SelectBranchToCheckout
 from processes.project import DeleteProject
 from data.colors import ColorFormat, Colors
 
@@ -35,10 +35,15 @@ DeleteRemoteBranchMenu.AddDynamicEntries(SelectRemoteBranchToDelete)
 MergeBranchToCurrentMenu = Menu("What merge to branch into the current one:")
 MergeBranchToCurrentMenu.AddDynamicEntries(SelectBranchToMerge)
 
+## Switch to an existing branch
+SwitchBranchMenu = Menu("What branch to check out:")
+SwitchBranchMenu.AddDynamicEntries(SelectBranchToCheckout)
+
 #       Reset Menu
 BranchMenu = Menu("Branch Menu")
 BranchMenu.AddCallbackEntry("See checked out state", PrintCheckedoutState, "Get current branches (local and the remotes)")
 BranchMenu.AddCallbackEntry("See all branches", PrintAllBranches, "Get current branches (local and the remotes)")
+BranchMenu.AddSubmenuEntry("Switch branch", SwitchBranchMenu, "Checkout a branch on all clean, managed repos")
 BranchMenu.AddCallbackEntry("Checkout branch", CheckoutBranch, "Checkout a branch on all clean, managed repos")
 BranchMenu.AddSubmenuEntry("Merge", MergeBranchToCurrentMenu, "Select branch to merge into current")
 BranchMenu.AddSubmenuEntry("Delete local branch", DeleteLocalBranchMenu, "Delete a local branch")
