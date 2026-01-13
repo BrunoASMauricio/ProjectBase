@@ -6,7 +6,7 @@ from data.common import StringIsNumber
 from data.colors import *
 from processes.process import _LaunchCommand, SetupLocalEnvVars
 from processes.process import LaunchSilentProcess, ProcessError, RunInThreadsWithProgress
-from menus.menu import GetNextOption, MenuExit, PeekNextOption, PopNextOption
+from menus.menu import GetNextInput, MenuExit, PeekNextInput, PopNextInput
 from data.paths import JoinPaths
 
 """
@@ -106,7 +106,7 @@ def ExecuteMenu(PathToScan):
         print("[![G|V|S]]<INDEX [0-9]+> [Space separated argument list]")
         print("exit or Ctr+D to exit")
         try:
-            og_user_input = GetNextOption(single_string=True)
+            og_user_input = GetNextInput(single_string=True)
             # No input (Enter pressed)
             if len(og_user_input) == 0:
                 print("No input")
@@ -134,12 +134,12 @@ def ExecuteMenu(PathToScan):
                 #  across python executables (i.e. pip installations and modules available)
                 full_command = f"{sys.executable} {full_command}"
 
-            next_inp = PeekNextOption()
+            next_inp = PeekNextInput()
             if next_inp != None:
                 # There is an automated next command
                 arg_name = "--args="
                 if next_inp.startswith(arg_name):
-                    PopNextOption()
+                    PopNextInput()
                     args = next_inp.replace(arg_name, "")
                     full_command = f"{full_command} {args}"
 

@@ -5,7 +5,7 @@ from data.git import GetRepoNameFromURL, IsValidGitBranch
 from processes.project import Project, GetRelevantPath
 from processes.process import OpenBashOnDirectoryAndWait, RunOnFolders
 from processes.git_operations import *
-from menus.menu import GetNextOption
+from menus.menu import GetNextInput
 from processes.git     import *
 from processes.repository import __RepoHasFlagSet, GetRepoIdFromURL, __RepoHasSomeFlagSet
 
@@ -272,10 +272,10 @@ def __AssembleReposStatusMessage(statuses)-> ProjectStatusInfo:
     )
 
 def CheckoutBranch():
-    branch = GetNextOption("New branch name: ")
+    branch = GetNextInput("New branch name: ")
     while IsValidGitBranch(branch) == False:
         print("Invalid git branch")
-        branch = GetNextOption("New branch name: ")
+        branch = GetNextInput("New branch name: ")
 
     repo_branches = RunOnAllManagedRepos(GitCheckoutBranch, {"new_branch": branch})
     SetBranch(branch)
@@ -480,7 +480,7 @@ def GlobalFixedCommit():
     finally:
         if temp_commit_count == 0:
             print("There are no temporary commits. Direct global commit message")
-            commit_message = GetNextOption("[ fixed commit message ][<] ", True)
+            commit_message = GetNextInput("[ fixed commit message ][<] ", True)
             RunOnAllManagedRepos(RepoSaveChanges, {"commit_message":commit_message})
             return
 
@@ -491,7 +491,7 @@ def GlobalFixedCommit():
         status_message += f"\n\t* {len(temporary_commmits[path])} commits from {path.split("/")[-1]}"
 
     print(status_message)
-    commit_message = GetNextOption("[ fixed commit message ][<] ", True)
+    commit_message = GetNextInput("[ fixed commit message ][<] ", True)
     print(commit_message)
 
     arguments = []
@@ -513,7 +513,7 @@ def GetCurrentTemporaryCommits():
         print("\nNo temporary commits found")
 
 def GlobalSave():
-    commit_message = GetNextOption("[commit message <] ")
+    commit_message = GetNextInput("[commit message <] ")
 
     if commit_message == "":
         print("Commit message cannot be empty")

@@ -14,7 +14,7 @@ from data.colors import ColorFormat, Colors
 from processes.progress_bar import PrintProgressBar
 from data.common import Abort, AppendToEnvVariable, RemoveControlCharacters, RemoveAnsiEscapeCharacters
 from data.common import ErrorCheckLogs, SlimError, GetNow, RemoveNonAscii
-from menus.menu import PeekNextOption, PopNextOption
+from menus.menu import PeekNextInput, PopNextInput
 
 #                           PROCESS OPERATIONS
 

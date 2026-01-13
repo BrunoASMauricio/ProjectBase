@@ -16,7 +16,7 @@ class EntryType(Enum):
     MENU     = 2
     DYNAMIC  = 3
 
-def PeekNextOption():
+def PeekNextInput():
     if len(Settings["action"]) != 0:
         # Next automated action
         next_input = Settings["action"][0]
@@ -24,14 +24,14 @@ def PeekNextOption():
         next_input = None
     return next_input
 
-def PopNextOption():
+def PopNextInput():
     next_input = None
     if len(Settings["action"]) != 0:
         next_input = Settings["action"][0]
         del Settings["action"][0]
     return next_input
 
-def GetNextOption(prompt = "[<] ", single_string = False):
+def GetNextInput(prompt = "[<] ", single_string = False):
     global ProjectArgs
 
     if len(Settings["action"]) != 0:
@@ -252,7 +252,7 @@ class Menu():
                 self.completer.setup()
                 # Get next input and save to history
                 try:
-                    next_input_str = GetNextOption()
+                    next_input_str = GetNextInput()
                     if (MenuExit(next_input_str) == True):
                         return Settings.return_code
                     
