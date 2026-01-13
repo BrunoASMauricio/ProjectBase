@@ -5,6 +5,12 @@ from data.common import GetNow
 def GenerateLocalBranchName(branch):
     now = GetNow().replace(" ", "_").replace(":","_").replace(".","_").replace("-","_")
     return branch + "_ProjectBase_" + now
+
+def PBBranchNameToNormalName(branch):
+    if "_ProjectBase_" in branch:
+        return branch.split("_ProjectBase_")[0]
+    return branch
+
 """
 From: https://<git repo>/<path el 1>/<path el 2>/<path el 3>/<path el 4>
 To: git@<git repo>:<path el 1>/<path el 2>/<path el 3>/<path el 4>.git
