@@ -216,8 +216,9 @@ def __RunOnFoldersThreadWrapper(callback, path, arguments = None):
         operation_status[path] = result
         operation_lock.release()
     except ProcessError as exception:
-        ErrorCheckLogs(exception)
-        AddTothreadLog(str(exception.simple_message))
+        operation_lock.acquire()
+        operation_status[path] = exception
+        operation_lock.release()
     except Exception as exception:
         ErrorCheckLogs(exception)
 
