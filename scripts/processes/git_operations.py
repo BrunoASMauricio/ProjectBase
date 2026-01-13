@@ -1,10 +1,9 @@
 import os
 import logging
 from data.settings import Settings
-from data.colors import ColorFormat, Colors
 from processes.process import ProcessError, ParseProcessResponse, LaunchProcess
 from data.common import IsEmpty, RemoveEmpty
-from data.git import GenerateLocalBranchName
+from data.git import GenerateLocalBranchName, PBBranchNameToNormalName
 
 def ParseGitResult(git_command, path):
     if path == None:
@@ -61,7 +60,7 @@ def GetAllRepoBranches(path = None):
         "locals"     : local_branches,
         "remotes"    : remote_branches,
         "status"     : GetRepoStatus(path),
-        "remote"     : GetRepoRemoteBranch(path)
+        "remote"     : [PBBranchNameToNormalName(GetRepoRemoteBranch(path))]
     }
 
 def GitDeleteRemoteBranch(path=None, branch_name=None):
@@ -73,6 +72,12 @@ def GitDeleteRemoteBranch(path=None, branch_name=None):
 
 def GitDeleteLocalBranch(path=None, branch_name=None):
     return ParseGitResult(f"git branch -D {branch_name}", path)
+
+def GitMergeBranch(path, branch_to_merge):
+    return ParseGitResult(f"git merge {branch_to_merge}", path)
+
+def GitRebaseBranch(path, branch_to_rebase):
+    return ParseGitResult(f"git rebase {branch_to_rebase}", path)
 
 def GitCheckoutBranch(path = None, new_branch=None):
     branches = GetRepoGetDetailedLocalBranches(path)
@@ -125,8 +130,7 @@ def BranchesMatch(branchA, branchB):
 
 def ParseBranch(branch):
     branch = branch[2:]
-    if "_ProjectBase_" in branch:
-        branch = branch.split("_ProjectBase_")[0]
+    branch = PBBranchNameToNormalName(branch)
     return branch
 
 def ParseBranches(branches):

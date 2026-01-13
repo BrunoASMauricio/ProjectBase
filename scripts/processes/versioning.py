@@ -76,7 +76,7 @@ def RunOnAllManagedRepos(callback, arguments={}):
     return RunOnFolders(known_paths, callback, arguments)
 
 
-def SelectBranch(prompt, branches, callback):
+def SelectBranch(branches, callback):
     repo_branches = RunOnAllManagedRepos(GetAllRepoBranches)
     repo_branches = GetBranches(repo_branches)[branches]
 
@@ -113,7 +113,7 @@ def DeleteLocalBranch(branch_name):
     RunOnAllManagedRepos(DeleteLocalBranchRepo, {"branch_name": branch_name})
     
 def SelectLocalBranchToDelete():
-    return SelectBranch("Select the local branch to delete", "locals", DeleteLocalBranch)
+    return SelectBranch("locals", DeleteLocalBranch)
 
 
 
@@ -121,22 +121,37 @@ def DeleteRemoteBranch(branch_name):
     RunOnAllManagedRepos(GitDeleteRemoteBranch, {"branch_name": branch_name})
 
 def SelectRemoteBranchToDelete():
-    return SelectBranch("Select the remote branch to delete", "remotes", DeleteRemoteBranch)
+    return SelectBranch("remotes", DeleteRemoteBranch)
 
 
 def SwitchBranch(branch_name):
-    repo_branches = RunOnAllManagedRepos(GitCheckoutBranch, {"new_branch": branch_name})
+    RunOnAllManagedRepos(GitCheckoutBranch, {"new_branch": branch_name})
 
 def SelectBranchToCheckout():
-    return SelectBranch("Select the branch to checkout", "locals", SwitchBranch)
+    return SelectBranch("locals", SwitchBranch)
 
 
 def MergeBranch(branch_name):
-    print(branch_name)
+    errs = RunOnAllManagedRepos(GitMergeBranch, {"branch_to_merge": branch_name})
+    print(f"\nMerged branches into {branch_name}: {errs}")
 
 def SelectBranchToMerge():
-    return SelectBranch("Select the branch to merge", "locals", MergeBranch)
+    return SelectBranch("locals", MergeBranch)
 
+def RebaseBranch(branch_name):
+    outputs = RunOnAllManagedRepos(GitRebaseBranch, {"branch_to_rebase": branch_name})
+    print(f"\nRebased branches into {branch_name}")
+    # print(outputs)
+    for path, output in outputs.items():
+        if type(output) == ProcessError:
+            print(output)
+            if "could not apply" in output.returned["stderr"]:
+                print(f"Rebase issues found for {path}")
+            elif "It seems that there is already a rebase-merge directory" in output.returned["stderr"]:
+                print(f"Rebase on going {path}")
+
+def SelectBranchToRebase():
+    return SelectBranch("locals", RebaseBranch)
 
 def DirectlyManageSingleRepository():
     all_paths, known_paths, _ = GetKnownAndUnknownGitRepos()
@@ -179,7 +194,6 @@ def DirectlyManageSingleRepository():
         # Print path (relative to cwd)
         message += " " + ColorFormat(Colors.Blue, GetRepoNameFromPath(path))
         message += " ." + path.replace(Settings["paths"]["project main"], "")
-        # print(Message)
         new_entry = [message, OpenBashOnDirectoryAndWait, {"working_directory":all_paths[path_ind]}]
         dynamic_entries.append(new_entry)
 
@@ -265,7 +279,6 @@ def CheckoutBranch():
 
     repo_branches = RunOnAllManagedRepos(GitCheckoutBranch, {"new_branch": branch})
     SetBranch(branch)
-    print(repo_branches)
 
 
 def PrintAllBranches():
@@ -294,11 +307,11 @@ def PrintCheckedoutState():
 
     rows = []
     for repo, state in repo_branches.items():
-        local_branch = state["checkedout"]
+        local_branch = state["checkedout"][0]
         # Remove unique naming for managed branches
         local_branch = ColorFormat(Colors.Cyan, local_branch)
 
-        remote_branch = state["remote"]
+        remote_branch = state["remote"][0]
         remote_branch = ColorFormat(Colors.Magenta, remote_branch)
 
         status = ""
