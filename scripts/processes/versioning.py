@@ -8,6 +8,7 @@ from processes.git_operations import *
 from menus.menu import GetNextInput
 from processes.git     import *
 from processes.repository import __RepoHasFlagSet, GetRepoIdFromURL, __RepoHasSomeFlagSet
+from data.common import YES_NO_PROMPT, UserYesNoChoice
 
 from dataclasses import dataclass
 @dataclass
@@ -138,17 +139,46 @@ def MergeBranch(branch_name):
 def SelectBranchToMerge():
     return SelectBranch("locals", MergeBranch)
 
-def RebaseBranch(branch_name):
-    outputs = RunOnAllManagedRepos(GitRebaseBranch, {"branch_to_rebase": branch_name})
-    print(f"\nRebased branches into {branch_name}")
-    # print(outputs)
+def __AbortRebases(outputs):
     for path, output in outputs.items():
         if type(output) == ProcessError:
-            print(output)
-            if "could not apply" in output.returned["stderr"]:
+            if CheckRebaseOperationConflict(output.returned["stderr"]):
+                print(f"Reverted {path}")
+                GitRebaseAbortBranch(path)
+
+def RebaseBranch(branch_name):
+    # Check if all status are ok
+    statuses = RunOnAllManagedRepos(GetRepoStatus)
+    bad_stats = []
+    for path, status in statuses.items():
+        if CheckIfStatusIsClean(status) == False:
+            bad_stats.append(path)
+
+    if len(bad_stats) != 0:
+        print(f"Cannot rebase. Status not clean in {', '.join(bad_stats)}")
+        return
+
+    outputs = RunOnAllManagedRepos(GitRebaseBranch, {"branch_to_rebase": branch_name})
+    print(f"\nRebased branches into {branch_name}")
+
+    issue = False
+    for path, output in outputs.items():
+        if type(output) == ProcessError:
+            if CheckRebaseOperationConflict(output.returned["stderr"]):
                 print(f"Rebase issues found for {path}")
-            elif "It seems that there is already a rebase-merge directory" in output.returned["stderr"]:
-                print(f"Rebase on going {path}")
+                issue = True
+            elif CheckRebaseOperationSuccess(output.returned["stdout"]) == False:
+                print(f"Unknown issue with rebase (please send this message in a ticket for better error handling! =) ): {output}")
+                issue = True
+
+    if issue == True:
+        msg =  ColorFormat(Colors.Red, f"There was an issue that might require manual intervention!!\n")
+        msg += f"Do you want to revert all changes? {YES_NO_PROMPT}"
+        print(msg)
+        answer = GetNextInput()
+        if UserYesNoChoice(answer, True):
+            __AbortRebases(outputs)
+            return
 
 def SelectBranchToRebase():
     return SelectBranch("locals", RebaseBranch)
