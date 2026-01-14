@@ -79,6 +79,9 @@ def GitMergeBranch(path, branch_to_merge):
 def GitRebaseBranch(path, branch_to_rebase):
     return ParseGitResult(f"git rebase {branch_to_rebase}", path)
 
+def GitRebaseAbortBranch(path):
+    return ParseGitResult(f"git rebase --abort", path)
+
 def GitCheckoutBranch(path = None, new_branch=None):
     branches = GetRepoGetDetailedLocalBranches(path)
 
