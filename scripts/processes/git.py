@@ -289,6 +289,20 @@ def MoveWorkTree(bare_path, from_path, to_path):
     # RemoveWorkTree(bare_path, from_path)
     # GitStashPop(new_repo_path)
 
+def CheckRebaseOperationConflict(status):
+    return "could not apply" in status
+
+def CheckRebaseOperationOnGoing(status):
+    return "It seems that there is already a rebase-merge directory" in status
+
+def CheckRebaseOperationSuccess(status):
+    return "is up to date" in status or "Successfully rebased" in status
+
+
+def CheckStatusIsRebaseOnGoing(status):
+    return "use \"git rebase --abort\" to check out the original branch" in status
+
+
 def CheckIfStatusIsClean(status):
     return "nothing to commit, working tree clean" in status
 
