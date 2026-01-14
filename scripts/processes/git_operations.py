@@ -138,6 +138,8 @@ def ParseBranches(branches):
     for branch in branches.split("\n"):
         if " -> " in branch:
             continue
+        if "no branch" in branch:
+            continue
 
         branch = ParseBranch(branch)
         new_branches.append(branch)
