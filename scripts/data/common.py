@@ -273,19 +273,14 @@ def DumpToFile(file_path, data, mode='w'):
 Present Message to user and return True if the response is y or Y, False if n or N
 Loop if response is not in nNyY
 """
-def UserYesNoChoice(message):
-    while True:
-        print(message)
-        answer = input("("+ColorFormat(Colors.Green,"Yy")+"/"+ColorFormat(Colors.Red,"Nn")+"): ")
-        if answer in ["y", "Y"]:
-            answer = True
-            break
-        elif answer in ["n", "N"]:
-            answer = False
-            break
-        else:
-            continue
-    return answer
+YES_NO_PROMPT = "[yY/nN]"
+def UserYesNoChoice(choice, default_no = False):
+    # answer = input("("+ColorFormat(Colors.Green,"Yy")+"/"+ColorFormat(Colors.Red,"Nn")+"): ")
+    if choice in ["y", "Y"]:
+        return True
+    elif choice in ["n", "N"]:
+        return False
+    return default_no
 
 """
 Copy some script over and replace variables
