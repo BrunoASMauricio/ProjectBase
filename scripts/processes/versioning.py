@@ -99,7 +99,7 @@ def DeleteLocalBranch(branch_name):
             print(f"\nBranch {branch_name} is already checked out in: ", end=" ")
             for repo in repo_branches[branch_name]:
                 print(repo, end=" ")
-            print(ColorFormat(Colors.Red, "\nCannot delete. Please check out a different branch"))
+            print(ColorFormat(Colors.Red, "\nCannot delete. Please check out a different branch and then retry"))
             return
 
     # Check if there is any repo with that branch currently checked out
@@ -118,6 +118,7 @@ def SelectRemoteBranchToDelete():
 
 
 def SwitchBranch(branch_name):
+    SetBranch(branch_name)
     RunOnAllManagedRepos(GitCheckoutBranch, {"new_branch": branch_name})
 
 def SelectBranchToCheckout():
@@ -143,7 +144,7 @@ def MergeBranch(branch_name):
     if issue:
         msg = f"\n{MANUAL_INTERVENTION_MSG}\n{err_msg}"
         PrintError(msg)
-    print(f"\nMerged branches into {branch_name}")
+    print(f"\nMerged with {branch_name}")
 
 def SelectBranchToMerge():
     return SelectBranch("locals", MergeBranch)
@@ -335,9 +336,15 @@ def PrintAllBranches():
 
     print(CLICenterString(" Local branches ", ColorFormat(Colors.Blue, "=")))
     PrintBranches(repo_branches["locals"])
+
     # TODO: Print if remote has been pushed or not
-    print(CLICenterString(" Remote branches ", ColorFormat(Colors.Magenta, "=")))
+    print(CLICenterString(" Remote/Tracked branches ", ColorFormat(Colors.Magenta, "=")))
     PrintBranches(repo_branches["remotes"])
+
+    if len(repo_branches["not pushed"]) != 0:
+        print(CLICenterString(" Non pushed branches ", ColorFormat(Colors.Red, "=")))
+        print("These branches require a push to be properly set remotely")
+        PrintBranches(repo_branches["not pushed"])
 
 
 def PrintCheckedoutState():
