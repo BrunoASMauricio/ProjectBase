@@ -4,7 +4,8 @@ from data.common import *
 from data.json import *
 from data.git import GetRepoNameFromURL
 from enum import Enum
-import json 
+import json
+
 class CLONE_TYPE(Enum):
     HTTPS = "https"
     SSH   = "ssh"
@@ -12,6 +13,12 @@ class CLONE_TYPE(Enum):
 
 ActiveSettings ={}
 ActiveProjectName = ""
+
+DEFAULT_SETTINGS = {
+    "Speed":      "Safe",
+    "Mode":       "Debug",
+    "Clone Type": CLONE_TYPE.SSH.value
+}
 
 def ToggleSpeed():
     current_type = Settings["active"]["Speed"]
@@ -138,26 +145,23 @@ class SETTINGS(dict):
     def save_persisted_settings(self):
         dump_json_file(self["persisted"], self["paths"]["configs"] + "/project_cache/settings")
 
+    def reset_settings(self):
+        self["active"] = DEFAULT_SETTINGS
+
     def load_persistent_settings(self):
         global ActiveSettings
 
         project_name = self["ProjectName"]
 
-        default_settings = {
-            "Speed":      "Safe", 
-            "Mode":       "Debug",
-            "Clone Type": CLONE_TYPE.SSH.value
-        }
-
         default_project_settings = {
-            project_name: default_settings
+            project_name: DEFAULT_SETTINGS
         }
 
         # Get persisted project settings
         persisted_settings = load_json_file(self["paths"]["configs"]+"/project_cache/settings", default_project_settings)
 
         if project_name not in persisted_settings.keys():
-            persisted_settings[project_name] = default_settings
+            persisted_settings[project_name] = DEFAULT_SETTINGS
 
         self["persisted"] = persisted_settings
         self["active"]    = persisted_settings[project_name]
