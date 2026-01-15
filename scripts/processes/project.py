@@ -235,12 +235,11 @@ def CleanPBCache():
     LaunchVerboseProcess(f"rm -rf {Settings["cache file"]}")
     LaunchVerboseProcess(f"rm -rf {Settings["paths"]["temporary"]}/*")
     Project.DeleteRepositories()
+    Settings.reset_settings()
 
 def PurgePB():
     global Project
-    LaunchVerboseProcess(f"rm -rf {Settings["cache file"]}")
-    LaunchVerboseProcess(f"rm -rf {Settings["paths"]["temporary"]}/*")
+    CleanPBCache()
 
-    Project.DeleteRepositories()
     LaunchVerboseProcess(f"rm -rf {Settings["paths"]["project base"]}/projects/*")
     LaunchVerboseProcess(f"rm -rf {Settings["paths"]["bare gits"]}/*")
