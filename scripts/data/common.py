@@ -269,6 +269,16 @@ def DumpToFile(file_path, data, mode='w'):
     with open(file_path, mode) as file:
         file.write(data)
 
+def PrintError(message):
+    print(ColorFormat(Colors.Red, f"[ERROR] {message}"))
+
+def PrintWarning(message):
+    print(ColorFormat(Colors.Yellow, f"[WARN] {message}"))
+
+def PrintNotice(message):
+    print(ColorFormat(Colors.Blue, f"[NOTICE] {message}"))
+
+
 """
 Present Message to user and return True if the response is y or Y, False if n or N
 Loop if response is not in nNyY
