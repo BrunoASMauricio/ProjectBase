@@ -43,16 +43,28 @@ def GetGitTopLevel(path = None):
             top_level = path
     return top_level
 
+def GitCheckRemoteBranchExists(path, branch):
+    remote = GetRepoRemote(path)
+    ret = ParseGitResult(f"git ls-remote --heads {remote} {branch}", path)
+    if len(ret) == 0:
+        return False
+    return True
+
 def GetAllRepoBranches(path = None):
     checked_out = None
 
     local = GetRepoLocalBranches(path)
-    local_branches = []
     for branch in local.split("\n"):
         if branch.startswith("* "):
             checked_out = ParseBranch(branch)
 
+    not_pushed = []
     local_branches = ParseBranches(local)
+    for local_branch in local_branches:
+        if GitCheckRemoteBranchExists(path, local_branch) == False:
+            not_pushed.append(local_branch)
+
+
     remote_branches = GetParsedRepoRemoteBranches(path)
 
     return {
@@ -60,14 +72,14 @@ def GetAllRepoBranches(path = None):
         "locals"     : local_branches,
         "remotes"    : remote_branches,
         "status"     : GetRepoStatus(path),
-        "remote"     : [PBBranchNameToNormalName(GetRepoRemoteBranch(path))]
+        "remote"     : [PBBranchNameToNormalName(GetRepoRemoteBranch(path))],
+        "not pushed" : not_pushed
     }
 
 """
 Find all local branches that point to the requested remote branch
 """
 def FindLocalBranchForRemote(path, branch_name):
-    print(f"FindLocalBranchForRemote: {branch_name}")
     branch_name = f"{GetRepoRemote(path)}/{branch_name}"
     branches = GetRepoGetDetailedLocalBranches(path)
 
@@ -79,7 +91,6 @@ def FindLocalBranchForRemote(path, branch_name):
         if len(parts) < 3:
             continue
 
-        print(f"{branch_name} {parts[2]}")
         if parts[2].startswith(f"[{branch_name}"):
             local_branches.append(parts[0])
 
@@ -116,16 +127,16 @@ def GitDeleteLocalBranch(path=None, branch_name=None):
         except ProcessError as ex:
             ret.append(ex)
     if success:
-        PrintNotice(f"Deleted local branch: {ret}")
+        PrintNotice(f"Deleted local branch: {branch_name}")
     else:
-        PrintWarning(f"Failed to delete local branch {branch_name}: {ret}\n{local_branches}")
+        if len(local_branches) > 0:
+            PrintWarning(f"Failed to delete local branch {branch_name} for {path}: {ret}\nlocal_branches: {local_branches}")
 
     return ret
 
 def GitMergeBranch(path, branch_to_merge):
-    local_branches = FindLocalBranchForRemote(path, branch_name)
-
-    return ParseGitResult(f"git merge {branch_to_merge}", path)
+    local_branches = FindLocalBranchForRemote(path, branch_to_merge)
+    return ParseGitResult(f"git merge {local_branches[0]}", path)
 
 def GitRebaseBranch(path, branch_to_rebase):
     return ParseGitResult(f"git rebase {branch_to_rebase}", path)
@@ -141,7 +152,14 @@ def GitCheckoutBranch(path = None, new_branch=None):
         remote = GetRepoRemote(path)
         # msg = f"git switch --create {local_branch_name} && git push -u {remote} {local_branch_name}:{new_branch}"
         PrintNotice(f"Creating local branch {new_branch}")
-        return ParseGitResult(f"git switch --create {local_branch_name} && git branch --set-upstream-to={remote}/{new_branch}", path)
+        # Create branch locally
+        msg = f"git switch --create {local_branch_name} && "
+        # Create ficticious remote reference without pushing it
+        remote = GetRepoRemote(path)
+        msg += f"git update-ref refs/remotes/{remote}/{new_branch} $(git rev-parse HEAD) && "
+        # Set upstream to that reference
+        msg += f"git branch --set-upstream-to={remote}/{new_branch}"
+        return ParseGitResult(msg, path)
 
     # There is a local branch for this remote, just change to it
 
@@ -153,10 +171,6 @@ def GitCheckoutBranch(path = None, new_branch=None):
         PrintWarning(msg)
 
     return ParseGitResult(f"git switch {local_branches[0]}", path)
-
-def GitCheckRemoteBranchExists(path, branch):
-    remote = GetRepoRemote(path)
-    ret = ParseGitResult(f"git ls-remote --heads {remote} {branch}")
 
 def GetRepoGetDetailedLocalBranches(path = None):
     return ParseGitResult("git branch -vv", path)
@@ -265,10 +279,12 @@ def RepoPull(path = None):
 def RepoPush(path = None):
     # Push to bare git
     ParseGitResult("git push", path)
-
+    remote = GetRepoRemote(path)
     # Get remote branch name and push to it
     upstream_branch_name = GetCurrentBranchsUpstream(path)
-    ParseGitResult(f"git push origin HEAD:{upstream_branch_name}", path)
+    # Remove origin
+    upstream_branch_name.replace(f"{remote}/", "")
+    ParseGitResult(f"git push {remote} HEAD:{upstream_branch_name}", path)
 
 def GenAutoCommitMessage():
     return ""
