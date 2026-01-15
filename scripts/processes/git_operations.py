@@ -2,7 +2,7 @@ import os
 import logging
 from data.settings import Settings
 from processes.process import ProcessError, ParseProcessResponse, LaunchProcess
-from data.common import IsEmpty, RemoveEmpty
+from data.common import IsEmpty, RemoveEmpty, PrintNotice, PrintWarning, PrintError
 from data.git import GenerateLocalBranchName, PBBranchNameToNormalName
 
 def ParseGitResult(git_command, path):
@@ -63,17 +63,68 @@ def GetAllRepoBranches(path = None):
         "remote"     : [PBBranchNameToNormalName(GetRepoRemoteBranch(path))]
     }
 
+"""
+Find all local branches that point to the requested remote branch
+"""
+def FindLocalBranchForRemote(path, branch_name):
+    print(f"FindLocalBranchForRemote: {branch_name}")
+    branch_name = f"{GetRepoRemote(path)}/{branch_name}"
+    branches = GetRepoGetDetailedLocalBranches(path)
+
+    local_branches = []
+    for branch in branches.split('\n'):
+        parts = branch[2:].split(" ")
+        parts = RemoveEmpty(parts)
+
+        if len(parts) < 3:
+            continue
+
+        print(f"{branch_name} {parts[2]}")
+        if parts[2].startswith(f"[{branch_name}"):
+            local_branches.append(parts[0])
+
+    if len(local_branches) > 1:
+        PrintWarning(f"More than one local branch found for {branch_name}")
+
+    return local_branches
+
+"""
+Delete remote branch. No need to check name because remote names are the actual branch names
+"""
 def GitDeleteRemoteBranch(path=None, branch_name=None):
     remote = f"{GetRepoRemote(path)}/"
     if branch_name.startswith(remote):
         branch_name = branch_name.replace(remote, "")
 
+    PrintNotice(f"Deleted local branch: {branch_name}")
     return ParseGitResult(f"git push origin :refs/heads/{branch_name}", path)
 
+"""
+Delete all local branches that match the user requested branch
+There should be only one, but do so just in case
+"""
 def GitDeleteLocalBranch(path=None, branch_name=None):
-    return ParseGitResult(f"git branch -D {branch_name}", path)
+    local_branches = FindLocalBranchForRemote(path, branch_name)
+
+    ret = []
+    success = False
+    for branch in local_branches:
+        try:
+            res = ParseGitResult(f"git branch -D {branch}", path)
+            ret.append(res)
+            success = "Deleted branch" in res
+        except ProcessError as ex:
+            ret.append(ex)
+    if success:
+        PrintNotice(f"Deleted local branch: {ret}")
+    else:
+        PrintWarning(f"Failed to delete local branch {branch_name}: {ret}\n{local_branches}")
+
+    return ret
 
 def GitMergeBranch(path, branch_to_merge):
+    local_branches = FindLocalBranchForRemote(path, branch_name)
+
     return ParseGitResult(f"git merge {branch_to_merge}", path)
 
 def GitRebaseBranch(path, branch_to_rebase):
@@ -83,28 +134,29 @@ def GitRebaseAbortBranch(path):
     return ParseGitResult(f"git rebase --abort", path)
 
 def GitCheckoutBranch(path = None, new_branch=None):
-    branches = GetRepoGetDetailedLocalBranches(path)
+    local_branches = FindLocalBranchForRemote(path, new_branch)
 
-    # Check if there is already a local branch for that remote branch
-    local_branch = None
-    for branch in branches.split('\n'):
-        parts = branch[2:].split(" ")
-        parts = RemoveEmpty(parts)
-
-        if len(parts) < 3:
-            continue
-
-        if parts[2].startswith(f"[{new_branch}"):
-            local_branch = parts[0]
-            break
-
-    if local_branch != None:
-        # There is a branch, just change to local branch
-        return ParseGitResult(f"git switch {local_branch}", path)
-    else:
+    if len(local_branches) == 0:
         local_branch_name = GenerateLocalBranchName(new_branch)
         remote = GetRepoRemote(path)
-        return ParseGitResult(f"git switch --create {local_branch_name} && git push -u {remote} {local_branch_name}:{new_branch}", path)
+        # msg = f"git switch --create {local_branch_name} && git push -u {remote} {local_branch_name}:{new_branch}"
+        PrintNotice(f"Creating local branch {new_branch}")
+        return ParseGitResult(f"git switch --create {local_branch_name} && git branch --set-upstream-to={remote}/{new_branch}", path)
+
+    # There is a local branch for this remote, just change to it
+
+    if len(local_branches) > 1:
+        # TODO: It might be possible to fix this automatically if the branches are at the same commit
+        # Only give warning if this is not the case
+        msg  = "There are multiple local branches pointing to the same remote: {new_branch}. Manual intervention is recommended"
+        msg += f"Branch in use: {local_branches[0]}"
+        PrintWarning(msg)
+
+    return ParseGitResult(f"git switch {local_branches[0]}", path)
+
+def GitCheckRemoteBranchExists(path, branch):
+    remote = GetRepoRemote(path)
+    ret = ParseGitResult(f"git ls-remote --heads {remote} {branch}")
 
 def GetRepoGetDetailedLocalBranches(path = None):
     return ParseGitResult("git branch -vv", path)
