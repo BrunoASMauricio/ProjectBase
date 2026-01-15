@@ -89,15 +89,7 @@ def SelectBranch(branches, callback):
 
     return dynamic_entries
 
-def DeleteLocalBranchRepo(path, branch_name):
-    branches = GetRepoLocalBranches(path).split("\n")
-
-    # Delete all local check outs of the branch
-    for branch in branches:
-        branch = branch[2:]
-        if BranchesMatch(branch_name, branch):
-            GitDeleteLocalBranch(path, branch)
-
+# TODO: There is a repeated branch check operation in DeleteLocalBranch and GitDeleteLocalBranch
 def DeleteLocalBranch(branch_name):
     repo_branches = RunOnAllManagedRepos(GetAllRepoBranches)
     repo_branches = GetBranches(repo_branches)["checkedout"]
@@ -111,7 +103,7 @@ def DeleteLocalBranch(branch_name):
             return
 
     # Check if there is any repo with that branch currently checked out
-    RunOnAllManagedRepos(DeleteLocalBranchRepo, {"branch_name": branch_name})
+    RunOnAllManagedRepos(GitDeleteLocalBranch, {"branch_name": branch_name})
     
 def SelectLocalBranchToDelete():
     return SelectBranch("locals", DeleteLocalBranch)
@@ -132,9 +124,26 @@ def SelectBranchToCheckout():
     return SelectBranch("locals", SwitchBranch)
 
 
+MANUAL_INTERVENTION_MSG = f"There was an issue that might require manual intervention!!"
+from data.common import PrintError, PrintWarning
 def MergeBranch(branch_name):
-    errs = RunOnAllManagedRepos(GitMergeBranch, {"branch_to_merge": branch_name})
-    print(f"\nMerged branches into {branch_name}: {errs}")
+    outputs = RunOnAllManagedRepos(GitMergeBranch, {"branch_to_merge": branch_name})
+    issue = False
+    err_msg = ""
+    for path, output in outputs.items():
+        if type(output) == ProcessError:
+            issue = True
+            err_msg += f"path: {path}\n"
+            if (len(output.returned["stdout"]) > 0):
+                err_msg += f"stdout:\n{output.returned["stdout"]}\n"
+
+            if (len(output.returned["stderr"]) > 0):
+                err_msg += f"stderr:\n{output.returned["stderr"]}\n"
+
+    if issue:
+        msg = f"\n{MANUAL_INTERVENTION_MSG}\n{err_msg}"
+        PrintError(msg)
+    print(f"\nMerged branches into {branch_name}")
 
 def SelectBranchToMerge():
     return SelectBranch("locals", MergeBranch)
@@ -326,7 +335,7 @@ def PrintAllBranches():
 
     print(CLICenterString(" Local branches ", ColorFormat(Colors.Blue, "=")))
     PrintBranches(repo_branches["locals"])
-
+    # TODO: Print if remote has been pushed or not
     print(CLICenterString(" Remote branches ", ColorFormat(Colors.Magenta, "=")))
     PrintBranches(repo_branches["remotes"])
 
