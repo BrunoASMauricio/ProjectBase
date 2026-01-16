@@ -44,27 +44,202 @@ Empty merge test
 def Test2(branch):
     repo_a, _, _, _ = CreateBaseRepos()
 
+    # Setup repos and run test for sanity
     RunPB(repo_a.url, "1 2 3 3", branch)
     TestInFile("Built target RepoA_RepoA_Test", PB_out)
 
-    RunPB(repo_a.url, "1 5 4 1", branch)
-    TestInFile([
-    " | RepoA | master | origin/master",
-    " | RepoB | master | origin/master",
-    " | RepoD | master | origin/master",
-    " | RepoC | master | origin/master"
-    ], PB_out)
-
-    RunPB(repo_a.url, "1 5 4 2 Test 4 1", branch)
-    RunPB(repo_a.url, "1 5 4 1", branch)
+    # Create new branch and validate it exists
+    RunPB(repo_a.url, "1 5 4 4 Test 4 1", branch)
     TestInFile([
     " | RepoA | Test | origin/Test",
     " | RepoB | Test | origin/Test",
     " | RepoD | Test | origin/Test",
     " | RepoC | Test | origin/Test"
     ], PB_out)
+    # Merge branch
+    RunPB(repo_a.url, "1 2 5 4 5 2", branch)
+    TestInFile("Merged with master", PB_out)
+    TestNotInFile("There was an issue", PB_out)
 
-    RunPB(repo_a.url, "1 5 4 4 ", branch)
+
+"""
+Create and switch to branch A
+Create and switch to branch B
+Go back to A.
+Validate A isnt created again
+"""
+def Test3(branch):
+    repo_a, _, _, _ = CreateBaseRepos()
+
+    # Setup repos and run test for sanity
+    RunPB(repo_a.url, "1 2 3 3", branch)
+    TestInFile("Built target RepoA_RepoA_Test", PB_out)
+
+    # Create new branch and validate it exists
+    RunPB(repo_a.url, "1 5 4 4 Test 4 1", branch)
+    TestInFile([
+    " | RepoA | Test | origin/Test",
+    " | RepoB | Test | origin/Test",
+    " | RepoD | Test | origin/Test",
+    " | RepoC | Test | origin/Test",
+    "Creating local branch Test"
+    ], PB_out)
+
+    # Create another branch and validate it exists
+    RunPB(repo_a.url, "1 5 4 4 Test2 4 1", branch)
+    TestInFile([
+    " | RepoA | Test2 | origin/Test2",
+    " | RepoB | Test2 | origin/Test2",
+    " | RepoD | Test2 | origin/Test2",
+    " | RepoC | Test2 | origin/Test2",
+    "Creating local branch Test2"
+    ], PB_out)
+
+    # Switch branch
+    RunPB(repo_a.url, "1 5 4 4 Test 4 1", branch)
+    TestInFile([
+    " | RepoA | Test | origin/Test",
+    " | RepoB | Test | origin/Test",
+    " | RepoD | Test | origin/Test",
+    " | RepoC | Test | origin/Test"
+    ], PB_out)
+    # Nothing is created
+    TestNotInFile("Creating local branch Test", PB_out)
+
+"""
+Create and switch to branch A
+Try to delete branch A (expect failure)
+Change to master
+Successfully delete branch A
+"""
+def Test4(branch):
+    repo_a, _, _, _ = CreateBaseRepos()
+
+    # Setup repos and run test for sanity
+    # Create new branch and validate it exists
+    RunPB(repo_a.url, "1 2 3 3 5 4 4 Test", branch)
+    TestInFile([
+    "Built target RepoA_RepoA_Test",
+    "Creating local branch Test"
+    ], PB_out)
+
+    # Attempt to delete currently checked out branch (expect failure)
+    RunPB(repo_a.url, "1 2 5 4 7 1", branch)
+    TestInFile("Cannot delete. Please check out a different branch and then retry", PB_out)
+
+    # Change to master
+    RunPB(repo_a.url, "1 2 5 4 3 2", branch)
+
+    # Attempt to delete again
+    RunPB(repo_a.url, "1 2 5 4 7 1", branch)
+    TestInFile("Deleted local branch: Test", PB_out)
+
+"""
+Check a remote branch does not exist
+Create a local branch and push it
+Check it now exists remotely
+Delete branch locally
+Check it still exists remotely
+Delete branch remotely
+Check it does not exist remotely
+"""
+def _Test5(branch, push):
+    repo_a, _, _, _ = CreateBaseRepos()
+
+    # Create branch, print branches, check it wasnt pushed
+    RunPB(repo_a.url, "1 2 3 3 5 4 4 Test 4 2", branch)
+    TestInFile([
+    "Built target RepoA_RepoA_Test",
+    "Creating local branch Test",
+
+    "==== Checkedout branches ====",
+    "Test: RepoA, RepoB, RepoC, RepoD",
+    "==== Local branches ====",
+    "Test: RepoA, RepoB, RepoC, RepoD",
+    "master: RepoA, RepoB, RepoC, RepoD",
+    "==== Remote/Tracked branches ====",
+    "origin/Test: RepoA, RepoB, RepoC, RepoD",
+    "origin/master: RepoA, RepoB, RepoC, RepoD",
+    "==== Non pushed branches ====",
+    "These branches require a push to be properly set remotely",
+    "Test: RepoA, RepoB, RepoC, RepoD",
+    ], PB_out)
+    # Test with pushing the branches to the remote and without
+    # Result should be the same
+    if push == True:
+        # Push branch and check the warning no longer appears
+        RunPB(repo_a.url, "1 2 5 3 2 4 2", branch)
+        TestInFile([
+            "Pushing all managed repositories",
+            "==== Checkedout branches ====",
+            "Test: RepoA, RepoB, RepoC, RepoD",
+            "==== Local branches ====",
+            "Test: RepoA, RepoB, RepoC, RepoD",
+            "master: RepoA, RepoB, RepoC, RepoD",
+            "==== Remote/Tracked branches ====",
+            "origin/Test: RepoA, RepoB, RepoC, RepoD",
+            "origin/master: RepoA, RepoB, RepoC, RepoD"
+        ], PB_out)
+
+    # Delete the branch remotely (first check out to different branch)
+    RunPB(repo_a.url, "1 2 5 4 3 2 4 8 1", branch)
+    TestInFile([
+        "Pushing all managed repositories",
+        "==== Checkedout branches ====",
+        "master: RepoA, RepoB, RepoC, RepoD",
+        "==== Local branches ====",
+        "Test: RepoA, RepoB, RepoC, RepoD",
+        "master: RepoA, RepoB, RepoC, RepoD",
+        "==== Remote/Tracked branches ====",
+        "origin/master: RepoA, RepoB, RepoC, RepoD",
+        "Deleted remote branch: Test"
+    ], PB_out)
+    TestNotInFile("origin/Test: RepoA, RepoB, RepoC, RepoD", PB_out)
+
+    # Delete the branch locally
+    RunPB(repo_a.url, "1 2 5 4 7 1", branch)
+    TestInFile([
+        "Pushing all managed repositories",
+        "==== Checkedout branches ====",
+        "master: RepoA, RepoB, RepoC, RepoD",
+        "==== Local branches ====",
+        "master: RepoA, RepoB, RepoC, RepoD",
+        "==== Remote/Tracked branches ====",
+        "origin/master: RepoA, RepoB, RepoC, RepoD",
+        "Deleted local branch: Test"
+    ], PB_out)
+    TestNotInFile([
+        "Test: RepoA, RepoB, RepoC, RepoD",
+        "origin/Test: RepoA, RepoB, RepoC, RepoD",
+    ], PB_out)
+
+def Test5(branch):
+    _Test5(branch, True)
+
+def Test6(branch):
+    _Test5(branch, False)
+
+"""
+Tests to do
+TODO: branches checked out on 2 PB instances (different url)
+
+        Test branch checkout/switch
+
+
+
+Test deleting remotely before and after push
+Should be same result
+
+        Test rebase
+
+Test empty rebase on multiple repos
+
+Test smooth rebase on multiple repos
+
+Test rebase failure on single repo:
+    test both "undo rebase" and "keep conflict"
+
+"""
 
 """
 Base single change merge
@@ -95,6 +270,10 @@ def Test3(branch):
 tests = [
     Test1,
     Test2,
+    Test3,
+    Test4,
+    Test5,
+    Test6,
 ]
 
 RunTests(tests)
