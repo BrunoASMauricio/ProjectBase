@@ -105,7 +105,7 @@ Delete remote branch. No need to check name because remote names are the actual 
 def GitDeleteRemoteBranch(path=None, branch_name=None):
     remote = f"{GetRepoRemote(path)}/"
     if branch_name.startswith(remote):
-        branch_name = branch_name.replace(remote, "")
+        branch_name = branch_name.replace(remote, "", 1)
 
     PrintNotice(f"Deleted local branch: {branch_name}")
     return ParseGitResult(f"git push origin :refs/heads/{branch_name}", path)
@@ -282,12 +282,14 @@ def RepoPull(path = None):
 def RepoPush(path = None):
     # Push to bare git
     ParseGitResult("git push", path)
-    remote = GetRepoRemote(path)
-    # Get remote branch name and push to it
-    upstream_branch_name = GetCurrentBranchsUpstream(path)
-    # Remove origin
-    upstream_branch_name.replace(f"{remote}/", "")
-    ParseGitResult(f"git push {remote} HEAD:{upstream_branch_name}", path)
+    # Code below SHOULDNT be necessary again because remote ref is properly set
+    # Leavign it for now just in case something fails and we need a bit more manual push
+    # remote = GetRepoRemote(path)
+    # # Get remote branch name and push to it
+    # upstream_branch_name = GetCurrentBranchsUpstream(path)
+    # # Remove origin
+    # upstream_branch_name.replace(f"{remote}/", "", 1)
+    # ParseGitResult(f"git push {remote} HEAD:{upstream_branch_name}", path)
 
 def GenAutoCommitMessage():
     return ""
