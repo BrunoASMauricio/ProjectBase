@@ -269,14 +269,14 @@ def DumpToFile(file_path, data, mode='w'):
     with open(file_path, mode) as file:
         file.write(data)
 
-def PrintError(message):
-    print(ColorFormat(Colors.Red, f"[ERROR] {message}"))
+def PrintError(message, end="\n"):
+    print(ColorFormat(Colors.Red, f"[ERROR] {message}"), end)
 
-def PrintWarning(message):
-    print(ColorFormat(Colors.Yellow, f"[WARN] {message}"))
+def PrintWarning(message, end="\n"):
+    print(ColorFormat(Colors.Yellow, f"[WARN] {message}"), end)
 
-def PrintNotice(message):
-    print(ColorFormat(Colors.Blue, f"[NOTICE] {message}"))
+def PrintNotice(message, end="\n"):
+    print(ColorFormat(Colors.Blue, f"[NOTICE] {message}"), end)
 
 
 """
