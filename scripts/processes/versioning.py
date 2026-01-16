@@ -89,17 +89,18 @@ def SelectBranch(branches, callback):
 
     return dynamic_entries
 
-# TODO: There is a repeated branch check operation in DeleteLocalBranch and GitDeleteLocalBranch
 def DeleteLocalBranch(branch_name):
     repo_branches = RunOnAllManagedRepos(GetAllRepoBranches)
     repo_branches = GetBranches(repo_branches)["checkedout"]
 
+    # Check if the branch is checked out anywhere
     for branch in repo_branches.keys():
         if BranchesMatch(branch_name, branch):
-            print(f"\nBranch {branch_name} is already checked out in: ", end=" ")
+            PrintWarning(f"\nBranch {branch_name} is already checked out in: ", end=" ")
             for repo in repo_branches[branch_name]:
                 print(repo, end=" ")
-            print(ColorFormat(Colors.Red, "\nCannot delete. Please check out a different branch and then retry"))
+            print("\n")
+            PrintError(ColorFormat(Colors.Red, "\nCannot delete. Please check out a different branch and then retry"))
             return
 
     # Check if there is any repo with that branch currently checked out
