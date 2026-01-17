@@ -126,21 +126,6 @@ def SameBranch(branch1, branch2):
     return real_branch1 == real_branch2
 
 """
-Fix url so it is according to settings
-"""
-def FixUrl(url):
-    if Settings["active"]["Clone Type"] == CLONE_TYPE.SSH.value:
-        url = url_HTTPS_to_SSH(url)
-    elif Settings["active"]["Clone Type"] == CLONE_TYPE.HTTPS.value:
-        url = url_SSH_to_HTTPS(url)
-    else:
-        raise Exception("No mode selected is not acceptable: " + str(Settings["active"]["Clone Type"]))
-    
-    if url[-1] == '/':
-        url = url[:-1]
-    return url
-
-"""
 Current folder ends in .git (weak way to check)
 """
 def FolderIsBareGit(path):

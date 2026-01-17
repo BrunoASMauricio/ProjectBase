@@ -24,24 +24,6 @@ def FixUrl(url):
     return url
 
 """
-Current folder ends in .git (weak way to check)
-"""
-def FolderIsBareGit(path):
-    return GetCurrentFolderName(path).endswith(".git")
-
-"""
-Current folder has a .git file
-"""
-def FolderIsWorktree(path):
-    return os.path.isdir(path + "/.git") or os.path.isfile(path + "/.git")
-
-"""
-Folder is either baregit or worktree
-"""
-def FolderIsGit(path):
-    return FolderIsWorktree(path) or FolderIsBareGit(path)
-
-"""
 Obtain the name of the repository located at path
 """
 def GetRepositoryName(path):
@@ -289,41 +271,3 @@ def MoveWorkTree(bare_path, from_path, to_path):
     # RemoveWorkTree(bare_path, from_path)
     # GitStashPop(new_repo_path)
 
-def CheckRebaseOperationConflict(status):
-    return "could not apply" in status
-
-def CheckRebaseOperationOnGoing(status):
-    return "It seems that there is already a rebase-merge directory" in status
-
-def CheckRebaseOperationSuccess(status):
-    return "is up to date" in status or "Successfully rebased" in status
-
-
-def CheckStatusIsRebaseOnGoing(status):
-    return "use \"git rebase --abort\" to check out the original branch" in status
-
-
-def CheckIfStatusIsClean(status):
-    return "nothing to commit, working tree clean" in status
-
-def CheckIfStatusIsDiverged(status):
-    return "have diverged" in status
-
-def CheckIfStatusIsAhead(status):
-    return "branch is ahead" in status
-
-def CheckIfStatusIsBehind(status):
-    return "branch is behind" in status
-
-def CheckIfStatusIsUpToDate(status):
-    return "up to date" in status
-
-def RepoIsClean(path):
-    return CheckIfStatusIsClean(GetRepoStatus(path))
-
-def GetRepoNameFromPath(path):
-    url = GetRepositoryUrl(path)
-    if IsEmpty(url):
-        raise Exception(f"Could not retrieve Name from path \"{path}\"")
-
-    return GetRepoNameFromURL(url)
