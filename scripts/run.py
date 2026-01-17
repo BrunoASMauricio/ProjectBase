@@ -33,6 +33,7 @@ logging.basicConfig(filename=Settings["log_file"],
 
 logging.info("\n\n\n=============== PROJECTBASE start ===============")
 logging.info("=============== at " + GetNow() + " ===============")
+logging.info("=============== at " + os.getcwd() + " ===============")
 
 if Settings["debug"] == True:
     for handler in logging.getLogger().handlers:
