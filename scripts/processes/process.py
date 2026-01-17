@@ -288,6 +288,8 @@ def _LaunchCommand(command, path=None, to_print=False):
     returned = {
         "stdout": "<UNINITIALIZED STDOUT>",
         "stderr": "<UNINITIALIZED STDERR>",
+        # TODO: Replace stdout/stderr with plain out. There are too many programs that send errors to stderr
+        "out": "<UNINITIALIZED OUT>",
         "code": -1,
         "path": path,
         "command": command
@@ -348,7 +350,8 @@ def _LaunchCommand(command, path=None, to_print=False):
                 returned["stdout"] = result.stdout
                 returned["stderr"] = result.stderr
 
-        returned["code"]    = int(result.returncode)
+        returned["code"] = int(result.returncode)
+        returned["out"] = f"stdout: {returned["stdout"]}\nstderr: {returned["stderr"]}"
     return returned
 
 """
