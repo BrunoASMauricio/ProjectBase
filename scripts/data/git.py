@@ -1,6 +1,8 @@
+import os
 import re
 
 from data.common import GetNow
+from processes.filesystem import GetCurrentFolderName
 
 def GenerateLocalBranchName(branch):
     now = GetNow().replace(" ", "_").replace(":","_").replace(".","_").replace("-","_")
