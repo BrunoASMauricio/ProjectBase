@@ -118,6 +118,98 @@ def RepoInit(repo):
 
     repo.DelInstance(instance)
 
+def GetAllCommitsFromPath(path):
+    """
+    Return all commits from the git repository at `repo_path` as a list of dicts.
+    Each dict includes:
+    - sha
+    - author_name
+    - author_email
+    - author_date
+    - committer_name
+    - committer_email
+    - committer_date
+    - message
+    - diff (the patch/changes)
+    """
+    # Use record and field separators to delimit fields and commits
+    # We stop the metadata section with a unique delimiter before the diff.
+    sep_field = "\x1f"
+    sep_commit = "\x1e"
+    end_meta = "\x1d"  # sentinel between metadata and diff
+    pretty_fmt = (
+        sep_commit + "%H" + sep_field +
+        "%an" + sep_field + "%ae" + sep_field + "%ad" + sep_field +
+        "%cn" + sep_field + "%ce" + sep_field + "%cd" + sep_field +
+        "%s\n%b" + end_meta
+    )
+    cmd = [
+        "git", "-C", str(path),
+        "log",
+        f"--pretty=format:{pretty_fmt}",
+        "--date=iso-strict",
+        "--patch"  # include diffs
+    ]
+    a = 0
+    def ParseDiff(diff):
+        lines = diff.split('\n')
+
+        if lines[0].startswith("diff") == False:
+            return ""
+
+        for ind in range(len(lines)):
+            line = lines[ind]
+            if line.startswith("--- "):
+                break
+        Assert(lines[ind].startswith("---"),     f"AA1 {ind} {lines}")
+        Assert(lines[ind + 1].startswith("+++ b"), f"AA2 {ind} {lines}")
+
+        if lines[ind].startswith("--- a"):
+            from_file = lines[ind].replace("--- a", "")
+        else:
+            from_file = lines[ind].replace("--- ", "")
+
+        new_format = {
+            "from": from_file,
+            "to":   lines[ind + 1].replace("+++ b", ""),
+            "content": lines[ind + 2:]
+        }
+        return new_format
+    try:
+        raw = subprocess.check_output(cmd, text=True, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f"Failed to run git log: {e.output!r}") from e
+    commits = []
+    # Each record ends at sep_commit
+    for raw_commit in raw.split(sep_commit):
+        a += 1
+        if not raw_commit.strip():
+            continue
+        # Split metadata from diff on our sentinel
+        try:
+            meta_part, diff_part = raw_commit.split(end_meta, 1)
+        except ValueError:
+            # If no sentinel found, skip
+            continue
+        fields = meta_part.strip().split(sep_field)
+        (
+            sha,
+            author_name, author_email, author_date,
+            committer_name, committer_email, committer_date,
+            subject
+        ) = fields
+        commits.append({
+            "sha": sha,
+            "author_name": author_name,
+            "author_email": author_email,
+            "author_date": author_date,
+            "committer_name": committer_name,
+            "committer_email": committer_email,
+            "committer_date": committer_date,
+            "subject": subject,
+            "diff": ParseDiff(diff_part.strip()),
+        })
+    return commits
 
 class GIT_REPO_INSTANCE():
     def __init__(self, repo, path):
@@ -204,97 +296,7 @@ class GIT_REPO_INSTANCE():
     "<sha> <date> <author> - <subject>"
     """
     def GetAllCommits(self):
-        """
-        Return all commits from the git repository at `repo_path` as a list of dicts.
-        Each dict includes:
-        - sha
-        - author_name
-        - author_email
-        - author_date
-        - committer_name
-        - committer_email
-        - committer_date
-        - message
-        - diff (the patch/changes)
-        """
-        # Use record and field separators to delimit fields and commits
-        # We stop the metadata section with a unique delimiter before the diff.
-        sep_field = "\x1f"
-        sep_commit = "\x1e"
-        end_meta = "\x1d"  # sentinel between metadata and diff
-        pretty_fmt = (
-            sep_commit + "%H" + sep_field +
-            "%an" + sep_field + "%ae" + sep_field + "%ad" + sep_field +
-            "%cn" + sep_field + "%ce" + sep_field + "%cd" + sep_field +
-            "%s\n%b" + end_meta
-        )
-        cmd = [
-            "git", "-C", str(self.path),
-            "log",
-            f"--pretty=format:{pretty_fmt}",
-            "--date=iso-strict",
-            "--patch"  # include diffs
-        ]
-        a = 0
-        def ParseDiff(diff):
-            lines = diff.split('\n')
-
-            if lines[0].startswith("diff") == False:
-                return ""
-
-            for ind in range(len(lines)):
-                line = lines[ind]
-                if line.startswith("--- "):
-                    break
-            Assert(lines[ind].startswith("---"),     f"AA1 {ind} {lines}")
-            Assert(lines[ind + 1].startswith("+++ b"), f"AA2 {ind} {lines}")
-
-            if lines[ind].startswith("--- a"):
-                from_file = lines[ind].replace("--- a", "")
-            else:
-                from_file = lines[ind].replace("--- ", "")
-
-            new_format = {
-                "from": from_file,
-                "to":   lines[ind + 1].replace("+++ b", ""),
-                "content": lines[ind + 2:]
-            }
-            return new_format
-        try:
-            raw = subprocess.check_output(cmd, text=True, stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"Failed to run git log: {e.output!r}") from e
-        commits = []
-        # Each record ends at sep_commit
-        for raw_commit in raw.split(sep_commit):
-            a += 1
-            if not raw_commit.strip():
-                continue
-            # Split metadata from diff on our sentinel
-            try:
-                meta_part, diff_part = raw_commit.split(end_meta, 1)
-            except ValueError:
-                # If no sentinel found, skip
-                continue
-            fields = meta_part.strip().split(sep_field)
-            (
-                sha,
-                author_name, author_email, author_date,
-                committer_name, committer_email, committer_date,
-                subject
-            ) = fields
-            commits.append({
-                "sha": sha,
-                "author_name": author_name,
-                "author_email": author_email,
-                "author_date": author_date,
-                "committer_name": committer_name,
-                "committer_email": committer_email,
-                "committer_date": committer_date,
-                "subject": subject,
-                "diff": ParseDiff(diff_part.strip()),
-            })
-        return commits
+        return GetAllCommitsFromPath(self.path)
 
 
 class GIT_REPO():
