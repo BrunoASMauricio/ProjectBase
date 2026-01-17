@@ -100,7 +100,7 @@ def LaunchCommand(command, path=None, to_print=False):
     result = _LaunchCommand(command, path, to_print)
     if result["code"] != 0:
         raise CommandExecutionError(
-            message=f"Could not run '{command}' at {path}: {result["stdout"]}",
+            message=f"Could not run '{command}' at {path}: {result}",
             return_code=result["code"]
         )
     return result
