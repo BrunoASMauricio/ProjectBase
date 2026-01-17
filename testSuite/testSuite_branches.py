@@ -220,21 +220,77 @@ def Test6(branch):
     _Test5(branch, False)
 
 """
+Test empty rebase on multiple repos
+"""
+def Test7(branch):
+    repo_a, _, _, _ = CreateBaseRepos()
+
+    # Create new branch and validate it exists
+    RunPB(repo_a.url, "1 2 3 3 5 4 4 Test", branch)
+    TestInFile([
+    "Built target RepoA_RepoA_Test",
+    "Creating local branch Test"
+    ], PB_out)
+
+    # Rebase against the master
+    RunPB(repo_a.url, "1 2 5 4 6 2", branch)
+    TestInFile("Rebased branches into master", PB_out)
+    TestNotInFile("There was an issue", PB_out)
+
+"""
+Test smooth rebase (there are changes to the current beanch but they are ok)
+"""
+def Test8(branch):
+    repo_a, _, _, _ = CreateBaseRepos()
+
+    # Checkout master
+    RunPB(repo_a.url, "1 2 3 3", branch)
+    TestInFile("Built target RepoA_RepoA_Test", PB_out)
+
+    # Prepare another clone of the repo
+    inst_1 = repo_a.AddInstance(f"{test_path}/repo_a_1")
+    # Get the expected PB path for this repo
+    
+    # Obtain the commit number from the PB path
+    commits_before = GetAllCommitsFromPath(inst_1.GetPBPath(repo_a))
+
+    # Do some changes to master in repo_a
+    inst_1.ComplexCommit(GIT_COMMIT("Add random file").AddFile("some_file", "some_content")).Push()
+
+    # Update
+    RunPB(repo_a.url, "1 2 5 3 1", branch)
+    commits_after = GetAllCommitsFromPath(inst_1.GetPBPath(repo_a))
+
+    Assert(len(commits_before) + 1 == len(commits_after), f"Incorrect amount of commits {len(commits_before)} and {len(commits_after)}")
+
+def Test9(branch):
+    repo_a, _, _, _ = CreateBaseRepos()
+
+    # Create new branch and validate it exists
+    RunPB(repo_a.url, "1 2 3 3 5 4 4 Test", branch)
+    TestInFile([
+    "Built target RepoA_RepoA_Test",
+    "Creating local branch Test"
+    ], PB_out)
+
+    # Do some changes to master in repo_a
+    inst_1 = repo_a.AddInstance(f"{test_path}/repo_a_1")
+    inst_1.ComplexCommit(GIT_COMMIT("Add random file").AddFile("some_file", "some_content")).Push()
+
+    # Update
+    RunPB(repo_a.url, "1 2 5 3 1", branch)
+
+    # Rebase against the master
+    RunPB(repo_a.url, "1 2 5 4 6 2", branch)
+    TestInFile("Rebased branches into master", PB_out)
+    TestNotInFile("There was an issue", PB_out)
+
+
+"""
 Tests to do
 TODO: branches checked out on 2 PB instances (different url)
 
-        Test branch checkout/switch
-
-
-
-Test deleting remotely before and after push
-Should be same result
-
         Test rebase
-
-Test empty rebase on multiple repos
-
-Test smooth rebase on multiple repos
 
 Test rebase failure on single repo:
     test both "undo rebase" and "keep conflict"
