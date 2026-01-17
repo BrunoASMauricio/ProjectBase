@@ -3,19 +3,44 @@ import logging
 from data.settings import Settings
 from processes.process import ProcessError, ParseProcessResponse, LaunchProcess
 from data.common import IsEmpty, RemoveEmpty, PrintNotice, PrintWarning, PrintError
-from data.git import GenerateLocalBranchName, PBBranchNameToNormalName
+from data.git import *
 
-def ParseGitResult(git_command, path):
-    if path == None:
-        path = os.getcwd()
+GIT_ERROR_MSG = "ERRORED OUT"
 
-    response = "ERRORED OUT"
-    try:
-        response = ParseProcessResponse(LaunchProcess(git_command, path, False))
-    finally:
+class GIT_CMD():
+    def __init__(self, command, path):
+        if path == None:
+            path = os.getcwd()
+
+        self.command = command
+        self.path = command
+
+        self.legacy_return = None
+
+        self.proc_error = None
+
+        self.success = False
+        self.success_nessage = None
+        self.error_nessage = None
+
+        try:
+            self.returned = ParseProcessResponse(LaunchProcess(command, path, False))
+            self.legacy_return = self.returned
+            self.success = True
+        except ProcessError as ex:
+            self.legacy_return = ex
+            self.proc_error = ex
+            self.returned = ex.returned
+
         if Settings["debug"]:
             logging.debug(f"Git Operation return: {response}")
-    return response
+
+    def __str__(self):
+        return f"cmd: {self.command}\npath: {self.path}\nreturned: {self.returned}\n"
+
+def ParseGitResult(git_command, path):
+    return GIT_CMD(git_command, path).legacy_return
+
 
 # ================= GET operations =================
 
@@ -107,7 +132,7 @@ def GitDeleteRemoteBranch(path=None, branch_name=None):
     if branch_name.startswith(remote):
         branch_name = branch_name.replace(remote, "", 1)
 
-    PrintNotice(f"Deleted local branch: {branch_name}")
+    PrintNotice(f"Deleted remote branch: {branch_name}")
     return ParseGitResult(f"git push origin :refs/heads/{branch_name}", path)
 
 """
@@ -137,15 +162,64 @@ def GitDeleteLocalBranch(path=None, branch_name=None):
 
     return ret
 
+def GitFastForwardFetch(path, current):
+    code = """
+# Update remote-tracking refs first
+# NEVER use  --prune. We set our own upstreams that might NOT be on the remote
+git fetch --all
+
+cur_branch=$(git rev-parse --abbrev-ref HEAD)
+
+git for-each-ref refs/heads --format='%(refname:short) %(upstream:short)' |
+while read -r branch upstream; do
+    [ -n "$branch" ] || continue
+    [ -n "$upstream" ] || continue
+    if [ "$branch" = "$cur_branch" ]; then
+"""
+    if current:
+        code += """
+        # Merge current branch only if fast forward is possible
+        git merge --ff-only "$upstream";"""
+    else:
+        code += """
+        # Do nothing"""
+
+    code += """
+    else
+        # For other branches, update the remote reference
+        remote=${upstream%%/*}
+        rbranch=${upstream#*/}
+        git fetch "$remote" "$rbranch:refs/heads/$branch"
+    fi
+done"""
+    return ParseGitResult(code, path)
+
+def GitRebaseOrMergeBranch(path, branch, operation):
+    local_branches = FindLocalBranchForRemote(path, branch)
+    result = GIT_CMD(f"git {operation} {local_branches[0]}", path)
+
+    if result.proc_error != None:
+        if operation == "merge":
+            if CheckMergeOperationConflict(result.returned["out"]):
+                result.error_nessage = f"Merge conflict in {path} when merging branch {branch}"
+            elif not CheckMergeOperationSuccess(result.returned["out"]):
+                result.error_nessage = f"Unknown issue with merge (please send this message in a ticket for better error handling! =) ): {output}"
+        else:
+            if CheckRebaseOperationConflict(result.returned["out"]):
+                result.error_nessage = f"Rebase conflict in {path} when merging branch {branch}"
+            elif not CheckRebaseOperationSuccess(result.returned["out"]):
+                result.error_nessage = f"Unknown issue with rebase (please send this message in a ticket for better error handling! =) ): {result}"
+
+    return result
+
 def GitMergeBranch(path, branch_to_merge):
-    local_branches = FindLocalBranchForRemote(path, branch_to_merge)
-    return ParseGitResult(f"git merge {local_branches[0]}", path)
+    return GitRebaseOrMergeBranch(path, branch_to_merge, "merge")
 
 def GitRebaseBranch(path, branch_to_rebase):
-    return ParseGitResult(f"git rebase {branch_to_rebase}", path)
+    return GitRebaseOrMergeBranch(path, branch_to_merge, "rebase")
 
-def GitRebaseAbortBranch(path):
-    return ParseGitResult(f"git rebase --abort", path)
+def GitRebaseOrMergeAbort(path, operation):
+    return ParseGitResult(f"git {operation} --abort", path)
 
 def GitCheckoutBranch(path = None, new_branch=None):
     local_branches = FindLocalBranchForRemote(path, new_branch)
@@ -268,16 +342,23 @@ def RepoFetch(path = None):
     ParseGitResult("git fetch origin '*:*'", path)
 
 def RepoPull(path = None):
-    try:
-        if GetRepoLocalBranch(path) != "HEAD":
-            ParseGitResult("git pull origin --rebase", path)
-            ParseGitResult("git fetch --all", path)
-            ParseGitResult("git rebase", path)
-    except ProcessError as ex:
+    # Only pull if it is not a commit
+    if GetRepoLocalBranch(path) != "HEAD":
+        ret = GitFastForwardFetch(path, True)
+    else:
+        ret = GitFastForwardFetch(path, False)
+
+    if ret.error_nessage != None:
         status = GetRepoStatus(path)
         if "both modified" in status:
             print(f"WARNING: Code needs merge in {path}")
-        raise ex
+        else:
+            # Not sure what the error was, just print it
+            print(ret)
+
+    # ParseGitResult("git pull origin --rebase", path)
+    # ParseGitResult("git fetch --all", path)
+    # ParseGitResult("git rebase", path)
 
 def RepoPush(path = None):
     # Push to bare git

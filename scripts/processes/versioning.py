@@ -270,7 +270,10 @@ def __AssembleReposStatusMessage(statuses)-> ProjectStatusInfo:
         elif CheckIfStatusIsBehind(status):
             status_message += ColorFormat(Colors.Yellow, "behind (fix with sync pull)")
         else:
-            status_message += ColorFormat(Colors.Green, "synced")
+            if CheckIfStatusIsUpToDate(status):
+                status_message += ColorFormat(Colors.Green, "synced")
+            else:
+                status_message += ColorFormat(Colors.Green, "desynced (unknown reason)")
             desynced = desynced[:-1]
             desynced_id = desynced_id[:-1]
 
