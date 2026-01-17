@@ -192,7 +192,7 @@ while read -r branch upstream; do
         git fetch "$remote" "$rbranch:refs/heads/$branch"
     fi
 done"""
-    return ParseGitResult(code, path)
+    return GIT_CMD(code, path)
 
 def GitRebaseOrMergeBranch(path, branch, operation):
     local_branches = FindLocalBranchForRemote(path, branch)
