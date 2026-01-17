@@ -150,6 +150,8 @@ def ExecuteMenu(PathToScan):
                 SetupLocalEnvVars()
                 result = _LaunchCommand(full_command, path=None, to_print=False)
                 print(result["stdout"])
+                if len(result["stderr"]) > 0:
+                    print(result["stderr"])
 
                 if result["code"] != 0:
                     print(ColorFormat(Colors.Red, '"' + full_command + '" returned code = '+str(result["code"])))
