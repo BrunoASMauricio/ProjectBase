@@ -304,13 +304,13 @@ def _LaunchCommand(command, path=None, to_print=False):
         print(ColorFormat(Colors.Blue, command))
         output_bytes = []
         def read(fd):
-            Data = os.read(fd, 1024)
-            output_bytes.append(Data)
+            data = os.read(fd, 1024)
+            output_bytes.append(data)
             # If stdout changed, the spawned process will not have the same stdout
             # Need to explicitly print the data into the scripts stdout
             if sys.stdout != sys.__stdout__:
-                print(Data.decode('utf-8'), end='')
-            return Data
+                print(data.decode('utf-8'), end='')
+            return data
 
         # Remove all types of whitespace repetitions `echo  \t  a` -> `echo a`
         command = " ".join(command.split())
