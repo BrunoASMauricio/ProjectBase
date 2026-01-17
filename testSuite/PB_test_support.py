@@ -222,7 +222,7 @@ class GIT_REPO_INSTANCE():
         self.__loadConfs()
 
     def GetPBPath(self, root_proj):
-        return = f"{PB_path}/projects/{root_proj.name}.ProjectBase/code/{self.GetConfs()["local_path"]}/{self.repo.name}"
+        return f"{PB_path}/projects/{root_proj.name}.ProjectBase/code/{self.GetConfs()["local_path"]}/{self.repo.name}"
 
     def __loadConfs(self):
         self.confs = load_json_file(self.conf_file, {})
