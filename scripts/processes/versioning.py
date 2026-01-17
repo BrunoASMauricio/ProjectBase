@@ -183,7 +183,7 @@ def RebaseBranch(branch_name):
                 issue = True
 
     if issue == True:
-        msg =  ColorFormat(Colors.Red, f"There was an issue that might require manual intervention!!\n")
+        msg =  ColorFormat(Colors.Red, MANUAL_INTERVENTION_MSG)
         msg += f"Do you want to revert all changes? {YES_NO_PROMPT}"
         print(msg)
         answer = GetNextInput()
