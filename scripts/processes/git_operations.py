@@ -58,6 +58,13 @@ def GetRepositoryUrl(path = None):
         return ""
     return url
 
+def GetRepoNameFromPath(path):
+    url = GetRepositoryUrl(path)
+    if IsEmpty(url):
+        raise Exception(f"Could not retrieve Name from path \"{path}\"")
+
+    return GetRepoNameFromURL(url)
+
 def GetGitTopLevel(path = None):
     top_level = ""
     try:
