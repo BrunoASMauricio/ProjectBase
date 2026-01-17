@@ -128,36 +128,19 @@ def SelectBranchToCheckout():
 
 MANUAL_INTERVENTION_MSG = f"There was an issue that might require manual intervention!!"
 from data.common import PrintError, PrintWarning
-def MergeBranch(branch_name):
-    outputs = RunOnAllManagedRepos(GitMergeBranch, {"branch_to_merge": branch_name})
-    issue = False
-    err_msg = ""
+
+def __AbortRebaseOrMerge(outputs, operation):
     for path, output in outputs.items():
-        if type(output) == ProcessError:
-            issue = True
-            err_msg += f"path: {path}\n"
-            if (len(output.returned["stdout"]) > 0):
-                err_msg += f"stdout:\n{output.returned["stdout"]}\n"
+        if output.error_nessage != None:
+            if operation == "rebase":
+                if CheckRebaseOperationConflict(output.returned["out"]):
+                    GitRebaseOrMergeAbort(path, operation)
+            else:
+                if CheckMergeOperationConflict(output.returned["out"]):
+                    GitRebaseOrMergeAbort(path, operation)
+            print(f"Reverted {path}")
 
-            if (len(output.returned["stderr"]) > 0):
-                err_msg += f"stderr:\n{output.returned["stderr"]}\n"
-
-    if issue:
-        msg = f"\n{MANUAL_INTERVENTION_MSG}\n{err_msg}"
-        PrintError(msg)
-    print(f"\nMerged with {branch_name}")
-
-def SelectBranchToMerge():
-    return SelectBranch("locals", MergeBranch)
-
-def __AbortRebases(outputs):
-    for path, output in outputs.items():
-        if type(output) == ProcessError:
-            if CheckRebaseOperationConflict(output.returned["stderr"]):
-                print(f"Reverted {path}")
-                GitRebaseAbortBranch(path)
-
-def RebaseBranch(branch_name):
+def _RebaseOrMergeBranch(branch_name, operation):
     # Check if all status are ok
     statuses = RunOnAllManagedRepos(GetRepoStatus)
     bad_stats = []
@@ -166,33 +149,40 @@ def RebaseBranch(branch_name):
             bad_stats.append(path)
 
     if len(bad_stats) != 0:
-        print(f"Cannot rebase. Status not clean in {', '.join(bad_stats)}")
+        print(f"Cannot {operation}. Status not clean in {', '.join(bad_stats)}")
         return
 
-    outputs = RunOnAllManagedRepos(GitRebaseBranch, {"branch_to_rebase": branch_name})
-    print(f"\nRebased branches into {branch_name}")
+    if operation == "rebase":
+        outputs = RunOnAllManagedRepos(GitRebaseBranch, {"branch_to_rebase": branch_name})
+    elif operation == "merge":
+        outputs = RunOnAllManagedRepos(GitMergeBranch, {"branch_to_merge": branch_name})
+    else:
+        raise Exception(f"Uknown operation {operation}")
 
     issue = False
     for path, output in outputs.items():
-        if type(output) == ProcessError:
-            if CheckRebaseOperationConflict(output.returned["stderr"]):
-                print(f"Rebase issues found for {path}")
-                issue = True
-            elif CheckRebaseOperationSuccess(output.returned["stdout"]) == False:
-                print(f"Unknown issue with rebase (please send this message in a ticket for better error handling! =) ): {output}")
-                issue = True
+        if output.error_nessage != None:
+            issue = True
 
-    if issue == True:
-        msg =  ColorFormat(Colors.Red, MANUAL_INTERVENTION_MSG)
-        msg += f"Do you want to revert all changes? {YES_NO_PROMPT}"
-        print(msg)
+    if issue:
+        print("\n"+ColorFormat(Colors.Red, MANUAL_INTERVENTION_MSG))
+        print(f"Do you want to revert the conflicting changes? {YES_NO_PROMPT}")
         answer = GetNextInput()
         if UserYesNoChoice(answer, True):
-            __AbortRebases(outputs)
-            return
+            __AbortRebaseOrMerge(outputs, operation)
+
+def MergeBranch(branch_name):
+    _RebaseOrMergeBranch(branch_name, "merge")
+
+def SelectBranchToMerge():
+    return SelectBranch("locals", MergeBranch)
+
+def RebaseBranch(branch_name):
+    _RebaseOrMergeBranch(branch_name, "rebase")
 
 def SelectBranchToRebase():
     return SelectBranch("locals", RebaseBranch)
+
 
 def DirectlyManageSingleRepository():
     all_paths, known_paths, _ = GetKnownAndUnknownGitRepos()
@@ -273,7 +263,7 @@ def __AssembleReposStatusMessage(statuses)-> ProjectStatusInfo:
             if CheckIfStatusIsUpToDate(status):
                 status_message += ColorFormat(Colors.Green, "synced")
             else:
-                status_message += ColorFormat(Colors.Green, "desynced (unknown reason)")
+                status_message += ColorFormat(Colors.Red, "desynced (unknown reason)")
             desynced = desynced[:-1]
             desynced_id = desynced_id[:-1]
 
