@@ -124,3 +124,85 @@ def SameBranch(branch1, branch2):
     real_branch1 = branch1.split("_ProjectBase")[0]
     real_branch2 = branch2.split("_ProjectBase")[0]
     return real_branch1 == real_branch2
+
+"""
+Fix url so it is according to settings
+"""
+def FixUrl(url):
+    if Settings["active"]["Clone Type"] == CLONE_TYPE.SSH.value:
+        url = url_HTTPS_to_SSH(url)
+    elif Settings["active"]["Clone Type"] == CLONE_TYPE.HTTPS.value:
+        url = url_SSH_to_HTTPS(url)
+    else:
+        raise Exception("No mode selected is not acceptable: " + str(Settings["active"]["Clone Type"]))
+    
+    if url[-1] == '/':
+        url = url[:-1]
+    return url
+
+"""
+Current folder ends in .git (weak way to check)
+"""
+def FolderIsBareGit(path):
+    return GetCurrentFolderName(path).endswith(".git")
+
+"""
+Current folder has a .git file
+"""
+def FolderIsWorktree(path):
+    return os.path.isdir(path + "/.git") or os.path.isfile(path + "/.git")
+
+"""
+Folder is either baregit or worktree
+"""
+def FolderIsGit(path):
+    return FolderIsWorktree(path) or FolderIsBareGit(path)
+
+def CheckMergeOperationSuccess(ret):
+    return True
+
+def CheckMergeOperationConflict(ret):
+    return "Merge conflict" in ret
+
+def CheckRebaseOperationConflict(ret):
+    return "could not apply" in ret
+
+def CheckRebaseOperationOnGoing(ret):
+    return "It seems that there is already a rebase-merge directory" in ret
+
+def CheckRebaseOperationSuccess(ret):
+    return "is up to date" in ret or "Successfully rebased" in ret
+
+
+def CheckStatusIsRebaseOnGoing(status):
+    return "use \"git rebase --abort\" to check out the original branch" in status
+
+def CheckStatusConflict(status):
+    return "both added" in ret
+
+
+def CheckIfStatusIsClean(status):
+    return "nothing to commit, working tree clean" in status
+
+def CheckIfStatusIsDiverged(status):
+    return "have diverged" in status
+
+def CheckIfStatusIsAhead(status):
+    return "branch is ahead" in status
+
+def CheckIfStatusIsBehind(status):
+    return "branch is behind" in status
+
+def CheckIfStatusIsUpToDate(status):
+    return "up to date" in status
+
+def RepoIsClean(path):
+    return CheckIfStatusIsClean(GetRepoStatus(path))
+
+def GetRepoNameFromPath(path):
+    url = GetRepositoryUrl(path)
+    if IsEmpty(url):
+        raise Exception(f"Could not retrieve Name from path \"{path}\"")
+
+    return GetRepoNameFromURL(url)
+
