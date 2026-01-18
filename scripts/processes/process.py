@@ -352,7 +352,7 @@ def _LaunchCommand(command, path=None, to_print=False):
         returned["stderr"] = RemoveControlCharacters(returned["stderr"].rstrip())
 
         returned["code"] = int(result.returncode)
-        returned["out"] = f"{returned["stdout"]} {returned["stderr"]}"
+        returned["out"] = f"{returned["stdout"]}{returned["stderr"]}"
     return returned
 
 """
