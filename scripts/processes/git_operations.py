@@ -225,6 +225,9 @@ def GitRebaseBranch(path, branch_to_rebase):
 def GitRebaseOrMergeAbort(path, operation):
     return ParseGitResult(f"git {operation} --abort", path)
 
+def GitGetHeadCommit(path):
+    return ParseGitResult(f"git rev-parse HEAD", path)
+
 def GitCheckoutBranch(path = None, new_branch=None):
     local_branches = FindLocalBranchForRemote(path, new_branch)
 
