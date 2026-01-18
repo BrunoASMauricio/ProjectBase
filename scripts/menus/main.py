@@ -1,8 +1,7 @@
 from menus.menu import Menu
-from data.settings import Settings
 from data.colors import ColorFormat, Colors
 from processes.project import Project
-from data.settings import CLONE_TYPE
+from data.settings import CLONE_TYPE, Settings, GetBranch
 
 from menus.run import RunMenu
 from menus.settings import SettingsMenu
@@ -11,7 +10,11 @@ from menus.clean import CleanMenu
 from menus.version import VersioningMenu
 from menus.kconfig import RunMenuConfig
 from menus.ci import CIMenu
-from data.settings import GetBranch
+
+from data.paths import GetProjectBasePath
+from processes.git_operations import GitGetHeadCommit
+
+
 
 def main_description():
     active_settings = Settings["active"]
@@ -36,13 +39,15 @@ def main_description():
     else:
         checkedout_branch = ColorFormat(Colors.Grey, "No project wide branch checkedout")
 
+    PB_commit = GitGetHeadCommit(GetProjectBasePath())
+
     return ColorFormat(Colors.Yellow, r"""
  ______              __              __   ______
 |   __ \.----.-----.|__|.-----.----.|  |_|   __ \.---.-.-----.-----.
 |    __/|   _|  _  ||  ||  -__|  __||   _|   __ <|  _  |__ --|  -__|
 |___|   |__| |_____||  ||_____|____||____|______/|___._|_____|_____|
                    |___|
-""" ) + f"{build_type} - {checkedout_branch}\n({Settings["url"]})\n({clone_type} - {speed_type})\n({Settings["paths"]["project main"]})\n"
+""" ) + PB_commit + f"\n{build_type} - {checkedout_branch}\n({Settings["url"]})\n({clone_type} - {speed_type})\n({Settings["paths"]["project main"]})\n"
 
 def generate_project_description():
     return "Load project (" + str(len(Project.repositories)) + " loaded)"
