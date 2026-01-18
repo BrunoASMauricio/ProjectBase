@@ -14,28 +14,28 @@ def Test1(branch):
 
     RunPB(repo_a.url, "1 5 4 1", branch)
     TestInFile([
-    " | RepoA | master | origin/master",
-    " | RepoB | master | origin/master",
-    " | RepoD | master | origin/master",
-    " | RepoC | master | origin/master"
+    " | RepoA | master | master",
+    " | RepoB | master | master",
+    " | RepoD | master | master",
+    " | RepoC | master | master"
     ], PB_out)
 
     # Create new branch and check it out
     RunPB(repo_a.url, "1 5 4 4 Test 4 1", branch)
     TestInFile([
-    " | RepoA | Test  | origin/Test",
-    " | RepoB | Test  | origin/Test",
-    " | RepoD | Test  | origin/Test",
-    " | RepoC | Test  | origin/Test"
+    " | RepoA | Test  | Test",
+    " | RepoB | Test  | Test",
+    " | RepoD | Test  | Test",
+    " | RepoC | Test  | Test"
     ], PB_out)
 
     # Go back to maser
     RunPB(repo_a.url, "1 5 4 4 master 4 1", branch)
     TestInFile([
-    " | RepoA | master | origin/master",
-    " | RepoB | master | origin/master",
-    " | RepoD | master | origin/master",
-    " | RepoC | master | origin/master"
+    " | RepoA | master | master",
+    " | RepoB | master | master",
+    " | RepoD | master | master",
+    " | RepoC | master | master"
     ], PB_out)
 
 """
@@ -51,10 +51,10 @@ def Test2(branch):
     # Create new branch and validate it exists
     RunPB(repo_a.url, "1 5 4 4 Test 4 1", branch)
     TestInFile([
-    " | RepoA | Test  | origin/Test",
-    " | RepoB | Test  | origin/Test",
-    " | RepoD | Test  | origin/Test",
-    " | RepoC | Test  | origin/Test"
+    " | RepoA | Test  | Test",
+    " | RepoB | Test  | Test",
+    " | RepoD | Test  | Test",
+    " | RepoC | Test  | Test"
     ], PB_out)
     # Merge branch
     RunPB(repo_a.url, "1 2 5 4 5 2", branch)
@@ -78,30 +78,30 @@ def Test3(branch):
     # Create new branch and validate it exists
     RunPB(repo_a.url, "1 5 4 4 Test 4 1", branch)
     TestInFile([
-    " | RepoA | Test  | origin/Test",
-    " | RepoB | Test  | origin/Test",
-    " | RepoD | Test  | origin/Test",
-    " | RepoC | Test  | origin/Test",
+    " | RepoA | Test  | Test",
+    " | RepoB | Test  | Test",
+    " | RepoD | Test  | Test",
+    " | RepoC | Test  | Test",
     "Creating local branch Test"
     ], PB_out)
 
     # Create another branch and validate it exists
     RunPB(repo_a.url, "1 5 4 4 Test2 4 1", branch)
     TestInFile([
-    " | RepoA | Test2 | origin/Test2",
-    " | RepoB | Test2 | origin/Test2",
-    " | RepoD | Test2 | origin/Test2",
-    " | RepoC | Test2 | origin/Test2",
+    " | RepoA | Test2 | Test2",
+    " | RepoB | Test2 | Test2",
+    " | RepoD | Test2 | Test2",
+    " | RepoC | Test2 | Test2",
     "Creating local branch Test2"
     ], PB_out)
 
     # Switch branch
     RunPB(repo_a.url, "1 5 4 4 Test 4 1", branch)
     TestInFile([
-    " | RepoA | Test  | origin/Test",
-    " | RepoB | Test  | origin/Test",
-    " | RepoD | Test  | origin/Test",
-    " | RepoC | Test  | origin/Test"
+    " | RepoA | Test  | Test",
+    " | RepoB | Test  | Test",
+    " | RepoD | Test  | Test",
+    " | RepoC | Test  | Test"
     ], PB_out)
     # Nothing is created
     TestNotInFile("Creating local branch Test", PB_out)
