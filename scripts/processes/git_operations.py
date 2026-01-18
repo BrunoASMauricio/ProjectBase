@@ -48,14 +48,14 @@ def ParseGitResult(git_command, path):
 Obtain the URL of the repository located at path
 """
 def GetRepositoryUrl(path = None):
-    url = ParseGitResult("git config --get remote.origin.url", path)
-    top_level = GetGitTopLevel(path)
-
     if path == None:
         path = os.getcwd()
 
-    if top_level != path:
-        return ""
+    url = ParseGitResult("git config --get remote.origin.url", path)
+    # top_level = GetGitTopLevel(path)
+
+    # if top_level != path:
+    #     return ""
     return url
 
 def GetRepoNameFromPath(path):
