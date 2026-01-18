@@ -39,7 +39,7 @@ class GIT_CMD():
         return f"cmd: {self.command}\npath: {self.path}\nreturned: {self.returned}\n"
 
 def ParseGitResult(git_command, path):
-    return GIT_CMD(git_command, path).legacy_return
+    return GIT_CMD(git_command, path).returned["stdout"]
 
 
 # ================= GET operations =================
@@ -285,8 +285,7 @@ def GetRepoLocalBranch(path = None):
     return ParseGitResult("git rev-parse --abbrev-ref HEAD", path)
 
 def GetRepoRemoteBranch(path = None):
-    ret = GIT_CMD("git for-each-ref --format='%(upstream:short)' $(git symbolic-ref -q HEAD)", path)
-    return ParseProcessResponse(ret)
+    return ParseProcessResponse(ParseGitResult("git rev-parse --abbrev-ref HEAD", path))
 
 def GetRepoRemoteCommit(path = None):
     return ParseGitResult("git rev-parse `git branch -r --sort=committerdate | tail -1`", path)
