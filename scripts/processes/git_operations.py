@@ -66,13 +66,10 @@ def GetRepoNameFromPath(path):
     return GetRepoNameFromURL(url)
 
 def GetGitTopLevel(path = None):
-    top_level = ""
-    try:
-        top_level = ParseGitResult("git rev-parse --show-toplevel", path)
-    except Exception as ex:
-        # Failure in bare gits
-        if "fatal: this operation must be run in a work tree" in str(ex):
-            top_level = path
+    top_level = ParseGitResult("git rev-parse --show-toplevel", path)
+    # Failure in bare gits
+    if "fatal: this operation must be run in a work tree" in str(top_level):
+        top_level = path
     return top_level
 
 def GitCheckRemoteBranchExists(path, branch):
