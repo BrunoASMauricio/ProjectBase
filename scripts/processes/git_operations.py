@@ -120,7 +120,7 @@ def FindLocalBranchForRemote(path, branch_name):
         if len(parts) < 3:
             continue
 
-        if parts[2].startswith(f"[{branch_name}"):
+        if parts[2] == f"[{branch_name}]":
             local_branches.append(parts[0])
 
     if len(local_branches) > 1:
@@ -247,8 +247,9 @@ def GitCheckoutBranch(path = None, new_branch=None):
     if len(local_branches) > 1:
         # TODO: It might be possible to fix this automatically if the branches are at the same commit
         # Only give warning if this is not the case
-        msg  = "There are multiple local branches pointing to the same remote: {new_branch}. Manual intervention is recommended"
-        msg += f"Branch in use: {local_branches[0]}"
+        msg  = f"There are multiple local branches pointing to the same remote: {new_branch}. Manual intervention is recommended\n"
+        msg += f"Branches found: {local_branches}\n"
+        msg += f"Branch to use: {local_branches[0]}"
         PrintWarning(msg)
 
     return ParseGitResult(f"git switch {local_branches[0]}", path)
