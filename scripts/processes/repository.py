@@ -220,6 +220,11 @@ def LoadRepositories(root_configs, cache_path):
         repositories[root_repo_id] = root_configs
         repositories[root_repo_id]["reloaded"] = False
     else:
+        # Always reset the root configs to what comes from the command line args
+        # Even if it differs from the internal state
+        for key in root_configs.keys():
+            repositories[root_repo_id][key] = root_configs[key]
+
         for repo_id in repositories:
             repositories[repo_id]["reloaded"] = False
 

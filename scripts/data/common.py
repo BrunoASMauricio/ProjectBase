@@ -269,6 +269,9 @@ def DumpToFile(file_path, data, mode='w'):
     with open(file_path, mode) as file:
         file.write(data)
 
+def Print(message, end="\n"):
+    print(message, end)
+
 def PrintError(message, end="\n"):
     print(ColorFormat(Colors.Red, f"[ERROR] {message}"), end)
 

@@ -5,7 +5,7 @@ import pickle
 from data.settings import Settings, CLONE_TYPE
 from data.paths    import GetProjectPaths, JoinPaths
 from data.git      import GetRepoNameFromURL, url_HTTPS_to_SSH, url_SSH_to_HTTPS
-from data.common   import LoadFromFile, DumpToFile
+from data.common   import LoadFromFile, DumpToFile, PrintNotice
 
 from processes.repository_configs     import ConfigsChanged, ResetConfigsState
 
@@ -73,6 +73,7 @@ class PROJECT(dict):
         else:
             self.root_repo_base_config["commitish"] = None
 
+        PrintNotice(f"Loading repositories with the following parameters: {self.root_repo_base_config}")
         self.repositories = LoadRepositories(self.root_repo_base_config, Settings["cache file"])
         print("Project loaded")
 
