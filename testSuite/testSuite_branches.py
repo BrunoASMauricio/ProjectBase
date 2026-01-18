@@ -100,8 +100,6 @@ def Test3(branch):
     TestInFile([
     " | RepoA | Test  | Test",
     " | RepoB | Test  | Test",
-    .
-
     " | RepoD | Test  | Test",
     " | RepoC | Test  | Test"
     ], PB_out)
@@ -298,7 +296,6 @@ Test rebase failure on single repo:
     test both "undo rebase" and "keep conflict"
 
 """
-
 
 # Test delete branch that was already deleted 9remote and local
 tests = [
