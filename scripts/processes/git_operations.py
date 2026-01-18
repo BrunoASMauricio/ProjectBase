@@ -52,10 +52,10 @@ def GetRepositoryUrl(path = None):
         path = os.getcwd()
 
     url = ParseGitResult("git config --get remote.origin.url", path)
-    # top_level = GetGitTopLevel(path)
-
-    # if top_level != path:
-    #     return ""
+    # Validate that we are currently at the top level (otherwise git will search backwards)
+    top_level = GetGitTopLevel(path)
+    if top_level != path:
+        return ""
     return url
 
 def GetRepoNameFromPath(path):
