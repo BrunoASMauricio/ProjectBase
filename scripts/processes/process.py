@@ -12,8 +12,7 @@ from threading import Thread, Lock
 from data.settings import Settings
 from data.colors import ColorFormat, Colors
 from processes.progress_bar import PrintProgressBar
-from data.common import Abort, AppendToEnvVariable, RemoveControlCharacters, RemoveAnsiEscapeCharacters
-from data.common import ErrorCheckLogs, SlimError, GetNow, RemoveNonAscii
+from data.common import *
 from menus.menu import PeekNextInput, PopNextInput
 
 #                           PROCESS OPERATIONS
@@ -112,7 +111,7 @@ def ThreadWrapper(run_callback, run_arg):
         run_callback(*run_arg)
         return_val = True
     except KeyboardInterrupt as ex:
-        print("Keyboard Interrupt, stopping")
+        PrintNotice("Keyboard Interrupt, stopping")
         raise ex
     except ProcessError as ex:
         return_val = False
@@ -165,7 +164,7 @@ def RunInThreadsWithProgress(run_callback, run_args, max_delay=None, print_callb
                     PrintProgressBar(run_arg_ind, len(run_args), prefix = 'Running:', suffix = 'Work finished ' + str(run_arg_ind) + '/' + str(len(run_args)))
                 thread_return[run_arg_ind] = True
             except KeyboardInterrupt:
-                print("Keyboard Interrupt, stopping")
+                PrintNotice("Keyboard Interrupt, stopping")
                 ClearThreadLog()
                 return
             except Exception as ex:
@@ -351,7 +350,7 @@ def _LaunchCommand(command, path=None, to_print=False):
                 returned["stderr"] = result.stderr
 
         returned["code"] = int(result.returncode)
-        returned["out"] = f"stdout: {returned["stdout"]}\nstderr: {returned["stderr"]}"
+        returned["out"] = f"{returned["stdout"]} {returned["stderr"]}"
     return returned
 
 """
@@ -376,9 +375,6 @@ def LaunchProcess(command, path=None, to_print=False):
     SetupLocalEnvVars()
 
     returned = _LaunchCommand(command, path, to_print)
-
-    if returned["code"] == -1:
-        return returned
 
     if returned["code"] != 0:
         simple_message = "\t\tProcess returned failure (" + ColorFormat(Colors.Yellow, str(returned["code"])) + "):\n"
@@ -405,7 +401,7 @@ def LaunchProcess(command, path=None, to_print=False):
     return returned
 
 def ParseProcessResponse(response):
-    return RemoveControlCharacters(response["stdout"].rstrip())
+    return RemoveControlCharacters(response["out"].rstrip())
 
 def OpenBashOnDirectoryAndWait(working_directory):
     print("Opening new slave terminal")
