@@ -58,7 +58,7 @@ def Test2(branch):
     ], PB_out)
     # Merge branch
     RunPB(repo_a.url, "1 2 5 4 5 2", branch)
-    TestInFile("Merged with master", PB_out)
+    TestInFile("merge with branch master completed with success", PB_out)
     TestNotInFile("There was an issue", PB_out)
 
 
