@@ -185,7 +185,7 @@ def __RunRepoCommands(command_set_name, commands):
             proceed_condition = command_block["condition to proceed"]
             command_list      = command_block["command list"]
             try:
-                ParseProcessResponse(LaunchProcess(proceed_condition))
+                LaunchProcess(proceed_condition)
                 result = True
             except ProcessError as proc_error:
                 if proc_error.returned["code"] == 1:

@@ -348,6 +348,8 @@ def _LaunchCommand(command, path=None, to_print=False):
                 print(f"Exception trying to handle decoding error: {Ex}")
                 returned["stdout"] = result.stdout
                 returned["stderr"] = result.stderr
+        returned["stdout"] = RemoveControlCharacters(returned["stdout"].rstrip())
+        returned["stderr"] = RemoveControlCharacters(returned["stderr"].rstrip())
 
         returned["code"] = int(result.returncode)
         returned["out"] = f"{returned["stdout"]} {returned["stderr"]}"
@@ -399,9 +401,6 @@ def LaunchProcess(command, path=None, to_print=False):
         raise ProcessError(simple_message, trace_message, returned)
 
     return returned
-
-def ParseProcessResponse(response):
-    return RemoveControlCharacters(response["out"].rstrip())
 
 def OpenBashOnDirectoryAndWait(working_directory):
     print("Opening new slave terminal")

@@ -1,7 +1,7 @@
 import os
 import logging
 from data.settings import Settings
-from processes.process import ProcessError, ParseProcessResponse, LaunchProcess
+from processes.process import ProcessError, LaunchProcess
 from data.common import IsEmpty, RemoveEmpty, PrintNotice, PrintWarning, PrintError
 from data.git import *
 
@@ -24,7 +24,7 @@ class GIT_CMD():
         self.error_nessage = None
 
         try:
-            self.returned = ParseProcessResponse(LaunchProcess(command, path, False))
+            self.returned = LaunchProcess(command, path, False)
             self.legacy_return = self.returned
             self.success = True
         except ProcessError as ex:
@@ -39,7 +39,7 @@ class GIT_CMD():
         return f"cmd: {self.command}\npath: {self.path}\nreturned: {self.returned}\n"
 
 def ParseGitResult(git_command, path):
-    return GIT_CMD(git_command, path).returned["stdout"]
+    return GIT_CMD(git_command, path).returned["out"]
 
 
 # ================= GET operations =================
@@ -285,7 +285,7 @@ def GetRepoLocalBranch(path = None):
     return ParseGitResult("git rev-parse --abbrev-ref HEAD", path)
 
 def GetRepoRemoteBranch(path = None):
-    return ParseProcessResponse(ParseGitResult("git rev-parse --abbrev-ref HEAD", path))
+    return ParseGitResult("git rev-parse --abbrev-ref HEAD", path)
 
 def GetRepoRemoteCommit(path = None):
     return ParseGitResult("git rev-parse `git branch -r --sort=committerdate | tail -1`", path)
