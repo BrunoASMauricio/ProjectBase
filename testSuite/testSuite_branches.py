@@ -23,10 +23,10 @@ def Test1(branch):
     # Create new branch and check it out
     RunPB(repo_a.url, "1 5 4 4 Test 4 1", branch)
     TestInFile([
-    " | RepoA | Test | origin/Test",
-    " | RepoB | Test | origin/Test",
-    " | RepoD | Test | origin/Test",
-    " | RepoC | Test | origin/Test"
+    " | RepoA | Test  | origin/Test",
+    " | RepoB | Test  | origin/Test",
+    " | RepoD | Test  | origin/Test",
+    " | RepoC | Test  | origin/Test"
     ], PB_out)
 
     # Go back to maser
@@ -51,10 +51,10 @@ def Test2(branch):
     # Create new branch and validate it exists
     RunPB(repo_a.url, "1 5 4 4 Test 4 1", branch)
     TestInFile([
-    " | RepoA | Test | origin/Test",
-    " | RepoB | Test | origin/Test",
-    " | RepoD | Test | origin/Test",
-    " | RepoC | Test | origin/Test"
+    " | RepoA | Test  | origin/Test",
+    " | RepoB | Test  | origin/Test",
+    " | RepoD | Test  | origin/Test",
+    " | RepoC | Test  | origin/Test"
     ], PB_out)
     # Merge branch
     RunPB(repo_a.url, "1 2 5 4 5 2", branch)
@@ -78,10 +78,10 @@ def Test3(branch):
     # Create new branch and validate it exists
     RunPB(repo_a.url, "1 5 4 4 Test 4 1", branch)
     TestInFile([
-    " | RepoA | Test | origin/Test",
-    " | RepoB | Test | origin/Test",
-    " | RepoD | Test | origin/Test",
-    " | RepoC | Test | origin/Test",
+    " | RepoA | Test  | origin/Test",
+    " | RepoB | Test  | origin/Test",
+    " | RepoD | Test  | origin/Test",
+    " | RepoC | Test  | origin/Test",
     "Creating local branch Test"
     ], PB_out)
 
@@ -98,10 +98,10 @@ def Test3(branch):
     # Switch branch
     RunPB(repo_a.url, "1 5 4 4 Test 4 1", branch)
     TestInFile([
-    " | RepoA | Test | origin/Test",
-    " | RepoB | Test | origin/Test",
-    " | RepoD | Test | origin/Test",
-    " | RepoC | Test | origin/Test"
+    " | RepoA | Test  | origin/Test",
+    " | RepoB | Test  | origin/Test",
+    " | RepoD | Test  | origin/Test",
+    " | RepoC | Test  | origin/Test"
     ], PB_out)
     # Nothing is created
     TestNotInFile("Creating local branch Test", PB_out)
