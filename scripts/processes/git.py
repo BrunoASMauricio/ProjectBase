@@ -221,10 +221,14 @@ def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
 
         remote = GetRepoRemote(bare_path)
 
-        LaunchGitCommandAt(f"git worktree add {new_repo_path}", bare_path, "Adding git branch worktree")
-
+        # Setup worktree already on branch (otherwise, an automatic path related branch appears)
+        LaunchGitCommandAt(f"git worktree add -b {local_branch_name} {new_repo_path}", bare_path, "Adding git branch worktree")
+        # Fetch all branches
         LaunchGitCommandAt(f"git fetch --all", new_repo_path, f"Fetch all branches")
-        LaunchGitCommandAt(f"git checkout -b {local_branch_name} {remote}/{branch_to_follow}", new_repo_path, f"Following branch {branch_to_follow}")
+        # Setup appropriate upstream
+        LaunchGitCommandAt(f"git branch --set-upstream-to={remote}/{branch_to_follow}", new_repo_path, f"Following branch {branch_to_follow}")
+
+        # LaunchGitCommandAt(f"git checkout -b {local_branch_name} {remote}/{branch_to_follow}", new_repo_path, f"Following branch {branch_to_follow}")
         # LaunchGitCommandAt(f"git branch --set-upstream-to=origin/{branch_to_follow} {local_branch_name}", new_repo_path)
 
     if not os.path.isdir(new_repo_path):
