@@ -5,7 +5,7 @@ from processes.process import ProcessError, ParseProcessResponse, LaunchProcess
 from data.common import IsEmpty, RemoveEmpty, PrintNotice, PrintWarning, PrintError
 from data.git import *
 
-GIT_ERROR_MSG = "ERRORED OUT"
+UNKNOWN_ERR = f"Unknown issue. Please send this message in a ticket for better error handling in the future!"
 
 class GIT_CMD():
     def __init__(self, command, path):
@@ -196,7 +196,22 @@ while read -r branch upstream; do
         git fetch "$remote" "$rbranch:refs/heads/$branch"
     fi
 done"""
-    return GIT_CMD(code, path)
+    ret = GIT_CMD(code, path)
+    if ret.proc_error != None:
+        status = GetRepoStatus(path)
+        if "Diverging branches" in ret.returned["stderr"]:
+            ret.error_nessage =f"Branches diverged, can't pull (merge) in {path}. Need manual intervention!"
+        elif "both modified" in status:
+            # TODO: Dont use status
+            result.error_nessage = f"Code needs merge in {path}"
+        else:
+            # Not sure what the error was, just print it
+            result.error_nessage = f"{UNKNOWN_ERR}: {ret}"
+        # elif "both modified" in status:
+        #     PrintWarning(f"Code needs merge in {path}")
+
+    ret.error_nessage
+    return ret
 
 def GitRebaseOrMergeBranch(path, branch, operation):
     local_branches = FindLocalBranchForRemote(path, branch)
@@ -207,12 +222,12 @@ def GitRebaseOrMergeBranch(path, branch, operation):
             if CheckMergeOperationConflict(result.returned["out"]):
                 result.error_nessage = f"Merge conflict in {path} when merging branch {branch}"
             elif not CheckMergeOperationSuccess(result.returned["out"]):
-                result.error_nessage = f"Unknown issue with merge (please send this message in a ticket for better error handling! =) ): {output}"
+                result.error_nessage = f"{UNKNOWN_ERR}: {output}"
         else:
             if CheckRebaseOperationConflict(result.returned["out"]):
                 result.error_nessage = f"Rebase conflict in {path} when merging branch {branch}"
             elif not CheckRebaseOperationSuccess(result.returned["out"]):
-                result.error_nessage = f"Unknown issue with rebase (please send this message in a ticket for better error handling! =) ): {result}"
+                result.error_nessage = f"{UNKNOWN_ERR}: {result}"
 
     return result
 
@@ -270,7 +285,8 @@ def GetRepoLocalBranch(path = None):
     return ParseGitResult("git rev-parse --abbrev-ref HEAD", path)
 
 def GetRepoRemoteBranch(path = None):
-    return ParseGitResult("git for-each-ref --format='%(upstream:short)' \"$(git symbolic-ref -q HEAD)\"", path)
+    ret = GIT_CMD("git for-each-ref --format='%(upstream:short)' $(git symbolic-ref -q HEAD)", path)
+    return ParseProcessResponse(ret)
 
 def GetRepoRemoteCommit(path = None):
     return ParseGitResult("git rev-parse `git branch -r --sort=committerdate | tail -1`", path)
@@ -355,15 +371,9 @@ def RepoPull(path = None):
         ret = GitFastForwardFetch(path, True)
     else:
         ret = GitFastForwardFetch(path, False)
-
+    
     if ret.error_nessage != None:
-        status = GetRepoStatus(path)
-        if "both modified" in status:
-            print(f"WARNING: Code needs merge in {path}")
-        else:
-            # Not sure what the error was, just print it
-            print(ret)
-
+        PrintWarning(ret.error_nessage)
     # ParseGitResult("git pull origin --rebase", path)
     # ParseGitResult("git fetch --all", path)
     # ParseGitResult("git rebase", path)
