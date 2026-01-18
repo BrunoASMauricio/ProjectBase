@@ -21,7 +21,7 @@ def Test1(branch):
     ], PB_out)
 
     # Create new branch and check it out
-    RunPB(repo_a.url, "1 5 4 2 Test 4 1", branch)
+    RunPB(repo_a.url, "1 5 4 4 Test 4 1", branch)
     TestInFile([
     " | RepoA | Test | origin/Test",
     " | RepoB | Test | origin/Test",
@@ -303,7 +303,7 @@ Base single change merge
 def Test3(branch):
     repo_a, _, _, _ = CreateBaseRepos()
 
-    RunPB(repo_a.url, "1 5 4 2 Test 4 1", branch)
+    RunPB(repo_a.url, "1 5 4 4 Test 4 1", branch)
     TestInFile([
     " | RepoA | Test | origin/Test",
     " | RepoB | Test | origin/Test",
