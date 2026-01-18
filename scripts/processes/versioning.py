@@ -170,6 +170,11 @@ def _RebaseOrMergeBranch(branch_name, operation):
         answer = GetNextInput()
         if UserYesNoChoice(answer, True):
             __AbortRebaseOrMerge(outputs, operation)
+            Printnotice(f"{operation} with branch {branch_name} completed with success")
+        else:
+            PrintWarning(f"{operation} with branch {branch_name} completed with issues")
+    else:
+        PrintNotice(f"\n{operation} with branch {branch_name} completed with success")
 
 def MergeBranch(branch_name):
     _RebaseOrMergeBranch(branch_name, "merge")
