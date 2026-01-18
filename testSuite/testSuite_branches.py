@@ -100,6 +100,8 @@ def Test3(branch):
     TestInFile([
     " | RepoA | Test  | Test",
     " | RepoB | Test  | Test",
+    .
+
     " | RepoD | Test  | Test",
     " | RepoC | Test  | Test"
     ], PB_out)
@@ -296,30 +298,6 @@ Test rebase failure on single repo:
     test both "undo rebase" and "keep conflict"
 
 """
-
-"""
-Base single change merge
-"""
-def Test3(branch):
-    repo_a, _, _, _ = CreateBaseRepos()
-
-    RunPB(repo_a.url, "1 5 4 4 Test 4 1", branch)
-    TestInFile([
-    " | RepoA | Test | origin/Test",
-    " | RepoB | Test | origin/Test",
-    " | RepoD | Test | origin/Test",
-    " | RepoC | Test | origin/Test"
-    ], PB_out)
-
-    data_to_print = AddPrintToExec(inst_1.GetPBPath(repo_a), 0)
-
-    TestInFile([
-    "DIRTY  | RepoA | Test | origin/Test",
-    "       | RepoB | Test | origin/Test",
-    "       | RepoD | Test | origin/Test",
-    "       | RepoC | Test | origin/Test"
-    ], PB_out)
-    sys.exit(0)
 
 
 # Test delete branch that was already deleted 9remote and local
