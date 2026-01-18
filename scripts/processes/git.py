@@ -6,7 +6,7 @@ from data.common import RemoveSequentialDuplicates
 from data.git import *
 from processes.filesystem import CreateDirectory, RemoveDirectory
 from processes.git_operations import *
-from processes.filesystem import JoinPaths, GetNewTemporaryPath, GetParentPath, GetCurrentFolderName
+from processes.filesystem import JoinPaths, GetNewTemporaryPath, GetParentPath
 
 """
 Fix url so it is according to settings
