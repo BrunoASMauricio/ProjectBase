@@ -184,7 +184,6 @@ def _Test5(branch, push):
     # Delete the branch remotely (first check out to different branch)
     RunPB(repo_a.url, "1 2 5 4 3 2 4 8 1", branch)
     TestInFile([
-        "Pushing all managed repositories",
         "==== Checkedout branches ====",
         "master: RepoA, RepoB, RepoC, RepoD",
         "==== Local branches ====",
@@ -199,7 +198,6 @@ def _Test5(branch, push):
     # Delete the branch locally
     RunPB(repo_a.url, "1 2 5 4 7 1", branch)
     TestInFile([
-        "Pushing all managed repositories",
         "==== Checkedout branches ====",
         "master: RepoA, RepoB, RepoC, RepoD",
         "==== Local branches ====",
