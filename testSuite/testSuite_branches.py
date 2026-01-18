@@ -30,7 +30,7 @@ def Test1(branch):
     ], PB_out)
 
     # Go back to maser
-    RunPB(repo_a.url, "1 5 4 2 master 4 1", branch)
+    RunPB(repo_a.url, "1 5 4 4 master 4 1", branch)
     TestInFile([
     " | RepoA | master | origin/master",
     " | RepoB | master | origin/master",
