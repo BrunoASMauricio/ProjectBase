@@ -163,6 +163,7 @@ def GitDeleteLocalBranch(path=None, branch_name=None):
         else:
             # Couldnt find any local branch. It is likely a branch that exists as is (not created by PB)
             ret.append(ParseGitResult(f"git branch -D {branch_name}", path))
+            PrintNotice(f"Deleted local branch: {branch_name}")
 
     return ret
 
