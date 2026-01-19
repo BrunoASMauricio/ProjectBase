@@ -132,7 +132,7 @@ def Test4(branch):
 
     # Attempt to delete again
     RunPB(repo_a.url, "1 2 5 4 7 1", branch)
-    TestInFile("Deleted local branch: Test", PB_out)
+    TestInFile("Deleted local branch (PB generated branch): Test", PB_out)
 
 """
 Check a remote branch does not exist
@@ -204,7 +204,7 @@ def _Test5(branch, push):
         "master: RepoA, RepoB, RepoC, RepoD",
         "==== Remote/Tracked branches ====",
         "origin/master: RepoA, RepoB, RepoC, RepoD",
-        "Deleted local branch: Test"
+        "Deleted local branch (PB generated branch): Test"
     ], PB_out)
     TestNotInFile([
         "Test: RepoA, RepoB, RepoC, RepoD",
