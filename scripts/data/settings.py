@@ -1,4 +1,3 @@
-import sys
 import argparse
 from data.common import *
 from data.json import *
@@ -19,6 +18,11 @@ DEFAULT_SETTINGS = {
     "Mode":       "Debug",
     "Clone Type": CLONE_TYPE.SSH.value
 }
+
+def ErrorCheckLogs(exception):
+    print(f"ERROR: Check logs at {Settings["log_file"]} for more information")
+    logging.error(f"Exception: {type(exception)} {exception}")
+    logging.error(get_full_traceback(exception))
 
 def ToggleSpeed():
     current_type = Settings["active"]["Speed"]
