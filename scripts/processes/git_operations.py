@@ -120,7 +120,7 @@ def FindLocalBranchForRemote(path, branch_name):
         if len(parts) < 3:
             continue
 
-        if parts[2] == f"[{branch_name}]":
+        if parts[2] == f"[{branch_name}]" or parts[2] == f"[{branch_name} " or parts[2] == f"[{branch_name}:":
             local_branches.append(parts[0])
 
     if len(local_branches) > 1:
