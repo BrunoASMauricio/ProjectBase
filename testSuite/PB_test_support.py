@@ -346,6 +346,7 @@ def RunPB(url, commands, branch):
     WriteFile(PB_log, "")
     WriteFile(PB_out, "")
     LaunchCommand(f"git checkout {branch}", path=PB_path)
+    print(f"Running PB with: {commands}")
     cmd = f"./run.sh --fast --log_file={PB_log} --out_file={PB_out} -e --url={url} {commands}"
     return_info = LaunchCommand(cmd, to_print=False, path=PB_path)
     return return_info
