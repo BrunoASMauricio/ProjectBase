@@ -156,14 +156,14 @@ def GitDeleteLocalBranch(path=None, branch_name=None):
         except ProcessError as ex:
             ret.append(ex)
     if success:
-        PrintNotice(f"Deleted local branch: {branch_name}")
+        PrintNotice(f"Deleted local branch (PB generated branch): {branch_name}")
     else:
         if len(local_branches) > 0:
             PrintWarning(f"Failed to delete local branch {branch_name} for {path}: {ret}\nlocal_branches: {local_branches}")
         else:
             # Couldnt find any local branch. It is likely a branch that exists as is (not created by PB)
             ret.append(ParseGitResult(f"git branch -D {branch_name}", path))
-            PrintNotice(f"Deleted local branch: {branch_name}")
+            PrintNotice(f"Deleted local branch (normal branch): {branch_name}")
 
     return ret
 
