@@ -4,10 +4,9 @@ import time
 import logging
 from enum import Enum
 
-from data.common import Formatter, ErrorCheckLogs, SlimError, Assert, GetText, GetHost, GetTime
-from data.common import RemoveNonAlfanumeric, ResetTerminal, AssembleTable
+from data.common import *
 from data.colors import ColorFormat, Colors
-from data.settings import Settings
+from data.settings import Settings, ErrorCheckLogs
 from data.paths import JoinPaths
 from processes.auto_completer import CustomCompleter
 
