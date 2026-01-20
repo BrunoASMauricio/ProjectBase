@@ -328,6 +328,22 @@ def GetParsedLocalBranches(path = None):
 def GetRepoStatus(path = None):
     return ParseGitResult("git status", path)
 
+def __GetUntrackedFilesDiff(path):
+    return GIT_CMD("git ls-files --others --exclude-standard -z | xargs -0 -n 1 git --no-pager diff --stat /dev/null", path).returned["stdout"]
+
+def __GetUntrackedDiff(path):
+    return GIT_CMD("git ls-files --others --exclude-standard -z | xargs -0 -n 1 git --no-pager diff /dev/null", path).returned["stdout"]
+
+def GetGitFileDiff(path = None):
+    untracked = __GetUntrackedFilesDiff(path)
+    tracked = GIT_CMD("git --no-pager diff --stat", path).returned["stdout"]
+    return tracked + "\n" + untracked
+
+def GetGitDiff(path = None):
+    untracked = __GetUntrackedDiff(path)
+    tracked = GIT_CMD("git --no-pager diff", path).returned["stdout"]
+    return tracked + "\n" + untracked
+
 def GetRepoRemote(path = None):
     return ParseGitResult("git remote show", path)
 

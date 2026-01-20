@@ -188,6 +188,19 @@ def RebaseBranch(branch_name):
 def SelectBranchToRebase():
     return SelectBranch("locals", RebaseBranch)
 
+def GetFilesDiff():
+    results = RunOnAllRepos(GetGitFileDiff)
+    for path, diff in results.items():
+        if len(diff) > 1:
+            print(CLICenterString(path))
+            print(diff)
+
+def GetDiff():
+    results = RunOnAllRepos(GetGitDiff)
+    for path, diff in results.items():
+        if len(diff) > 1:
+            print(CLICenterString(path))
+            print(diff)
 
 def DirectlyManageSingleRepository():
     all_paths, known_paths, _ = GetKnownAndUnknownGitRepos()
