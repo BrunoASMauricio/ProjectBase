@@ -9,11 +9,10 @@ import subprocess
 
 from time import sleep
 from threading import Thread, Lock
-from data.settings import Settings
+from data.settings import Settings, ErrorCheckLogs
 from data.colors import ColorFormat, Colors
 from processes.progress_bar import PrintProgressBar
 from data.common import *
-from menus.menu import PeekNextInput, PopNextInput
 
 #                           PROCESS OPERATIONS
 
@@ -277,7 +276,7 @@ def SetupLocalEnvVars():
 def GetEnvVarExports():
     return "; ".join(f"export {var}='{val}'" for var, val in GetEnvVars().items())
 
-def _LaunchCommand(command, path=None, to_print=False):
+def _LaunchCommand(command, path=None, interactive=False):
     if path == None:
         path = os.getcwd()
     else:
@@ -299,7 +298,7 @@ def _LaunchCommand(command, path=None, to_print=False):
 
     command = f"cd '{path}'; {command}"
 
-    if to_print == True:
+    if interactive == True:
         print(ColorFormat(Colors.Blue, command))
         output_bytes = []
         def read(fd):
@@ -316,8 +315,7 @@ def _LaunchCommand(command, path=None, to_print=False):
 
         returned["code"] = int(pty.spawn(['bash', '-c', command], read))
 
-        if to_print == True:
-            print(ColorFormat(Colors.Blue, "Returned " + str(returned["code"])))
+        print(ColorFormat(Colors.Blue, "Returned " + str(returned["code"])))
 
         if len(output_bytes) != 0:
             output_bytes = b''.join(output_bytes)
@@ -325,7 +323,8 @@ def _LaunchCommand(command, path=None, to_print=False):
             no_escape_utf8 = RemoveAnsiEscapeCharacters(output_utf8)
             clean_utf8 = RemoveControlCharacters(no_escape_utf8)
 
-            returned["stdout"] = clean_utf8
+            returned["stdout"] = output_utf8
+            returned["out"] = clean_utf8
         else:
             returned["stdout"] = ""
     else:
@@ -334,36 +333,40 @@ def _LaunchCommand(command, path=None, to_print=False):
                                 stderr=subprocess.PIPE,
                                 text=True)
         returned["command"] = command
-        try:
-            returned["stdout"]  = result.stdout
-            returned["stderr"]  = result.stderr
-            # returned["stdout"]  = result.stdout.decode('utf-8')
-            # returned["stderr"]  = result.stderr.decode('utf-8')
-        except UnicodeDecodeError as Ex:
-            print(f"Decoding error: {Ex}")
-            try:
-                returned["stdout"]  = RemoveNonAscii(RemoveControlCharacters(result.stdout))
-                returned["stderr"]  = RemoveNonAscii(RemoveControlCharacters(result.stderr))
-            except Exception as Ex:
-                print(f"Exception trying to handle decoding error: {Ex}")
-                returned["stdout"] = result.stdout
-                returned["stderr"] = result.stderr
-        returned["stdout"] = RemoveControlCharacters(returned["stdout"].rstrip())
-        returned["stderr"] = RemoveControlCharacters(returned["stderr"].rstrip())
+        returned["stdout"]  = result.stdout
+        returned["stderr"]  = result.stderr
+        # try:
+        #     returned["stdout"]  = result.stdout
+        #     returned["stderr"]  = result.stderr
+        #     # returned["stdout"]  = result.stdout.decode('utf-8')
+        #     # returned["stderr"]  = result.stderr.decode('utf-8')
+        # except UnicodeDecodeError as Ex:
+        #     print(f"Decoding error: {Ex}")
+        #     try:
+        #         returned["stdout"]  = RemoveNonAscii(RemoveControlCharacters(result.stdout))
+        #         returned["stderr"]  = RemoveNonAscii(RemoveControlCharacters(result.stderr))
+        #     except Exception as Ex:
+        #         print(f"Exception trying to handle decoding error: {Ex}")
+        #         returned["stdout"] = result.stdout
+        #         returned["stderr"] = result.stderr
+        returned["stdout"] = returned["stdout"].rstrip()
+        returned["stderr"] = returned["stderr"].rstrip()
 
         returned["code"] = int(result.returncode)
+
         returned["out"] = f"{returned["stdout"]}{returned["stderr"]}"
+        returned["out"] = RemoveNonAscii(RemoveControlCharacters(returned["out"]))
     return returned
 
 """
 Changes to the given directory, launches the Command in a forked process and
 returns the { "stdout": "..." , "code": "..."  } dictionary
 """
-def LaunchProcess(command, path=None, to_print=False):
+def LaunchProcess(command, path=None, interactive=False):
     """
     Launch new process
 
-    to_print: whether to print the output (process thinks it is in a TY)
+    interactive: whether to have an interactive TTY session or just run as a process and return output
 
     Returns:
         _type_: {"stdout":"<stdout>", "code": return code}
@@ -376,7 +379,7 @@ def LaunchProcess(command, path=None, to_print=False):
     # Allow python scripts to use ProjectBase scripts
     SetupLocalEnvVars()
 
-    returned = _LaunchCommand(command, path, to_print)
+    returned = _LaunchCommand(command, path, interactive)
 
     if returned["code"] != 0:
         simple_message = "\t\tProcess returned failure (" + ColorFormat(Colors.Yellow, str(returned["code"])) + "):\n"

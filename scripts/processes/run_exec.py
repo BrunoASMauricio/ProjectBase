@@ -148,7 +148,7 @@ def ExecuteMenu(PathToScan):
             try:
                 # Allow python scripts to use ProjectBase scripts
                 SetupLocalEnvVars()
-                result = _LaunchCommand(full_command, path=None, to_print=False)
+                result = _LaunchCommand(full_command, path=None, interactive=True)
                 print(result["stdout"])
                 if len(result["stderr"]) > 0:
                     print(result["stderr"])
