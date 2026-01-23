@@ -1,3 +1,4 @@
+import os
 import logging
 
 from processes.process import *
@@ -118,56 +119,47 @@ def GetAllGitRepos(path_to_search, depth=-1):
 
     return git_repos
 
-
-
-import os
 def SetupBareData(repo_url):
+    bare_gits = Settings["paths"]["bare gits"]
+    bare_tree_name = GetRepoBareTreePath(repo_url)
+    clone_command = 'git clone "' + repo_url + '" "' + JoinPaths(bare_gits, bare_tree_name) + '" --bare'
+    logging.debug("Cloning bare git with: " + clone_command)
+    try:
+        LaunchProcess(clone_command)
+    except ProcessError as ex:
+        ex.RaiseIfNotInOutput("already exists")
+    bare_git = JoinPaths(bare_gits, bare_tree_name)
+
+    # Setup some configs
+    msg = "New branches track the remote of the current local branch"
+    LaunchGitCommandAt("git config branch.autoSetupMerge always", bare_git, msg)
+
+    msg = "Configuring branch.autoSetupMerge"
+    LaunchGitCommandAt("git config push.default upstream", bare_git, msg)
+
+    msg = "Pull will rebase instead of merge"
+    LaunchGitCommandAt("git config pull.rebase true", bare_git, msg)
+
+    msg = "Auto stash before pull and apply afterwards"
+    LaunchGitCommandAt("git config rebase.autoStash true", bare_git, msg)
+
+    remote = GetRepoRemote(bare_git)
+    LaunchGitCommandAt(f"git config --add remote.{remote}.fetch \"+refs/heads/*:refs/remotes/{remote}/*\"", bare_git, "Setup worktree to get all references")
+    # Ensure we are fetching all branches of the remote
+    LaunchGitCommandAt(f"git fetch --all", bare_git, f"Fetch all branches")
+
+    if False == os.path.isdir(bare_git):
+        print("Bare git " + bare_git + " could not be pulled")
+        exit(-1)
+    return bare_git
+
+def GetBareGit(repo_url):
     repo_url       = FixUrl(repo_url)
-    # ActiveSettings = Settings["active"]
-
-    bare_gits      = Settings["paths"]["bare gits"]
-
-    # This called takes time 
-
-    repo_url_base = url_SSH_to_HTTPS(repo_url)
-    bare_git_probable_path = bare_gits + "/" + repo_url_base[8:] + ".git"
-
-    if(os.path.exists(bare_git_probable_path)):
-        bare_git = bare_git_probable_path 
-    else:
-        bare_git  = FindGitRepo(bare_gits, repo_url)
+    bare_gits = Settings["paths"]["bare gits"]
+    bare_git  = FindGitRepo(bare_gits, repo_url)
 
     if bare_git == None:
-        bare_tree_name = GetRepoBareTreePath(repo_url)
-        clone_command = 'git clone "' + repo_url + '" "' + JoinPaths(bare_gits, bare_tree_name) + '" --bare'
-        logging.debug("Cloning bare git with: " + clone_command)
-        try:
-            LaunchProcess(clone_command)
-        except ProcessError as ex:
-            ex.RaiseIfNotInOutput("already exists")
-        bare_git = JoinPaths(bare_gits, bare_tree_name)
-
-        # Setup some configs
-        msg = "New branches track the remote of the current local branch"
-        LaunchGitCommandAt("git config branch.autoSetupMerge always", bare_git, msg)
-
-        msg = "Configuring branch.autoSetupMerge"
-        LaunchGitCommandAt("git config push.default upstream", bare_git, msg)
-
-        msg = "Pull will rebase instead of merge"
-        LaunchGitCommandAt("git config pull.rebase true", bare_git, msg)
-
-        msg = "Auto stash before pull and apply afterwards"
-        LaunchGitCommandAt("git config rebase.autoStash true", bare_git, msg)
-
-        remote = GetRepoRemote(bare_git)
-        LaunchGitCommandAt(f"git config --add remote.{remote}.fetch \"+refs/heads/*:refs/remotes/{remote}/*\"", bare_git, "Setup worktree to get all references")
-        # Ensure we are fetching all branches of the remote
-        LaunchGitCommandAt(f"git fetch --all", bare_git, f"Fetch all branches")
-
-        if False == os.path.isdir(bare_git):
-            print("Bare git " + bare_git + " could not be pulled")
-            exit(-1)
+        bare_git = SetupBareData(repo_url)
 
     return bare_git
 
