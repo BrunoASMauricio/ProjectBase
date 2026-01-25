@@ -342,7 +342,6 @@ def _LoadRepositories(root_configs, cache_path):
 
     while len(next_dependencies) > 0:
         new_repos = 0
-        print(f"\n{len(next_dependencies)} unloaded dependencies found")
 
         # For each unloaded repository, get ready to load it
         repo_args = []
@@ -353,6 +352,11 @@ def _LoadRepositories(root_configs, cache_path):
             # Check if repo was loaded in a previous operation, need to block it here as well
             if config["url"] not in loaded_urls:
                 repo_args.append((config,))
+
+        if len(repo_args) == 0:
+            break
+
+        print(f"\n{len(repo_args)} unloaded dependencies found")
 
         # Load remaining repositories
         RunInThreadsWithProgress(_LoadRepository, repo_args, None, __PrintLoadProgress)
