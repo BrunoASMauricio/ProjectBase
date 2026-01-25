@@ -74,6 +74,7 @@ at the expected path
 """
 def __LoadRepositoryFolder(imposed_configs):
     global repositories
+    global state_changed_detected
 
     repo_id = imposed_configs["repo ID"]
 
@@ -283,6 +284,13 @@ def _LoadRepository(imposed_configs):
     imposed_configs["bare path"] = GetBareGit(imposed_configs["url"])
     imposed_configs["repo ID"]   = GetRepoIdFromPath(imposed_configs["bare path"])
 
+    with repositories_lock:
+        # Check if repo ID has been loaded
+        repo_id = imposed_configs["repo ID"]
+        if repo_id in repositories.keys() and repositories[repo_id]["url"] in loaded_urls:
+            PrintNotice(f"Repeated ID {repo_id} found for {imposed_configs["name"]}")
+            return
+
     configs = __LoadRepositoryFolder(imposed_configs)
 
     # Parse configs with appropriate variable values
@@ -379,13 +387,12 @@ def LoadRepositories(root_configs, cache_path):
         #  commit/branch from cached load). Needs to be done one by one in case there
         #  are preexisting keys that dont exst anymore
         for key in root_configs.keys():
-            repositories[root_configs["repo ID"]][key] = root_configs[key]
+            repositories[root_data["repo ID"]][key] = root_configs[key]
 
     # Setup all repositories to be reloaded and copy them over to be dependencies
     for repo_id in repositories:
         repositories[repo_id]["reloaded"] = False
     
-    # next_dependencies = [x for x in repositories.values()]
     for x, y in repositories.items():
         next_dependencies[x] = y
 
