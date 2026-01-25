@@ -116,3 +116,9 @@ The characters/prefixes/operations available are:
 `!g`: gdb with no options
 `!s`: gdbserver with no options
 `!v`: valgrind with no options
+
+
+
+# Scripts
+
+Python scripts launched from within PB contain access to the internal PB functions, as well as sharing the python venv and pip installation

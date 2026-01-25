@@ -3,6 +3,7 @@
 ## General
 
 - [X] Dependency visualizer
+- [ ] Usually if there are too many `No such path` errors it means that the state is messed up. Maybe check for it and a dd a helpful tip?
 - [ ] Project specific repos. It might be useful to group together repositories
   - [ ] Allow repositories to specify group IDs somehow
   - [ ] Create shared objects per repo group
@@ -48,6 +49,7 @@
   - [ ] Collect how many bytes are lost and how many different errors, per each test
 - [ ] Fix completion
   - [ ] Current input counts for completion. i.e. '3 3 ' and then TAB would show the possible completions of menu 3.3 and not current menu
+- [ ] Allow selection of menu entries by their values instead of index, at least for the dynamically generated entries
 - [ ] Deal with projects that have no code (simple message stating nothing to do)
 - [X] Modify how processes are called. Multiple attempts should not be necessary and are very error prone
 - [ ] Check config file on all config checks, dont cache
@@ -127,6 +129,7 @@
 - [ ] Improve how git is used (use by repo instead of by path)
 - [X] In status, warn if there are dirty repos that will not be commited (have the no commit flag set)
 - [X] Add information on sync status in getting repo status
+- [ ] Test access to repos (i.e. ssh is properly configured) before parallel load. Otherwise its impossible to input the password or whatever and the errors are mangled
 - [ ] Toggle between project wide and specific repository operations
 - [X] Allow two types of commits
   - [X] "fixed" commits (other word isencouraged) are normal commits

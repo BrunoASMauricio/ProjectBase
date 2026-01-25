@@ -29,7 +29,8 @@ sys.stderr = out
 
 # Configure logging
 logging.basicConfig(filename=Settings["log_file"],
-                    filemode='a', level = logging.DEBUG)
+                    filemode='a', level = logging.WARNING)
+                    # filemode='a', level = logging.DEBUG)
 
 logging.info("\n\n\n=============== PROJECTBASE start ===============")
 logging.info("=============== at " + GetNow() + " ===============")

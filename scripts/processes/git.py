@@ -120,15 +120,13 @@ def GetAllGitRepos(path_to_search, depth=-1):
     return git_repos
 
 def SetupBareData(repo_url):
-    bare_gits = Settings["paths"]["bare gits"]
-    bare_tree_name = GetRepoBareTreePath(repo_url)
-    clone_command = 'git clone "' + repo_url + '" "' + JoinPaths(bare_gits, bare_tree_name) + '" --bare'
+    bare_git = GetRepoBareTreePath(Settings["paths"]["bare gits"], repo_url)
+    clone_command = 'git clone "' + repo_url + '" "' + bare_git + '" --bare'
     logging.debug("Cloning bare git with: " + clone_command)
     try:
         LaunchProcess(clone_command)
     except ProcessError as ex:
         ex.RaiseIfNotInOutput("already exists")
-    bare_git = JoinPaths(bare_gits, bare_tree_name)
 
     # Setup some configs
     msg = "New branches track the remote of the current local branch"
@@ -154,10 +152,10 @@ def SetupBareData(repo_url):
     return bare_git
 
 def GetBareGit(repo_url):
-    repo_url       = FixUrl(repo_url)
-    bare_gits = Settings["paths"]["bare gits"]
-    bare_git  = FindGitRepo(bare_gits, repo_url)
-
+    repo_url  = FixUrl(repo_url)
+    # TODO: Calculate the path and try to check for it directly first
+    # Here we might not even need to do Find for baregit at all
+    bare_git  = FindGitRepo(Settings["paths"]["bare gits"], repo_url)
     if bare_git == None:
         bare_git = SetupBareData(repo_url)
 

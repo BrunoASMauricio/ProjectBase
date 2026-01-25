@@ -261,7 +261,10 @@ def Test8(branch):
 
     Assert(len(commits_before) + 1 == len(commits_after), f"Incorrect amount of commits {len(commits_before)} and {len(commits_after)}")
 
-def Test9(branch):
+"""
+Test
+"""
+def _Test9(branch, undo):
     repo_a, _, _, _ = CreateBaseRepos()
 
     # Create new branch and validate it exists
@@ -283,6 +286,11 @@ def Test9(branch):
     TestInFile("Rebased branches into master", PB_out)
     TestNotInFile("There was an issue", PB_out)
 
+def Test9(branch):
+    _Test9(branch, True)
+
+def Test10(branch):
+    _Test9(branch, False)
 
 """
 Tests to do
@@ -303,6 +311,10 @@ tests = [
     Test4,
     Test5,
     Test6,
+    Test7,
+    Test8,
+    Test9,
+    Test10
 ]
 
 RunTests(tests)

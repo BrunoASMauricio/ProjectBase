@@ -9,7 +9,7 @@ from data.common   import LoadFromFile, DumpToFile, PrintNotice
 
 from processes.repository_configs     import ConfigsChanged, ResetConfigsState
 
-from processes.repository     import LoadRepositories, Setup, Build
+from processes.repository     import _LoadRepositories, Setup, Build
 from processes.process        import LaunchProcess, LaunchVerboseProcess
 from data.colors              import ColorFormat, Colors
 from processes.git_operations import GetRepositoryUrl
@@ -74,7 +74,8 @@ class PROJECT(dict):
             self.root_repo_base_config["commitish"] = None
 
         PrintNotice(f"Loading repositories with the following parameters: {self.root_repo_base_config}")
-        self.repositories = LoadRepositories(self.root_repo_base_config, Settings["cache file"])
+        # self.repositories = LoadRepositories(self.root_repo_base_config, Settings["cache file"])
+        self.repositories = _LoadRepositories(self.root_repo_base_config, Settings["cache file"])
         print("Project loaded")
 
     def setup(self):

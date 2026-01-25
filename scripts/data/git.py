@@ -2,7 +2,7 @@ import os
 import re
 
 from data.common import GetNow
-from processes.filesystem import GetCurrentFolderName
+from processes.filesystem import GetCurrentFolderName, JoinPaths
 
 def GenerateLocalBranchName(branch):
     now = GetNow().replace(" ", "_").replace(":","_").replace(".","_").replace("-","_")
@@ -101,7 +101,7 @@ def GetRepoNameFromURL(url):
         url = url[:-4]
     return url
 
-def GetRepoBareTreePath(url):
+def GetRepoBareTreePath(base_path, url):
     url = url_SSH_to_HTTPS(url)
     if url[-1] == '/':
         url = url[:-1]
@@ -109,7 +109,7 @@ def GetRepoBareTreePath(url):
     url = url.replace("http://","")
     if not url.endswith(".git"):
         url = url+".git"
-    return url
+    return JoinPaths(base_path, url)
 
 def SameUrl(url1, url2):
     try:

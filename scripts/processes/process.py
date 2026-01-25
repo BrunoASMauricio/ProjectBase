@@ -175,10 +175,10 @@ def RunInThreadsWithProgress(run_callback, run_args, max_delay=None, print_callb
             PrintProgressWhileWaitOnThreads((threads, run_callback, run_args), max_delay, print_callback, print_args)
         except KeyboardInterrupt:
             print("Keyboard Interrupt, stopping threads")
-            for thread in threads:
-                if thread.is_alive():
-                    # thread.raise_exception()
-                    thread._stop()
+            # for thread in threads:
+            #     if thread.is_alive():
+            #         # thread.raise_exception()
+            #         thread._stop()
             ClearThreadLog()
 
     Flushthread_log()

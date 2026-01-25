@@ -33,7 +33,7 @@ class GIT_CMD():
             self.returned = ex.returned
 
         if Settings["debug"]:
-            logging.debug(f"Git Operation return: {response}")
+            logging.debug(f"Git Operation return: {self.returned}")
 
     def __str__(self):
         return f"cmd: {self.command}\npath: {self.path}\nreturned: {self.returned}\n"
@@ -324,6 +324,19 @@ def GetRepoLocalBranches(path = None):
     return ParseGitResult("git branch", path)
 def GetParsedLocalBranches(path = None):
     return ParseBranches(GetRepoLocalBranches(path))
+
+def GetRepoUrl(path = None):
+    """
+    origin	<URL A> (fetch)
+    origin	<URL B> (push)
+    """
+    result = ParseGitResult("git remote -v", path)
+    result = result.split('\n')[0]
+    result = result.split(' ')[1]
+    return result
+
+def GetFirstCommit(path = None):
+    return ParseGitResult("git rev-list --max-parents=0 HEAD", path)
 
 def GetRepoStatus(path = None):
     return ParseGitResult("git status", path)
