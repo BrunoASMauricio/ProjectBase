@@ -5,6 +5,7 @@ from processes.project import Project
 from dependency_graph import BuildGraph, VisualizeGraph
 from processes.project import CleanPBCache, PurgePB
 from data.settings import ToggleCloneType, ToggleSpeed, ToggleMode
+from processes.PB_debug_terminal import PBTerminal
 
 def CurrentSpeedEntry():
     if Settings["active"]["Speed"] == "Fast":
@@ -79,3 +80,4 @@ SettingsMenu.AddCallbackEntry("Create API graph", CreateApiGraph, "Create a grap
 SettingsMenu.AddCallbackEntry("Show repositories", ShowRepositories, "Print PB view of the projects' repos")
 SettingsMenu.AddCallbackEntry("Clean project cache", CleanPBCache, "Clean cache (will have to reload from disk)")
 SettingsMenu.AddCallbackEntry("Purge ALL projects (DANGEROUS)", PurgePB, "Fully remove all PB data. Equivalent to clean clone")
+SettingsMenu.AddCallbackEntry("Launch PB Debug console", PBTerminal, "Console for performing introspection into PB")
