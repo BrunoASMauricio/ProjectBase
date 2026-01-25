@@ -9,7 +9,8 @@
   - [ ] Create shared objects per repo group
   - [ ] Visualize the groups in a project
 - [ ] ProjectBase documentation
-- [ ] Allow certain menus to receive multiple inputs (i.e. by using, to separate the list like 1,2,3,4)
+- [X] Allow certain menus to receive multiple inputs (i.e. by using, to separate the list like 1,2,3,4)
+  - [X] Implicitly done by menus that "hold" input
 - [ ] Add ProjectBase configs
   - [ ] For project wide flags
   - [ ] For build system setup

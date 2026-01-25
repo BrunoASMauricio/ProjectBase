@@ -662,7 +662,6 @@ def __SetupCMake(repositories):
     for repo_id in repositories.keys():
         repository = repositories[repo_id]
 
-        # logging.error(repository)
         if __RepoHasFlagSet(repository, "no auto build") or __RepoHasNoCode(repository):
             logging.info(f"Skipping CMake setup for {repo_id}")
             continue
