@@ -264,18 +264,38 @@ def DumpToFile(file_path, data, mode='w'):
     with open(file_path, mode) as file:
         file.write(data)
 
-def Print(message, end="\n"):
-    print(message, end)
-
 def PrintError(message, end="\n"):
-    print(ColorFormat(Colors.Red, f"[ERROR] {message}"), end)
+    message = ColorFormat(Colors.Red, f"[ERROR] {message}")
+    print(message, end=end)
+    logging.error(message + end)
 
 def PrintWarning(message, end="\n"):
-    print(ColorFormat(Colors.Yellow, f"[WARN] {message}"), end)
+    message = ColorFormat(Colors.Magenta, f"[WARN] {message}")
+    print(message, end=end)
+    logging.warning(message + end)
+
 
 def PrintNotice(message, end="\n"):
-    print(ColorFormat(Colors.Blue, f"[NOTICE] {message}"), end)
+    message = ColorFormat(Colors.Blue, f"[NOTICE] {message}")
+    print(message, end=end)
+    logging.info(message + end)
 
+"""
+To be considered the default when communicating with the user information about the current
+process
+"""
+def PrintInfo(message, end="\n"):
+    message = ColorFormat(Colors.Green, f"{message}")
+    print(message, end=end)
+    logging.info(message + end)
+
+def Print(message, end="\n"):
+    PrintInfo(message, end)
+
+def PrintDebug(message, end="\n"):
+    message = f"[DEBUG] {message}"
+    print(message, end=end)
+    logging.debug(message + end)
 
 """
 Present Message to user and return True if the response is y or Y, False if n or N

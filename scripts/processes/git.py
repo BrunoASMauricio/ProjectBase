@@ -45,26 +45,30 @@ def FindGitRepo(base_path, repo_url, repo_commitish = None, depth=-1):
 
     # multiple threads mean base_path can be randomly deleted
     if not os.path.isdir(base_path):
-        logging.warning("Folder disappeared during operation")
         return None
 
-    url_base_path = GetRepositoryUrl(base_path)
-    if SameUrl(repo_url,  url_base_path ):
-        if repo_commitish != None:
-            # Look into commit
-            if repo_commitish["type"] == "commit":
-                commit = GetRepoLocalCommit(base_path)
-                if commit == repo_commitish["commit"]:
-                    return RemoveSequentialDuplicates(base_path, "/")
-            # Look into branch
-            elif repo_commitish["type"] == "branch":
-                branch = GetRepoLocalBranch(base_path)
-                if SameBranch(branch, repo_commitish["branch"]):
-                    return RemoveSequentialDuplicates(base_path, "/")
+    try:
+        url_base_path = GetRepositoryUrl(base_path)
+        if SameUrl(repo_url,  url_base_path ):
+            if repo_commitish != None:
+                # Look into commit
+                if repo_commitish["type"] == "commit":
+                    commit = GetRepoLocalCommit(base_path)
+                    if commit == repo_commitish["commit"]:
+                        return RemoveSequentialDuplicates(base_path, "/")
+                # Look into branch
+                elif repo_commitish["type"] == "branch":
+                    branch = GetRepoLocalBranch(base_path)
+                    if SameBranch(branch, repo_commitish["branch"]):
+                        return RemoveSequentialDuplicates(base_path, "/")
+                else:
+                    raise Exception("Invalid commitish: "+str(repo_commitish))
             else:
-                raise Exception("Invalid commitish: "+str(repo_commitish))
-        else:
-            return RemoveSequentialDuplicates(base_path, "/")
+                return RemoveSequentialDuplicates(base_path, "/")
+    except Exception as ex:
+        # If the folder got removed during iteration, just return None
+        if "No such path" in str(ex):
+            return None
 
     # multiple threads mean base_path can be randomly deleted
     if not os.path.isdir(base_path):
@@ -181,7 +185,7 @@ def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
     if existing_tree != None and GetParentPath(existing_tree) == target_path:
         # Already exists, skip
         return existing_tree
-    
+
     # --track: Set remote and merge configurations to track upstream
     # --force: Override safe guards and allow same branch name to be checked out by multiple worktrees
     # 

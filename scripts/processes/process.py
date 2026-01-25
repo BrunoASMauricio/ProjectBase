@@ -16,7 +16,6 @@ from data.common import *
 
 #                           PROCESS OPERATIONS
 
-import threading
 thread_log = ""
 thread_log_lock = threading.Lock()
 
@@ -247,7 +246,7 @@ def RunOnFolders(paths, callback, arguments={}):
 class ProcessError(Exception):
     def __init__(self, simple_message, trace_message, returned):
         # Call the base class constructor with the parameters it needs
-        message  = f"\n\t========================= Process failed (start) ({GetNow()}) =========================\n"
+        message  = f"\n\t========================= Process failed (start) ({GetNow()}) ({threading.get_ident()}) =========================\n"
         message += f"{simple_message}\nTrace:\n{trace_message}"
         message += "\n\t========================= Process failed (end) =========================\n"
 

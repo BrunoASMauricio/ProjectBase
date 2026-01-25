@@ -9,8 +9,8 @@ from data.common   import LoadFromFile, DumpToFile, PrintNotice
 
 from processes.repository_configs     import ConfigsChanged, ResetConfigsState
 
-from processes.repository     import _LoadRepositories, Setup, Build
-from processes.process        import LaunchProcess, LaunchVerboseProcess
+from processes.repository     import LoadRepositories, Setup, Build, full_load
+from processes.process        import LaunchProcess, LaunchVerboseProcess, LaunchSilentProcess
 from data.colors              import ColorFormat, Colors
 from processes.git_operations import GetRepositoryUrl
 from processes.process        import GetEnvVarExports
@@ -47,6 +47,9 @@ class PROJECT(dict):
         ## root url for automatic project detection
         DumpToFile(JoinPaths(Settings["paths"]["project main"], "root_url.txt"), Settings["url"])
 
+        # Clean temporary at startup
+        LaunchSilentProcess(f"rm -rf {Settings["paths"]["temporary"]}/*")
+
     def load(self):
         logging.info("Loading repositories")
         # Reset configs state
@@ -74,8 +77,7 @@ class PROJECT(dict):
             self.root_repo_base_config["commitish"] = None
 
         PrintNotice(f"Loading repositories with the following parameters: {self.root_repo_base_config}")
-        # self.repositories = LoadRepositories(self.root_repo_base_config, Settings["cache file"])
-        self.repositories = _LoadRepositories(self.root_repo_base_config, Settings["cache file"])
+        self.repositories = LoadRepositories(self.root_repo_base_config, Settings["cache file"])
         print("Project loaded")
 
     def setup(self):
@@ -122,6 +124,7 @@ class PROJECT(dict):
             LaunchProcess("git remote rm origin; git remote add origin " + url, repository["full worktree path"])
 
     def GetRepositories(self):
+        global full_load
         # See if saved cache exist 
         base_path = "configs/project_cache/"
         load_file = base_path + Settings["ProjectName"] + "_load_project.pkl"
@@ -135,12 +138,11 @@ class PROJECT(dict):
                     print("Loaded project from pickle.")
             
         # Not loaded, load and return
-        if len(self.repositories) == 0:
-            logging.info("No repositories loaded")
+        if len(self.repositories) == 0 or full_load == False:
             self.load()
             return self.repositories
 
-        if(Settings["active"]["Speed"] == "Safe"):
+        if Settings["active"]["Speed"] == "Safe":
             # Single change in configs must trigger full reloading of configs
             # Also internally this code is slower than it shoud there are proably ways to
             # speed it up. TODO 

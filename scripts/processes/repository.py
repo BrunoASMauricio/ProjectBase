@@ -14,17 +14,25 @@ from processes.progress_bar import PrintProgressBar
 from threading import Lock
 from data.paths import JoinPaths
 
+# Repository operation lock
 repositories_lock = Lock()
+
 # Dependencies to load on the next loop
-next_dependencies = []
+next_dependencies = {}
 # Total URLs loaded (used to prevent infinite dependency cycles)
 loaded_urls = []
+# The repos currently being loaded
 repos_being_loaded = []
+# Helper map between URLs and IDs
 url_to_id = {}
 
 repositories = None
-StateChangedDetected = False
+# Root configs. Used to kickstart further loads without searching
 root_data = None
+# Whether a full load has happened or not (i.e. it was interrupted)
+full_load = False
+# Whether there was an incoherency between internal and external state
+state_changed_detected = False
 
 class RepoFlags(Enum):
     NO_COMMIT = 1
@@ -41,18 +49,6 @@ def LoadReposFromCache(path):
     global repositories
     repositories = load_json_file(path, {})
     return repositories
-
-def SetDetectedStateChange():
-    global StateChangedDetected
-    StateChangedDetected = True
-
-def ResetDetectedStateChange():
-    global StateChangedDetected
-    StateChangedDetected = False
-
-def DetectedStateChanged():
-    global StateChangedDetected
-    return StateChangedDetected
 
 def GetRepoIdFromPath(path):
     return GetFirstCommit(path)
@@ -78,9 +74,8 @@ at the expected path
 """
 def __LoadRepositoryFolder(imposed_configs):
     global repositories
-    global repositories_lock
 
-    repo_id = imposed_configs["repo id"]
+    repo_id = imposed_configs["repo ID"]
 
     # Current full path to the repository
     current_location = None
@@ -91,11 +86,12 @@ def __LoadRepositoryFolder(imposed_configs):
         current_location  = FindGitRepo(repository["full worktree path"], imposed_configs["url"], imposed_configs["commitish"], depth=1)
         if current_location == None:
             logging.warning(f"Repo {imposed_configs["name"]} is not in the expected path of: {repository["full worktree path"]}")
-            SetDetectedStateChange()
+            state_changed_detected = True
+
             # Delete previous data. Cant trust it
             del repositories[repo_id]
     else:
-        SetDetectedStateChange()
+        state_changed_detected = True
 
     # Try to see if repository is still on the cached localization
     if current_location == None: # Do a guess of the correct place
@@ -123,7 +119,7 @@ def __LoadRepositoryFolder(imposed_configs):
         # current_location = expected_local_path
         current_location = JoinPaths(expected_local_path, repository["name"])
 
-        SetDetectedStateChange()
+        state_changed_detected = True
 
     else: # Repository present at current_location
         # logging.debug("Repo " + imposed_configs["name"] + " found at " + current_location)
@@ -137,11 +133,8 @@ def __LoadRepositoryFolder(imposed_configs):
             logging.warning(f"Repository not in expected place (at \"{current_location}\" instead of \"{repo_path}\"). Moving it")
             MoveWorkTree(repository["bare path"], current_location, expected_local_path)
             current_location = repo_path
-            SetDetectedStateChange()
+            state_changed_detected = True
         current_location = repo_path
-
-
-
 
     # From this point on:
     # 1. Repository dict exists containing configs
@@ -223,16 +216,72 @@ def __PrintLoadProgress():
     if current_progress != total_repos:
         PrintProgressBar(current_progress, total_repos, prefix = 'Loading Repositories:', suffix = "Loading " + str(current_progress) + "/" + str(total_repos) + " Repositories")
 
+"""
+Check if new dependency configs conflict with either already setup configs
+ or with configs ready to be setup
+Return true if there is a conflict and current operation must stop, false otherwise
+Throws if there are incompatible conflicts
+"""
+def ConflictsPresent(dependency_configs):
+    def __ConflictingConfigs(configA, configB):
+        # Any key that exists on both besides "url", which isnt the same, is problematic
+        keys = ['after build', 'bare path', 'before build', 'commitish', 'dependencies', 'flags', 'local path', 'name', 'private headers', 'public headers', 'repo name', 'setup', 'test headers', 'url']
+        for key in keys:
+            if key not in configA or key not in configB:
+                continue
+
+            if configA[key] != configB[key]:
+                return True
+        return False
+
+    dep_url = dependency_configs["url"]
+    msg = None
+    conflict = False
+
+    # Conditions that can lead to issues
+
+    ## If it was already loaded
+    if dep_url in loaded_urls:
+        conflict = True
+        configs = repositories[url_to_id[dep_url]]
+
+        if __ConflictingConfigs(dependency_configs, configs) == True:
+            msg = CLICenterString(f"Incompatible configs for url {dep_url} (1)", "X")
+            msg = f"{msg}\nA: {pformat(dependency_configs)}\nB: {pformat(configs)}"
+
+    ## It is setup to be loaded next
+    if dep_url in next_dependencies.keys():
+        conflict = True
+        if __ConflictingConfigs(dependency_configs, next_dependencies[dep_url]) == True:
+            msg = CLICenterString(f"Incompatible configs for url {dep_url} (2)", "X")
+            msg = f"{msg}\nA: {pformat(dependency_configs)}\nB: {pformat(next_dependencies[dep_url])}"
+
+    if msg != None:
+        raise Exception(msg)
+
+    return conflict
+
+"""
+Prepare dependency to be fully setup
+"""
+def __AddNewDependency(dependency_configs):
+    global repositories_lock
+    global next_dependencies
+
+    with repositories_lock:
+        if ConflictsPresent(dependency_configs) == True:
+            return
+
+        next_dependencies[dependency_configs["url"]] = dependency_configs
+
 def _LoadRepository(imposed_configs):
     global repositories
-    global next_dependencies
     global loaded_urls
-    global repositories_lock
     global new_repos
 
     imposed_configs["name"]      = GetRepoNameFromURL(imposed_configs["url"])
     imposed_configs["bare path"] = GetBareGit(imposed_configs["url"])
-    imposed_configs["repo id"]   = GetRepoIdFromPath(imposed_configs["bare path"])
+    imposed_configs["repo ID"]   = GetRepoIdFromPath(imposed_configs["bare path"])
 
     configs = __LoadRepositoryFolder(imposed_configs)
 
@@ -248,8 +297,12 @@ def _LoadRepository(imposed_configs):
         "REPO_LIB_PATH":    configs["libraries"],
     })
 
-    # Put repository into appropriate place
-    repositories[configs["repo id"]] = configs
+    # Register repository appropriately
+    with repositories_lock:
+        new_repos += 1
+        loaded_urls.append(configs["url"])
+        repositories[configs["repo ID"]] = configs
+        url_to_id[configs["url"]] = configs["repo ID"]
 
     # Get dependencies ready to be loaded
     try:
@@ -278,20 +331,13 @@ def _LoadRepository(imposed_configs):
             else:
                 dependency_configs["commitish"] = None
 
-            repositories_lock.acquire()
-            # Avoid cyclic dependency leading to infinite operation by only loading
-            #  from any URL once
-            dep_url = dependency_configs["url"]
-            if dep_url not in loaded_urls:
-                loaded_urls.append(dep_url)
-                next_dependencies.append(dependency_configs)
-            repositories_lock.release()
+            __AddNewDependency(dependency_configs)
     except Exception as ex:
         logging.error(f"Failed to load {pformat(configs)}")
         raise ex
-    new_repos += 1
+
 """
-Repo ID can only be obtained after load
+repo ID can only be obtained after load
 To avoid infinite loop, store all loaded URLs
 
 Set root as current "dep
@@ -299,17 +345,21 @@ Set root as current "dep
 Load from the dependencies into the repositories
 
 """
-def _LoadRepositories(root_configs, cache_path):
+def LoadRepositories(root_configs, cache_path):
     global repositories
     global root_data
+    global full_load
     global loaded_urls
     global next_dependencies
     global new_repos
     global repos_being_loaded
+    global state_changed_detected
 
     repos_being_loaded.clear()
     loaded_urls.clear()
     next_dependencies.clear()
+    state_changed_detected = False
+    full_load = False
 
     # Load repositories from cache (if any)
     repositories = LoadReposFromCache(cache_path)
@@ -320,25 +370,24 @@ def _LoadRepositories(root_configs, cache_path):
         root_configs["repo ID"]   = GetRepoIdFromPath(root_configs["bare path"])
         root_data = root_configs
 
-    # root_repo_id = root_configs["repo ID"]
-
-    # Always reset the root configs to what comes from the command line args
-    # Even if it differs from the internal state (i.e/ invoked with different
-    #  commit/branch from cached load). Needs to be done one by one in case there
-    #  are preexisting keys that dont exst anymore
-    # if root_repo_id in repositories:
-    #     for key in root_configs.keys():
-    #         repositories[root_repo_id][key] = root_configs[key]
-
-
     # Root is the starting point of the loop
-    repositories[root_configs["repo ID"]] = root_configs
+    if root_data["repo ID"] not in repositories:
+        repositories[root_data["repo ID"]] = root_configs
+    else:
+        # Always reset the root configs to what comes from the command line args
+        # Even if it differs from the internal state (i.e/ invoked with different
+        #  commit/branch from cached load). Needs to be done one by one in case there
+        #  are preexisting keys that dont exst anymore
+        for key in root_configs.keys():
+            repositories[root_configs["repo ID"]][key] = root_configs[key]
 
     # Setup all repositories to be reloaded and copy them over to be dependencies
     for repo_id in repositories:
         repositories[repo_id]["reloaded"] = False
     
-    next_dependencies = [x for x in repositories.values()]
+    # next_dependencies = [x for x in repositories.values()]
+    for x, y in repositories.items():
+        next_dependencies[x] = y
 
     while len(next_dependencies) > 0:
         new_repos = 0
@@ -346,7 +395,8 @@ def _LoadRepositories(root_configs, cache_path):
         # For each unloaded repository, get ready to load it
         repo_args = []
 
-        repos_being_loaded = [x for x in next_dependencies]
+        repos_being_loaded = [x for x in next_dependencies.values()]
+
         next_dependencies.clear()
         for config in repos_being_loaded:
             # Check if repo was loaded in a previous operation, need to block it here as well
@@ -354,163 +404,25 @@ def _LoadRepositories(root_configs, cache_path):
                 repo_args.append((config,))
 
         if len(repo_args) == 0:
+            Print("Nothing more to load")
             break
 
-        print(f"\n{len(repo_args)} unloaded dependencies found")
+        Print(f"{len(repo_args)} unloaded dependencies found")
 
         # Load remaining repositories
         RunInThreadsWithProgress(_LoadRepository, repo_args, None, __PrintLoadProgress)
 
         PrintProgressBar(len(repos_being_loaded), len(repos_being_loaded), prefix = 'Loading Repositories:', suffix = "Loaded " + str(len(repos_being_loaded)) + "/" + str(len(repos_being_loaded)) + " Repositories")
-        print("\nFinished dependency round")
+        Print("Finished dependency round")
         repos_being_loaded.clear()
 
-    if DetectedStateChanged():
-        logging.debug("SAVING "+str(len(repositories))+" repositories in cache")
+    if state_changed_detected == True:
+        PrintInfo("Saving "+str(len(repositories))+" repositories in cache")
         SaveReposToCache(repositories, cache_path)
 
-    del repos_being_loaded
+    full_load = True
 
     return repositories
-
-
-
-def LoadRepositories(root_configs, cache_path):
-    global repositories
-    global dependencies
-
-    # Load root repository seperately
-    LoadRepository(root_configs)
-
-    root_repo_id = GetRepoId(root_configs)
-    ResetDetectedStateChange()
-    repositories = LoadReposFromCache(cache_path)
-
-    if len(repositories) == 0:
-        repositories[root_repo_id] = root_configs
-        repositories[root_repo_id]["reloaded"] = False
-    else:
-        # Always reset the root configs to what comes from the command line args
-        # Even if it differs from the internal state
-        for key in root_configs.keys():
-            repositories[root_repo_id][key] = root_configs[key]
-
-        for repo_id in repositories:
-            repositories[repo_id]["reloaded"] = False
-
-    unloaded = 1
-    loaded_amount = 0
-    dependencies.clear()
-    while unloaded > 0:
-        if loaded_amount == 0:
-            print(f"\n{len(repositories)} unloaded dependencies found")
-        else:
-            print(f"\n{unloaded} unloaded dependencies found")
-        loaded_amount = 0
-
-        # For each unloaded repository, load it
-        repo_args = []
-        for repo_id in repositories:
-            if repositories[repo_id]["reloaded"] == False:
-                repo_args.append((repositories[repo_id],))
-            else:
-                loaded_amount += 1
-
-        # Load remaining repositories
-        RunInThreadsWithProgress(LoadRepository, repo_args, None, __PrintLoadProgress)
-
-        # Merge dependencies with existing repositories
-        unloaded = 0
-        for dependency in dependencies:
-            dep_configs = dependencies[dependency]
-            repo_id = GetRepoId(dep_configs)
-            if repo_id not in repositories:
-                repositories[repo_id] = dep_configs
-                repositories[repo_id]["reloaded"] = False
-                SetDetectedStateChange()
-                unloaded += 1
-        dependencies.clear()
-        PrintProgressBar(len(repositories), len(repositories), prefix = 'Loading Repositories:', suffix = "Loaded " + str(len(repositories)) + "/" + str(len(repositories)) + " Repositories")
-        print("\nFinished dependency round")
-
-    if DetectedStateChanged():
-        logging.debug("SAVING "+str(len(repositories))+" repositories in cache")
-        SaveReposToCache(repositories, cache_path)
-    return repositories
-
-
-def LoadRepository(imposed_configs):
-    global repositories
-    global dependencies
-    global repositories_lock
-
-    imposed_configs["name"] = GetRepoNameFromURL(imposed_configs["url"])
-
-    # TODO: Calculate the path and try to check for it directly
-    # Here we might not even need to do Find for baregit at all
-    imposed_configs["bare path"] = GetBareGit(imposed_configs["url"])
-    repo_id = GetRepoIdFromPath(imposed_configs["bare path"])
-    imposed_configs["repo id"] = repo_id
-
-    configs = __LoadRepositoryFolder(imposed_configs)
-    configs["reloaded"] = True
-
-    config_variable_data = {
-        "PROJECT_PATH": Settings["paths"]["project main"],
-        "REPO_SRC_PATH":    configs["repo source"],
-        # "REPOPATH":     configs["repo source"],
-        # Repos specific paths for non-assisted build
-        ## For intermediary build objects
-        "REPO_BUILD_PATH":  configs["build path"],
-        "REPO_EXEC_PATH":   configs["executables"],
-        "REPO_TESTS_PATH":  configs["tests"],
-        "REPO_LIB_PATH":    configs["libraries"],
-    }
-
-    # Reload metadata
-    configs = ParseConfigs(configs, config_variable_data)
-
-    repositories[repo_id] = configs
-    repositories[repo_id]["reloaded"] = True
-
-    # Load dependencies
-    try:
-        for dependency in configs["dependencies"]:
-            base_dependency = configs["dependencies"][dependency]
-
-            if "configs" in base_dependency:
-                dependency_configs = base_dependency["configs"].copy()
-            else:
-                dependency_configs = {}
-
-            dependency_configs["url"] = GetValueOrDefault(base_dependency, "url", dependency)
-            if(Settings["isCI"]):
-                if(dependency_configs["url"] in Settings["commitJson"]):
-                    # This means that settings should use the path ont he file system that has commits not in the remote in CI build
-                    dependency_configs["url"] = Settings["commitJson"][dependency_configs["url"]]
-
-            dependency_configs["reloaded"] = False
-            if "commit" in base_dependency and base_dependency["commit"] != None:
-                dependency_configs["commitish"] = {}
-                dependency_configs["commitish"]["type"] = "commit"
-                dependency_configs["commitish"]["commit"] = base_dependency["commit"]
-            elif "branch" in base_dependency and base_dependency["branch"] != None:
-                dependency_configs["commitish"] = {}
-                dependency_configs["commitish"]["type"] = "branch"
-                dependency_configs["commitish"]["branch"] = base_dependency["branch"]
-            else:
-                dependency_configs["commitish"] = None
-
-            dep_repo_id = GetRepoId(dependency_configs)
-            logging.error(f"dependency_configs of {configs["name"]} for {dep_repo_id}: {pformat(dependency_configs)}")
-            repositories_lock.acquire()
-            # if dep_repo_id in dependencies??
-            if dep_repo_id not in repositories and dep_repo_id not in dependencies:
-                dependencies[dep_repo_id] = dependency_configs
-            repositories_lock.release()
-    except Exception as ex:
-        logging.error(f"Failed to load {pformat(configs)}")
-        raise ex
 
 def __GenerateFullMenu(repositories):
     root = {}
@@ -689,7 +601,7 @@ def GetProjectVariables():
 def GetRepositoryVariables(repository):
     return {
         "REPO_NAME":       repository["repo name"],
-        "REPO_ID":         repository["repo id"],
+        "REPO_ID":         repository["repo ID"],
         "REPO_SRC_PATH":   repository["repo source"],
         "REPO_BUILD_PATH": repository["build path"],
         "REPO_EXEC_PATH":  repository["executables"],
@@ -727,8 +639,8 @@ def __FetchAllPublicHeaders(repositories):
 
         except Exception as ex:
             traceback.print_exc()
-            print(str(ex))
-            print(repositories[repo_id])
+            PrintError(str(ex))
+            PrintDebug(repositories[repo_id])
             logging.error(str(ex))
     return objects_to_link, public_header_folders
 
