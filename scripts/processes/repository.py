@@ -34,6 +34,9 @@ full_load = False
 # Whether there was an incoherency between internal and external state
 state_changed_detected = False
 
+def GetFullLoad():
+    return full_load
+
 class RepoFlags(Enum):
     NO_COMMIT = 1
     INDEPENDENT_PROJ = 2
@@ -428,6 +431,7 @@ def LoadRepositories(root_configs, cache_path):
         SaveReposToCache(repositories, cache_path)
 
     full_load = True
+    Print(f"X1 {id(full_load)} {full_load}")
 
     return repositories
 

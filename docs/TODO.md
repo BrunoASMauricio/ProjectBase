@@ -125,7 +125,7 @@
 
 - [X] Make `--branch` work even if the project has already been loaded
 - [ ] If branch is new and no changes, dont push it
-- [ ] If branch was explicitly pulled (i.e. a commit or branch was specified), dont perform branch switch/checkout/merge/rebase on them?? Maybe add a "no git" flag instead of "no commit" so no git operation is done?
+- [X] If a repo has "no commit" flag, branches aren't created
 - [ ] Temporary commits might be interrupted by other commits (i.e. in rebases/merges). Make the global commit be split among the existing "groups" of temporary commits and marked with [X/Y]
 - [ ] Improve how git is used (use by repo instead of by path)
 - [X] In status, warn if there are dirty repos that will not be commited (have the no commit flag set)

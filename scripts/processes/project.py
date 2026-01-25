@@ -6,16 +6,15 @@ from data.settings import Settings, CLONE_TYPE
 from data.paths    import GetProjectPaths, JoinPaths
 from data.git      import GetRepoNameFromURL, url_HTTPS_to_SSH, url_SSH_to_HTTPS
 from data.common   import LoadFromFile, DumpToFile, PrintNotice
+from data.colors   import ColorFormat, Colors
 
-from processes.repository_configs     import ConfigsChanged, ResetConfigsState
+from processes.repository_configs import ConfigsChanged, ResetConfigsState
+from processes.repository         import LoadRepositories, Setup, Build, GetFullLoad
+from processes.process            import LaunchProcess, LaunchVerboseProcess, LaunchSilentProcess, GetEnvVarExports
+from processes.git_operations     import GetRepositoryUrl
+from processes.run_linter         import CleanLinterFiles
+from processes.filesystem         import CreateParentDirs
 
-from processes.repository     import LoadRepositories, Setup, Build, full_load
-from processes.process        import LaunchProcess, LaunchVerboseProcess, LaunchSilentProcess
-from data.colors              import ColorFormat, Colors
-from processes.git_operations import GetRepositoryUrl
-from processes.process        import GetEnvVarExports
-from processes.run_linter     import CleanLinterFiles
-from processes.filesystem     import CreateParentDirs
 """
 Performs operations on a project
 Each project is built from a single repository
@@ -52,6 +51,7 @@ class PROJECT(dict):
 
     def load(self):
         logging.info("Loading repositories")
+
         # Reset configs state
         ResetConfigsState()
 
@@ -137,9 +137,15 @@ class PROJECT(dict):
                     logging.info("Loaded project from pickle.")
                     print("Loaded project from pickle.")
             
-        # Not loaded, load and return
-        if len(self.repositories) == 0 or full_load == False:
+        if len(self.repositories) == 0:
             self.load()
+            PrintNotice(f"No repositories loaded")
+            return self.repositories
+
+        # print(f"X2 {id(full_load)} {full_load}")
+        if GetFullLoad() == False:
+            self.load()
+            PrintNotice(f"Last load failed")
             return self.repositories
 
         if Settings["active"]["Speed"] == "Safe":
@@ -149,15 +155,14 @@ class PROJECT(dict):
             for repository in self.repositories:
                 config_change = ConfigsChanged(self.repositories[repository]["configs path"])
                 if config_change != None:
-                    print(f"Config change detected ({self.repositories[repository]["configs path"]}: {config_change}), reloading")
+                    PrintNotice(f"Config change detected ({self.repositories[repository]["configs path"]}: {config_change}), reloading")
                     self.load()
                     break
 
         if(Settings["active"]["Speed"] == "Fast"):       
             with open(load_file, "wb") as f:
                 pickle.dump(self, f)
-                logging.info("Saved project to pickle.")
-                print("Saved project to pickle.")
+                PrintNotice("Saved project to disk")
 
         return self.repositories
 
