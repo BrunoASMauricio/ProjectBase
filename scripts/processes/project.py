@@ -152,10 +152,10 @@ class PROJECT(dict):
             # Single change in configs must trigger full reloading of configs
             # Also internally this code is slower than it shoud there are proably ways to
             # speed it up. TODO 
-            for repository in self.repositories:
-                config_change = ConfigsChanged(self.repositories[repository]["configs path"])
+            for repo_id in self.repositories:
+                config_change = ConfigsChanged(self.repositories[repo_id]["configs path"])
                 if config_change != None:
-                    PrintNotice(f"Config change detected ({self.repositories[repository]["configs path"]}: {config_change}), reloading")
+                    PrintNotice(f"Config change detected ({self.repositories[repo_id]["configs path"]}: {config_change}), reloading")
                     self.load()
                     break
 
