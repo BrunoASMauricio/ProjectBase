@@ -1,6 +1,6 @@
 from data.settings     import Settings, SetBranch
 from data.colors       import ColorFormat, Colors
-from data.common import RemoveEmpty, CLICenterString, RemoveSequentialDuplicates, AssembleTable
+from data.common import RemoveEmpty, CLICenterString, RemoveSequentialDuplicates, AssembleTable, YES_NO_PROMPT, UserYesNoChoice
 from data.git import GetRepoNameFromURL, IsValidGitBranch
 from processes.project import Project, GetRelevantPath
 from processes.process import OpenBashOnDirectoryAndWait, RunOnFolders
@@ -8,9 +8,9 @@ from processes.git_operations import *
 from menus.menu import GetNextInput
 from processes.git     import *
 from processes.repository import __RepoHasFlagSet, GetRepoIdFromURL, __RepoHasSomeFlagSet
-from data.common import YES_NO_PROMPT, UserYesNoChoice
 
 from dataclasses import dataclass
+
 @dataclass
 class ProjectStatusInfo:
     repo_status: list[str]
@@ -20,7 +20,6 @@ class ProjectStatusInfo:
     desynced_id: list[str]
     ahead_id: list[str]
     messages: list[str]
-
 
 """
 Create a list of all unique branches from the provided per repository branches
