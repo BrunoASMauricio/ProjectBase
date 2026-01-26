@@ -304,7 +304,7 @@ class GIT_REPO():
         self.instances = []
         self.bare_path = f"{repos_path}/{name}.git"
         self.url  = self.bare_path
-        self.id   = GetRepoIdFromURL(self.url)
+        self.id   = GetRepoIdFromPath(self.bare_path)
         self.name = GetRepoNameFromURL(self.url)
         Assert(name == self.name)
 
