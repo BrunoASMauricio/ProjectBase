@@ -51,7 +51,6 @@ def SaveReposToCache(_repositories, path):
 def LoadReposFromCache(path):
     global repositories
     repositories = load_json_file(path, {})
-    return repositories
 
 def GetRepoIdFromPath(path):
     return GetFirstCommit(path)
@@ -83,6 +82,7 @@ def __LoadRepositoryFolder(imposed_configs):
 
     # Current full path to the repository
     current_location = None
+
     # We already have cached metadata on this repo
     if repo_id in repositories.keys() and repositories[repo_id] != None and repositories[repo_id]["reloaded"] == True:
         repository = repositories[repo_id]
@@ -94,20 +94,23 @@ def __LoadRepositoryFolder(imposed_configs):
 
             # Delete previous data. Cant trust it
             del repositories[repo_id]
+
     else:
         state_changed_detected = True
 
     # Try to see if repository is still on the cached localization
-    if current_location == None: # Do a guess of the correct place
-        if("repo source" in imposed_configs):
+    if current_location == None:
+        if "repo source" in imposed_configs:
             repo_path_cached = imposed_configs["repo source"]
-            if(repo_path_cached != ""):
+            if repo_path_cached != "":
                 cached_url = GetRepositoryUrl(repo_path_cached)
-                if(SameUrl(cached_url,imposed_configs["url"])):
+                if SameUrl(cached_url,imposed_configs["url"]):
                     current_location = repo_path_cached
+
     # Repo path unknown, or not where expected. Find repository
     if current_location == None:
         current_location = FindGitRepo(Settings["paths"]["project code"], imposed_configs["url"], imposed_configs["commitish"])
+
     # Repo nowhere to be found, add it
     if current_location == None:
         logging.info(f"Repository {imposed_configs} not found")
@@ -128,7 +131,6 @@ def __LoadRepositoryFolder(imposed_configs):
     else: # Repository present at current_location
         # logging.debug("Repo " + imposed_configs["name"] + " found at " + current_location)
         repository = MergeConfigs(LoadConfigs(current_location), imposed_configs)
-
         # Is that the expected path?
         expected_local_path = JoinPaths(Settings["paths"]["project code"], repository["local path"])
         repo_path = JoinPaths(expected_local_path, repository["name"])
@@ -297,16 +299,7 @@ def _LoadRepository(imposed_configs):
     configs = __LoadRepositoryFolder(imposed_configs)
 
     # Parse configs with appropriate variable values
-    configs = ParseConfigs(configs, {
-        "PROJECT_PATH": Settings["paths"]["project main"],
-        "REPO_SRC_PATH":    configs["repo source"],
-        # Repos specific paths for non-assisted build
-        ## For intermediary build objects
-        "REPO_BUILD_PATH":  configs["build path"],
-        "REPO_EXEC_PATH":   configs["executables"],
-        "REPO_TESTS_PATH":  configs["tests"],
-        "REPO_LIB_PATH":    configs["libraries"],
-    })
+    configs = ParseConfigs(configs, GetRepositoryVariables(configs))
 
     # Register repository appropriately
     with repositories_lock:
@@ -373,7 +366,7 @@ def LoadRepositories(root_configs, cache_path):
     full_load = False
 
     # Load repositories from cache (if any)
-    repositories = LoadReposFromCache(cache_path)
+    LoadReposFromCache(cache_path)
 
     if root_data == None:
         # No root set. Configure it (first load)
@@ -431,7 +424,6 @@ def LoadRepositories(root_configs, cache_path):
         SaveReposToCache(repositories, cache_path)
 
     full_load = True
-    Print(f"X1 {id(full_load)} {full_load}")
 
     return repositories
 
@@ -611,6 +603,7 @@ def GetProjectVariables():
 
 def GetRepositoryVariables(repository):
     return {
+        "PROJECT_PATH":    Settings["paths"]["project main"],
         "REPO_NAME":       repository["repo name"],
         "REPO_ID":         repository["repo ID"],
         "REPO_SRC_PATH":   repository["repo source"],
