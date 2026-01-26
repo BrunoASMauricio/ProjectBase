@@ -1,5 +1,7 @@
+from data.common import PrintWarning
 import traceback
 import json
+import os
 
 def load_json_file(path, error_value=None, variable_substitutions={}):
     """
@@ -12,6 +14,10 @@ def load_json_file(path, error_value=None, variable_substitutions={}):
         The object returned in case there is an error loading the json file
         If Object is None, the exception is thrown
     """
+
+    if not os.path.isfile(path):
+        return error_value
+
     try:
         with open(path, 'r') as File:
             json_data = json.load(File)
@@ -26,7 +32,9 @@ def load_json_file(path, error_value=None, variable_substitutions={}):
 
     except Exception as Ex:
         if error_value == None:
-            raise Exception("Could not load json from file " + path + " " + traceback.format_exc())
+            raise Exception(f"Could not load json from file {path} {traceback.format_exc()}")
+        PrintWarning(f"Failed to parse json in {path}, using default: {str(Ex)}")
+
     return error_value
 
 def dump_json_file(json_data, path):
