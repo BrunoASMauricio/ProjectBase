@@ -54,19 +54,10 @@ def LoadReposFromCache(path):
 
 def GetRepoIdFromPath(path):
     return GetFirstCommit(path)
-    # if repo_location == None:
-    #     return None
-    # return
-
-# def GetRepoId(repo_configs):
-#     # url = url_SSH_to_HTTPS(repo_configs["url"])
-#     # return url
-#     print(repo_configs)
-#     return GetFirstCommit(repo_configs["full worktree path"])
-#     # return str(repo_configs["url"]) + " " + str(repo_configs["branch"]) + " " + str(repo_configs["commit"])
 
 def GetRepoIdFromURL(repo_url):
-    return GetFirstCommit(FindGitRepo(Settings["paths"]["bare gits"], repo_url))
+    path = GetRepoBareTreePath(Settings["paths"]["bare gits"], repo_url)
+    return GetFirstCommit(FindGitRepo(path, repo_url, depth=1))
     # url = url_SSH_to_HTTPS(repo_url)
     # return url
 
@@ -447,7 +438,6 @@ def __GenerateFullMenu(repositories):
         # Use local_path to derive menu name
         parts = repository["local path"].split("/")
         menu = root
-        logging.error(f"For repository {repository["name"]}")
 
         for part in parts:
             if part not in menu:
