@@ -1,14 +1,3 @@
-from data.settings     import *
-from data.colors       import *
-from data.common       import *
-from data.git          import *
-
-from processes.project import *
-from processes.process import *
-from processes.git_operations import *
-from processes.git     import *
-from processes.repository import *
-
 
 def PBTerminal():
     # Shared namespace for variables to persist between executions
@@ -41,7 +30,19 @@ def PBTerminal():
                         break
                     lines.append(continuation)
                 user_input = "\n".join(lines)
-            
+            # Shove some imports into console
+            imports = [ "from data.settings     import *",
+                        "from data.colors       import *",
+                        "from data.common       import *",
+                        "from data.git          import *",
+                        "from processes.project import *",
+                        "from processes.process import *",
+                        "from processes.git_operations import *",
+                        "from processes.git     import *",
+                        "from processes.repository import *"]
+            for _import in imports:
+                eval(_import, namespace)
+
             # Try to evaluate as an expression first (to print results)
             try:
                 result = eval(user_input, namespace)
