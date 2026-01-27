@@ -7,7 +7,7 @@ from processes.process import OpenBashOnDirectoryAndWait, RunOnFolders
 from processes.git_operations import *
 from menus.menu import GetNextInput
 from processes.git     import *
-from processes.repository import __RepoHasFlagSet, GetRepoIdFromURL, __RepoHasSomeFlagSet
+from processes.repository import __RepoHasFlagSet, GetRepoIdFromPath, __RepoHasSomeFlagSet
 
 from dataclasses import dataclass
 
@@ -210,7 +210,7 @@ def DirectlyManageSingleRepository():
         new_entry = []
         path = all_paths[path_ind]
         repo_url  = GetRepositoryUrl(path)
-        repo_id   = GetRepoIdFromURL(repo_url)
+        repo_id   = GetRepoIdFromPath(path)
         path = RemoveSequentialDuplicates(path, "/")
 
         status = GetRepoStatus(path)
@@ -260,9 +260,9 @@ def __AssembleReposStatusMessage(statuses)-> ProjectStatusInfo:
     for path in statuses:
         status    = statuses[path]
         repo_url  = GetRepositoryUrl(path)
-        repo_id   = GetRepoIdFromURL(repo_url)
+        repo_id   = GetRepoIdFromPath(path)
         relevant_path = ColorFormat(Colors.Grey, f"(at {GetRelevantPath(path)})")
-        repo_name : str = f"{GetRepoNameFromURL(repo_url)} {relevant_path}"
+        repo_name : str = f"{GetRepoNameFromPath(path)} {relevant_path}"
 
         status_message += "---"
         status_message += repo_name + " is "
@@ -395,7 +395,6 @@ def getProjectStatusInfo():
     # Create and print status messa
     known_project_status = __AssembleReposStatusMessage(known_repo_status)
     unknown_project_status= __AssembleReposStatusMessage(unknown_repo_status)
-
 
     return known_project_status, unknown_project_status
 
