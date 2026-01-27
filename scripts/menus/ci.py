@@ -78,7 +78,7 @@ def SetupCI() -> ProjectCIInfo:
     project_root = project_base_repo / project_folder / root_url
     with open(project_root) as f:
         project_top_uid = f.read()
-    project_top_uid = repo.url_SSH_to_HTTPS(project_top_uid)
+    project_top_uid = repo.GetRepoIdFromURL(project_top_uid)
     project_top_info = repo.repositories[project_top_uid]
     project_worktree_source: str =  project_top_info['repo source']
 
