@@ -2,7 +2,7 @@ import os
 import subprocess
 from pathlib import Path
 
-from processes.repository import GetRepoIdFromURL
+from processes.repository import GetRepoIdFromPath
 from data.git import GetRepoNameFromURL
 from data.common import Assert, RemoveAnsiEscapeCharacters
 from processes.process import _LaunchCommand
