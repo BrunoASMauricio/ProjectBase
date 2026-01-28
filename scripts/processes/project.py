@@ -5,7 +5,8 @@ import pickle
 from data.settings import Settings, CLONE_TYPE
 from data.paths    import GetProjectPaths, JoinPaths
 from data.git      import GetRepoNameFromURL, url_HTTPS_to_SSH, url_SSH_to_HTTPS
-from data.common   import LoadFromFile, DumpToFile, PrintNotice
+from data.common   import LoadFromFile, DumpToFile
+from data.print    import *
 from data.colors   import ColorFormat, Colors
 
 from processes.repository_configs import ConfigsChanged, ResetConfigsState
@@ -78,15 +79,15 @@ class PROJECT(dict):
 
         PrintNotice(f"Loading repositories with the following parameters: {self.root_repo_base_config}")
         self.repositories = LoadRepositories(self.root_repo_base_config, Settings["cache file"])
-        print("Project loaded")
+        PrintInfo("Project loaded")
 
     def setup(self):
         logging.info("Setting up project")
-        print("Setting up project")
+        PrintInfo("Setting up project")
 
         Setup(self.GetRepositories())
         logging.info("Finished setting up project")
-        print("Finished setting up project")
+        PrintInfo("Finished setting up project")
 
     def build(self):
         logging.info("Building project")
@@ -135,7 +136,7 @@ class PROJECT(dict):
                     self.__dict__.update(loaded.__dict__)
                     self.update(loaded)
                     logging.info("Loaded project from pickle.")
-                    print("Loaded project from pickle.")
+                    PrintInfo("Loaded project from pickle.")
             
         if len(self.repositories) == 0:
             self.load()
@@ -191,7 +192,7 @@ def UserChooseProject():
             """
 
             if not entry.is_dir():
-                print("Unexpected file in projects "+entry.path+"/"+entry.name)
+                PrintWarning(f"Unexpected file in projects {entry.path}/{entry.name}")
                 continue
 
             url = LoadFromFile(JoinPaths(entry.path, "root_url.txt"), None)
@@ -235,6 +236,11 @@ def CleanAll():
     LaunchVerboseProcess(f"rm -rf {Settings["paths"]["build cache"]}/*")
     CleanCompiled()
     CleanLinterFiles()
+
+def CleanCMake():
+    CleanAll()
+    LaunchVerboseProcess(f"rm -rf {Settings["paths"]["build env"]}/*")
+    Setup(Project.GetRepositories())
 
 def DeleteProject():
     LaunchVerboseProcess(f"rm -rf {Settings["paths"]["project main"]}")
