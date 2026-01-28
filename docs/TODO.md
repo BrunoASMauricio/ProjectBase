@@ -23,6 +23,7 @@
   - [ ] Just like build folder is separate, use links to generate a view that only contains headers and source code
 - [X] Add abstraction similar to menu, but for multiple choice stuff (i.e. executable/test/project/single repo to manage operations)
 - [X] Add "There have been errors, please check the logs at PATH" message for logged exceptions
+- [ ] Remove all loops that can be reoved in place of multi threaded actoin
 - [ ] Find a way to identify repositories without using URLs (different URLs can point to the same repo)
       Use the X commit of the default branch?
   - [ ] Overhaul handling of repositories by name/url/path. Use unique internal ID that can link to those three attributes
@@ -41,7 +42,11 @@
     - [ ] Default example?
     - [ ] Use options (y/n/a yes/no/all)
 - [ ] Project metadata visualization (dependency tree, test amount and percentage of failures, ...)
+- [ ] If a repository is moved automatically, empty folders should be removed (i.e. local path changed from Runtime to Data, if Runtime becomes empty, it should be removed)
+- [ ] If a repository is removed, PB should set it back from the bare git as per configs
 - [X] Add time (with seconds) to banner. Helps in knowing when we ran the last commands
+- [ ] Improve print handling in multi threaded context. Make it automatically beave a expected
+- [ ] Add "Are you sure" for dangerous operations like "Purge projects"
 - [ ] Detect when ProjectBase was copy pasted into a different repository (messed up worktrees) and fix it
 - [ ] Inserting commands during other commands does not work, but it should be possible to chain commands using a separator like ';'. (unclear now on what todo here)
 - [X] Reset terminal after recovering control from external programs
