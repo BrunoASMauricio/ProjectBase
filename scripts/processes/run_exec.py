@@ -65,7 +65,7 @@ def __LocateExecutable(user_input, executables_available):
     if StringIsNumber(executable):
         exec_ind = int(executable)
         if exec_ind > len(executables_available):
-            print("Out of bounds index: " + user_input)
+            PrintWarning("Out of bounds index: " + user_input)
             return None, None
         path_to_exec = executables_available[exec_ind]
     else:
@@ -76,10 +76,10 @@ def ExecuteMenu(PathToScan):
     while True:
         executables_available = __GetAvailableExecutables(PathToScan)
         if len(executables_available) == 0:
-            print("No executables found")
+            PrintWarning("No executables found")
             return
 
-        print("Executables available in "+PathToScan+":")
+        PrintInfo("Executables available in "+PathToScan+":")
         executables_available.sort()
         previous_repo_name = ""
         for index in range(len(executables_available)):
@@ -109,7 +109,7 @@ def ExecuteMenu(PathToScan):
             og_user_input = GetNextInput(single_string=True)
             # No input (Enter pressed)
             if len(og_user_input) == 0:
-                print("No input")
+                PrintWarning("No input")
                 continue
 
             if MenuExit(og_user_input):
@@ -120,7 +120,7 @@ def ExecuteMenu(PathToScan):
             # Locate executable
             path_to_exec, input_list = __LocateExecutable(user_input, executables_available)
             if path_to_exec == None:
-                print("Executable not found")
+                PrintError("Executable not found")
                 continue
 
             # Assemble command and run

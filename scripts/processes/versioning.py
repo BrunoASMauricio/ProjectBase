@@ -8,6 +8,7 @@ from processes.git_operations import *
 from menus.menu import GetNextInput
 from processes.git     import *
 from processes.repository import __RepoHasFlagSet, GetRepoIdFromPath, __RepoHasSomeFlagSet
+from data.print import *
 
 from dataclasses import dataclass
 
@@ -95,10 +96,10 @@ def DeleteLocalBranch(branch_name):
     # Check if the branch is checked out anywhere
     for branch in repo_branches.keys():
         if BranchesMatch(branch_name, branch):
-            PrintWarning(f"\nBranch {branch_name} is already checked out in: ", end=" ")
+            msg = f"\nBranch {branch_name} is already checked out in: "
             for repo in repo_branches[branch_name]:
-                print(repo, end=" ")
-            print("\n")
+                msg += repo + " "
+            PrintWarning(msg)
             PrintError(ColorFormat(Colors.Red, "\nCannot delete. Please check out a different branch and then retry"))
             return
 
@@ -137,7 +138,7 @@ def __AbortRebaseOrMerge(outputs, operation):
             else:
                 if CheckMergeOperationConflict(output.returned["out"]):
                     GitRebaseOrMergeAbort(path, operation)
-            print(f"Reverted {path}")
+            PrintInfo(f"Reverted {path}")
 
 def _RebaseOrMergeBranch(branch_name, operation):
     # Check if all status are ok
@@ -148,7 +149,7 @@ def _RebaseOrMergeBranch(branch_name, operation):
             bad_stats.append(path)
 
     if len(bad_stats) != 0:
-        print(f"Cannot {operation}. Status not clean in {', '.join(bad_stats)}")
+        PrintWarning(f"Cannot {operation}. Status not clean in {', '.join(bad_stats)}")
         return
 
     if operation == "rebase":
@@ -164,16 +165,16 @@ def _RebaseOrMergeBranch(branch_name, operation):
             issue = True
 
     if issue:
-        print("\n"+ColorFormat(Colors.Red, MANUAL_INTERVENTION_MSG))
-        print(f"Do you want to revert the conflicting changes? {YES_NO_PROMPT}")
+        msg = f"\n{ColorFormat(Colors.Red, MANUAL_INTERVENTION_MSG)}\nDo you want to revert the conflicting changes? {YES_NO_PROMPT}"
+        PrintNotice(msg)
         answer = GetNextInput()
         if UserYesNoChoice(answer, True):
             __AbortRebaseOrMerge(outputs, operation)
-            Printnotice(f"{operation} with branch {branch_name} completed with success")
+            PrintInfo(f"{operation} with branch {branch_name} completed with success")
         else:
             PrintWarning(f"{operation} with branch {branch_name} completed with issues")
     else:
-        PrintNotice(f"\n{operation} with branch {branch_name} completed with success")
+        PrintInfo(f"\n{operation} with branch {branch_name} completed with success")
 
 def MergeBranch(branch_name):
     _RebaseOrMergeBranch(branch_name, "merge")
@@ -191,15 +192,15 @@ def GetFilesDiff():
     results = RunOnAllRepos(GetGitFileDiff)
     for path, diff in results.items():
         if len(diff) > 1:
-            print(CLICenterString(path))
-            print(diff)
+            PrintInfo(CLICenterString(path))
+            PrintInfo(diff)
 
 def GetDiff():
     results = RunOnAllRepos(GetGitDiff)
     for path, diff in results.items():
         if len(diff) > 1:
-            print(CLICenterString(path))
-            print(diff)
+            PrintInfo(CLICenterString(path))
+            PrintInfo(diff)
 
 def DirectlyManageSingleRepository():
     all_paths, known_paths, _ = GetKnownAndUnknownGitRepos()
@@ -325,7 +326,7 @@ def __AssembleReposStatusMessage(statuses)-> ProjectStatusInfo:
 def CheckoutBranch():
     branch = GetNextInput("New branch name: ")
     while IsValidGitBranch(branch) == False:
-        print("Invalid git branch")
+        PrintWarning("Invalid git branch")
         branch = GetNextInput("New branch name: ")
 
     repo_branches = RunOnAllManagedRepos(GitCheckoutBranch, {"new_branch": branch})
@@ -534,11 +535,10 @@ def GlobalFixedCommit():
         temporary_commmits = __GetCurrentTemporaryCommits()
         temp_commit_count = __CountTemporaryCommits(temporary_commmits)
     finally:
-        if temp_commit_count == 0:
+        if len(temp_commit_count) == 0:
             print("There are no temporary commits. Direct global commit message")
             commit_message = GetNextInput("[ fixed commit message ][<] ", True)
             RunOnAllManagedRepos(RepoSaveChanges, {"commit_message":commit_message})
-            return
 
     paths = temporary_commmits.keys()
     status_message = f"\nMerging in {len(paths)} repositories"
@@ -546,9 +546,9 @@ def GlobalFixedCommit():
     for path in paths:
         status_message += f"\n\t* {len(temporary_commmits[path])} commits from {path.split("/")[-1]}"
 
-    print(status_message)
+    PrintNotice(status_message)
     commit_message = GetNextInput("[ fixed commit message ][<] ", True)
-    print(commit_message)
+    PrintNotice(commit_message)
 
     arguments = []
     for path in paths:
@@ -564,22 +564,20 @@ def GetCurrentTemporaryCommits():
         status_message = f"\nTemporary commits found in {len(paths)} repositories"
         for path in paths:
             status_message += f"\n\t* {len(temporary_commmits[path])} commits from {path.split("/")[-1]}"
-        print(status_message)
+        PrintNotice(status_message)
     else:
-        print("\nNo temporary commits found")
+        PrintNotice("\nNo temporary commits found")
 
 def GlobalSave():
     commit_message = GetNextInput("[commit message <] ")
 
     if commit_message == "":
-        print("Commit message cannot be empty")
+        PrintWarning("Commit message cannot be empty")
     else:
         try:
             RunOnAllManagedRepos(RepoSaveChanges, {"commit_message":commit_message})
         except Exception as ex:
-            print("Unacceptable commit message: "+str(ex))
-            import sys
-            sys.exit(0)
+            Abort(f"Unacceptable commit message: {str(ex)}")
 
 def ResetToLatestSync():
     RunOnAllRepos(RepoResetToLatestSync)

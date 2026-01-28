@@ -2,7 +2,8 @@ import os
 import logging
 from data.settings import Settings
 from processes.process import ProcessError, LaunchProcess
-from data.common import IsEmpty, RemoveEmpty, PrintNotice, PrintWarning, PrintError
+from data.common import IsEmpty, RemoveEmpty
+from data.print import *
 from data.git import *
 
 UNKNOWN_ERR = f"Unknown issue. Please send this message in a ticket for better error handling in the future!"
@@ -365,12 +366,12 @@ def GetCurrentBranchsUpstream(path = None):
 
 def GetRepoDefaultBranch(path = None):
     remote = GetRepoRemote(path)
-    default_branch = ParseGitResult("git remote show " + remote + " 2>/dev/null | sed -n '/HEAD branch/s/.*: //p'", path)
-    if IsEmpty(default_branch):
-        Message  = "No default branch for "
-        Message += GetRepositoryUrl(path) + " at " + path + "\n"
-        Message += "Code: " + str(default_branch) + "\n"
-        Message += "Output: " + str(default_branch) + "\n"
+    default_branch = ParseGitResult(f"git remote show {remote} 2>/dev/null | sed -n '/HEAD branch/s/.*: //p'", path)
+    if default_branch == "(unknown)" or IsEmpty(default_branch):
+        Message =  f"No default branch for {GetRepositoryUrl(path)} for remote {remote} at {path}.\n"
+        Message += f"You may need to add an initial commit with some data.\ni.e.:\n"
+        Message += f"echo '# Project Title' > README.md\n"
+        Message += f"git add .\ngit commit -m 'Initial commit'\ngit push -u origin master"
         raise Exception(Message)
 
     return default_branch.split("/")[-1].strip()

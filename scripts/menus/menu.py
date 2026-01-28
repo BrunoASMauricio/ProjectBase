@@ -221,10 +221,7 @@ class Menu():
             if current_time - previous_time <= 1:
                 current_tries -= 1
                 if current_tries == 0:
-                    message = "Too many consecutive exceptions (maximum allowed is 5 with less than 1 second in between)"
-                    logging.critical(message)
-                    print(message)
-                    sys.exit(1)
+                    Abort("Too many consecutive exceptions (maximum allowed is 5 with less than 1 second in between)")
             else:
                 __ResetException()
 
@@ -232,10 +229,9 @@ class Menu():
         while True:
             try:
                 if Settings["exit"] and Settings.return_code != 0:
-                    print("\nLast thing failed to run :)")
-                    sys.exit(Settings.return_code)
-                   # If we are piping into a file, don't attempt to reset terminal
-                
+                    Abort("Last thing failed to run :)", Settings.return_code)
+
+                # If we are piping into a file, don't attempt to reset terminal
                 if len(Settings["out_file"]) == 0:    
                     ResetTerminal()
 
@@ -287,12 +283,10 @@ class Menu():
                 continue
             except SlimError as ex:
                 # An error has already been printed, stop here
-                msg = f"A thread errored out, operation canceled: {ex}"
-                logging.error(msg)
-                print(f"\n{msg}")
+                PrintError(f"\nA thread errored out, operation canceled: {ex}")
 
                 if Settings["exit"] == True:
-                    print("\nEarly exit")
+                    PrintNotice("\nEarly exit")
                     raise ex
             except EOFError:
                 # Ctrl+D

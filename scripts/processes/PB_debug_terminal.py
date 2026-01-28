@@ -1,11 +1,10 @@
+from data.print import *
 
 def PBTerminal():
     # Shared namespace for variables to persist between executions
     namespace = {}
     
-    print("Interactive Debug REPL")
-    print("Type 'exit' or 'quit' to end the session.")
-    print("-" * 40)
+    print("Interactive Debug REPL\nType 'exit' or 'quit' to end the session." + "-" * 40)
     
     while True:
         try:
@@ -59,4 +58,4 @@ def PBTerminal():
             print("\nGoodbye!")
             break
         except Exception as e:
-            print(f"{type(e).__name__}: {e}")
+            PrintError(f"{type(e).__name__}: {e}")

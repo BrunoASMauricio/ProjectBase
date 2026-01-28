@@ -151,8 +151,7 @@ def SetupBareData(repo_url):
     LaunchGitCommandAt(f"git fetch --all", bare_git, f"Fetch all branches")
 
     if False == os.path.isdir(bare_git):
-        print("Bare git " + bare_git + " could not be pulled")
-        exit(-1)
+        Abort("Bare git " + bare_git + " could not be pulled")
     return bare_git
 
 def GetBareGit(repo_url):
@@ -198,7 +197,6 @@ def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
     LaunchGitCommandAt('git worktree prune', bare_path)
     # If commit is defined, set it detached (it wont be updated)
     if repo_commitish != None and repo_commitish["type"] == "commit":
-        # print("git worktree add --force --detach " + new_repo_path + " " + repo_commitish["commit"])
         worktree_command = "git worktree add --force --detach " + new_repo_path + " " + repo_commitish["commit"]
         LaunchGitCommandAt(worktree_command, bare_path)
         logging.debug("\tAdding git commit worktree with: " + worktree_command + " from bare at " + bare_path)
@@ -228,7 +226,6 @@ def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
     if not os.path.isdir(new_repo_path):
         raise Exception(f"Could not add worktree for {repo_url} at {target_path} from bare git at {bare_path}")
 
-    # print("parent_path "+ parent_path)
     new_tree_path = FindGitRepo(new_repo_path, repo_url, repo_commitish, depth=1)
     if new_tree_path == None or new_tree_path != new_repo_path:
         raise Exception(f"Could not add correct worktree for {repo_url} at {target_path} from bare git at {bare_path}.\nGot {new_tree_path} instead of {new_repo_path}")

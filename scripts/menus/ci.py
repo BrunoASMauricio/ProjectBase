@@ -1,24 +1,19 @@
-from menus.menu import Menu
 import sys
-import subprocess
+import json
+import logging
 import tempfile
+import subprocess
 from pathlib import Path
+
+from menus.menu import Menu
 from data.settings import Settings
 import processes.repository as repo
 from processes.versioning import getProjectStatusInfo
 from processes.process import LaunchProcess
 from processes.process import ProcessError
-import json
-import logging
+from data.print import *
 
 CIMenu = Menu("Ci Menu")
-def logging_and_print(message, isError = False):
-    if(isError):
-        logging.error(message)
-    else:
-        logging.info(message)
-    print(message)
-
 
 def create_content_for_worktree_json(work_tree_path : Path):
     # This function creates a json file with a dictionary mapping
@@ -39,11 +34,11 @@ def create_content_for_worktree_json(work_tree_path : Path):
 
 def run_cmd(cmd, cwd, label):
     message = f"[CI] Running {label}: {' '.join(cmd)}"
-    logging_and_print(message)
+    PrintInfo(message)
     res = subprocess.run(cmd, cwd=cwd, shell=True)
     if res.returncode != 0:
         message = f"[CI] {label} failed with exit code {res.returncode}"
-        logging_and_print(message,isError=True)
+        PrintError(message)
     return res.returncode
 
 
@@ -65,7 +60,7 @@ def SetupCI() -> ProjectCIInfo:
     """
     tmp_dir = tempfile.mkdtemp(prefix="ci_scratch_")
     message = f"[CI] Temporary CI folder kept at {tmp_dir} for inspection (remove manually if desired)"
-    logging_and_print(message)
+    PrintInfo(message)
     if(repo.repositories is None):
         raise ValueError("Repositores are empty, this should only be called after a load")
     
@@ -187,7 +182,7 @@ def RunCIScratch(runCiType : RunCIType):
         # 3 Run all tests
         run_cmd = ' '.join(cmd)
         message = f"[CI] Testing {path} Running: {run_cmd}"
-        logging_and_print(message)
+        PrintInfo(message)
         try:
             ret = LaunchProcess(" ".join(cmd), clone_path,False)
             #retcode = int(ret["code"])
@@ -196,19 +191,19 @@ def RunCIScratch(runCiType : RunCIType):
             #retcode = int(returned)
             all_passed = False
             message = f"[CI] Test Failed : {path}"
-            logging_and_print(message, isError=True)
+            PrintError(message)
 
 
     Settings.ci_was_runned = True
     if(all_passed):
         message = "[CI] Scratch CI run completed successfully!"
-        logging_and_print(message)
+        PrintInfo(message)
         Settings.ci_was_runned_and_passed = True
         return 0
     else:
         Settings.return_code = 1
         message = "[CI] Scratch CI run Failed!"
-        logging_and_print(message, isError=True)
+        PrintError(message)
         if(Settings["exit"]):
             sys.exit(1)
         return 1

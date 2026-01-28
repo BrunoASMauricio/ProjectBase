@@ -1,7 +1,6 @@
 import os
 import sys
 import pty
-import logging
 import traceback
 import threading
 from time import time
@@ -13,36 +12,9 @@ from data.settings import Settings, ErrorCheckLogs
 from data.colors import ColorFormat, Colors
 from processes.progress_bar import PrintProgressBar
 from data.common import *
+from data.print import *
 
 #                           PROCESS OPERATIONS
-
-thread_log = ""
-thread_log_lock = threading.Lock()
-
-def GetThreadId():
-    return threading.get_ident()
-
-def AddTothreadLog(message):
-    global thread_log
-    global thread_log_lock
-
-    with thread_log_lock:
-        thread_log += f"({GetThreadId()}) {message}\n"
-
-def ClearThreadLog():
-    global thread_log
-    global thread_log_lock
-    with thread_log_lock:
-        thread_log = ""
-
-def Flushthread_log():
-    global thread_log
-    global thread_log_lock
-    with thread_log_lock:
-        if len(thread_log) > 0:
-            print(thread_log,end="")
-            logging.info(thread_log)
-        thread_log = ""
 
 def PrintProgressWhileWaitOnThreads(thread_data, max_delay=None, print_function=None, print_arguments=None):
     threads, callback, args = thread_data
@@ -148,6 +120,7 @@ def RunInThreadsWithProgress(run_callback, run_args, max_delay=None, print_callb
 
     PrintProgressBar(0, len(run_args), prefix = 'Starting...', suffix = '0/' + str(len(run_args)))
     ClearThreadLog()
+    ToggleThreading(True)
     if Settings["single thread"]:
         for run_arg_ind in run_args:
             run_arg = run_args[run_arg_ind]
@@ -181,6 +154,7 @@ def RunInThreadsWithProgress(run_callback, run_args, max_delay=None, print_callb
             ClearThreadLog()
 
     Flushthread_log()
+    ToggleThreading(False)
 
     for val in thread_return.values():
         if val == False:
@@ -200,7 +174,6 @@ def __RunOnFoldersThreadWrapper(callback, path, arguments = None):
             assert path == separate_arguments["path"]
             del arguments[0]
             arguments = separate_arguments
-            print(arguments)
         elif type(arguments) != dict:
             arguments = [arguments]
             raise Exception(f"Invalid arguments type of {type(arguments)}, must be dictionary")

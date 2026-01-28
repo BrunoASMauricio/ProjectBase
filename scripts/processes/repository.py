@@ -13,6 +13,7 @@ from processes.filesystem import CreateDirectory, CreateParentDirectory, FindFil
 from processes.progress_bar import PrintProgressBar
 from threading import Lock
 from data.paths import JoinPaths
+from data.print import *
 
 # Repository operation lock
 repositories_lock = Lock()
@@ -398,16 +399,16 @@ def LoadRepositories(root_configs, cache_path):
                 repo_args.append((config,))
 
         if len(repo_args) == 0:
-            Print("Nothing more to load")
+            PrintNotice("Nothing more to load")
             break
 
-        Print(f"{len(repo_args)} unloaded dependencies found")
+        PrintInfo(f"{len(repo_args)} unloaded dependencies found")
 
         # Load remaining repositories
         RunInThreadsWithProgress(_LoadRepository, repo_args, None, __PrintLoadProgress)
 
         PrintProgressBar(len(repos_being_loaded), len(repos_being_loaded), prefix = 'Loading Repositories:', suffix = "Loaded " + str(len(repos_being_loaded)) + "/" + str(len(repos_being_loaded)) + " Repositories")
-        Print("Finished dependency round")
+        PrintInfo("Finished dependency round")
         repos_being_loaded.clear()
 
     if state_changed_detected == True:
