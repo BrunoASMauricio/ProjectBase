@@ -15,6 +15,7 @@ import getpass # for getuser
 
 from data.paths import GetBasePaths
 from data.colors import ColorFormat, Colors
+from data.print import *
 
 # Exception for stopping current operation without printing stack/operation information
 # Used when we know the error has been output (i.e. inside a thread) and we don't store it
@@ -221,10 +222,15 @@ def GetValueOrDefault(dict, name, default = None):
 """
 Abort running program
 """
-def Abort(message):
-    print(ColorFormat(Colors.Red, message))
+def Abort(message, err_ret=-1):
+    message = ColorFormat(Colors.Red, message)
+
+    print(message)
+    logging.error(message)
+
+    Flushthread_log()
     sys.stdout.flush()
-    sys.exit(-1)
+    sys.exit(err_ret)
 
 """
 Abort if a condition is false
@@ -263,39 +269,6 @@ def LoadFromFile(file_path, default=None):
 def DumpToFile(file_path, data, mode='w'):
     with open(file_path, mode) as file:
         file.write(data)
-
-def PrintError(message, end="\n"):
-    message = ColorFormat(Colors.Red, f"[ERROR] {message}")
-    print(message, end=end)
-    logging.error(message + end)
-
-def PrintWarning(message, end="\n"):
-    message = ColorFormat(Colors.Magenta, f"[WARN] {message}")
-    print(message, end=end)
-    logging.warning(message + end)
-
-
-def PrintNotice(message, end="\n"):
-    message = ColorFormat(Colors.Blue, f"[NOTICE] {message}")
-    print(message, end=end)
-    logging.info(message + end)
-
-"""
-To be considered the default when communicating with the user information about the current
-process
-"""
-def PrintInfo(message, end="\n"):
-    message = ColorFormat(Colors.Green, f"{message}")
-    print(message, end=end)
-    logging.info(message + end)
-
-def Print(message, end="\n"):
-    PrintInfo(message, end)
-
-def PrintDebug(message, end="\n"):
-    message = f"[DEBUG] {message}"
-    print(message, end=end)
-    logging.debug(message + end)
 
 """
 Present Message to user and return True if the response is y or Y, False if n or N
