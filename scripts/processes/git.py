@@ -7,7 +7,8 @@ from data.common import RemoveSequentialDuplicates
 from data.git import *
 from processes.filesystem import CreateDirectory, RemoveDirectory
 from processes.git_operations import *
-from processes.filesystem import JoinPaths, GetNewTemporaryPath, GetParentPath
+from data.paths import GetNewTemporaryPath
+from processes.filesystem import JoinPaths, GetParentPath
 
 """
 Fix url so it is according to settings
@@ -247,7 +248,7 @@ def MoveWorkTree(bare_path, from_path, to_path):
 
     repo_name = GetRepoNameFromPath(bare_path)
 
-    temp_path = GetNewTemporaryPath(Settings["paths"])
+    temp_path = GetNewTemporaryPath()
 
     CreateDirectory(temp_path)
 

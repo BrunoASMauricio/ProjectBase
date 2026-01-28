@@ -1,6 +1,6 @@
 import os
 
-from processes.filesystem import JoinPaths
+from processes.filesystem import JoinPaths, GetTemporaryPath
 
 # Assume scripts is on the base folder
 def GetProjectBasePath():
@@ -32,6 +32,10 @@ def GetBasePaths():
     paths["caches"] = JoinPaths(paths["configs"], "project_cache", "repositories")
 
     return paths
+
+
+def GetNewTemporaryPath():
+    return GetTemporaryPath(GetBasePaths()["temporary"])
 
 def GetProjectPaths(project_name):
     """
