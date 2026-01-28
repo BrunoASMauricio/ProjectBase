@@ -534,7 +534,6 @@ def ConvertKconfigToHeader():
 
         for line in config:
             line = line.strip()
-            logging.error(line)
 
             if not line or line.startswith("#"):
                 continue
