@@ -56,7 +56,7 @@ def PrintProgressWhileWaitOnThreads(thread_data, max_delay=None, print_function=
             # Ask user if we should kill, reset timer, or ignore
 
         # Keep flushing log
-        Flushthread_log()
+        FlushthreadLog()
         sleep(0.05)
 
     PrintProgress()
@@ -120,7 +120,7 @@ def RunInThreadsWithProgress(run_callback, run_args, max_delay=None, print_callb
 
     PrintProgressBar(0, len(run_args), prefix = 'Starting...', suffix = '0/' + str(len(run_args)))
     ClearThreadLog()
-    ToggleThreading(True)
+    # ToggleThreading(True)
     if Settings["single thread"]:
         for run_arg_ind in run_args:
             run_arg = run_args[run_arg_ind]
@@ -153,12 +153,12 @@ def RunInThreadsWithProgress(run_callback, run_args, max_delay=None, print_callb
             #         thread._stop()
             ClearThreadLog()
 
-    Flushthread_log()
-    ToggleThreading(False)
+    FlushthreadLog()
+    # ToggleThreading(False)
 
     for val in thread_return.values():
         if val == False:
-            raise SlimError("One of the threads errored out")
+            raise SlimError(f"One of the threads errored out with {val}")
 
 def __RunOnFoldersThreadWrapper(callback, path, arguments = None):
     global operation_lock

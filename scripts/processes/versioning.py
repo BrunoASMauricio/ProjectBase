@@ -6,7 +6,7 @@ from processes.project import Project, GetRelevantPath
 from processes.process import OpenBashOnDirectoryAndWait, RunOnFolders
 from processes.git_operations import *
 from menus.menu import GetNextInput
-from processes.git     import *
+from processes.git_operations import *
 from processes.repository import __RepoHasFlagSet, GetRepoIdFromPath, __RepoHasSomeFlagSet
 from data.print import *
 

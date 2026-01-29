@@ -37,7 +37,6 @@ def PBTerminal():
                         "from processes.project import *",
                         "from processes.process import *",
                         "from processes.git_operations import *",
-                        "from processes.git     import *",
                         "from processes.repository import *"]
             for _import in imports:
                 eval(_import, namespace)

@@ -228,7 +228,7 @@ def Abort(message, err_ret=-1):
     print(message)
     logging.error(message)
 
-    Flushthread_log()
+    FlushthreadLog()
     sys.stdout.flush()
     sys.exit(err_ret)
 

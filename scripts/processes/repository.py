@@ -3,7 +3,8 @@ from enum import Enum
 
 from pprint import pformat
 from data.git import GetRepoNameFromURL
-from processes.git import *
+from processes.git_operations import *
+from processes.process import RunInThreadsWithProgress
 from data.common import SetupTemplate
 from data.settings import Settings
 from data.json import dump_json_file, load_json_file
@@ -105,7 +106,7 @@ def __LoadRepositoryFolder(imposed_configs):
 
     # Repo nowhere to be found, add it
     if current_location == None:
-        logging.info(f"Repository {imposed_configs} not found")
+        PrintWarning(f"Repository {imposed_configs} not found")
         # Setup helper worktree
         helper_path = AddWorkTree(imposed_configs["bare path"], imposed_configs["url"], imposed_configs["commitish"], Settings["paths"]["temporary"])
         repository  = MergeConfigs(LoadConfigs(helper_path), imposed_configs)
@@ -185,9 +186,9 @@ Expected commands format:
 """
 def __RunRepoCommands(command_set_name, commands):
     if len(commands) > 0:
-        logging.info("Running " + command_set_name + " commands")
+        PrintDebug("Running " + command_set_name + " commands")
         for block_name in commands:
-            logging.info("\t Command block:" + block_name)
+            PrintDebug("\t Command block:" + block_name)
             command_block     = commands[block_name]
             proceed_condition = command_block["condition to proceed"]
             command_list      = command_block["command list"]
@@ -198,10 +199,10 @@ def __RunRepoCommands(command_set_name, commands):
                 if proc_error.returned["code"] == 1:
                     result = False
             if result == False:
-                logging.info("\t Condition to proceed: '" + proceed_condition + "' is False, skipping " + str(len(command_list)) + " commands")
+                PrintDebug("\t Condition to proceed: '" + proceed_condition + "' is False, skipping " + str(len(command_list)) + " commands")
                 return
 
-            logging.info("\t Condition to proceed: '" + proceed_condition + "' is True, running " + str(len(command_list)) + " commands")
+            PrintDebug("\t Condition to proceed: '" + proceed_condition + "' is True, running " + str(len(command_list)) + " commands")
             # TODO: after console merge, run these one at a time and explicitly check return value?
             LaunchVerboseProcess("set -xe && "+' && '.join(command_list))
 
@@ -403,6 +404,7 @@ def LoadRepositories(root_configs, cache_path):
             break
 
         PrintInfo(f"{len(repo_args)} unloaded dependencies found")
+        PrintDebug(repo_args)
 
         # Load remaining repositories
         RunInThreadsWithProgress(_LoadRepository, repo_args, None, __PrintLoadProgress)
@@ -562,7 +564,7 @@ def __GenerateDefaultKconfig():
     pass
 
 def __SetupKConfig(repositories):
-    logging.info("Setting up KConfig")
+    PrintDebug("Setting up KConfig")
     menu_root = __GenerateFullMenu(repositories)
     collapsed_menus = __CollapseSingleEntryMenus(menu_root)
     __GenerateKConfigs(collapsed_menus, Settings["paths"]["project configs"])
@@ -639,7 +641,7 @@ def __FetchAllPublicHeaders(repositories):
     return objects_to_link, public_header_folders
 
 def __SetupCMake(repositories):
-    logging.info("Setting up CMake")
+    PrintDebug("Setting up CMake")
     global a
     repos_to_build = []
 
@@ -650,7 +652,7 @@ def __SetupCMake(repositories):
         repository = repositories[repo_id]
 
         if __RepoHasFlagSet(repository, "no auto build") or __RepoHasNoCode(repository):
-            logging.info(f"Skipping CMake setup for {repo_id}")
+            PrintDebug(f"Skipping CMake setup for {repo_id}")
             continue
 
         if __RepoHasFlagSet(repository, "independent project"):
@@ -775,7 +777,7 @@ def Setup(repositories):
     # Run setup scripts
     for repo_id in repositories:
         repository = repositories[repo_id]
-        logging.info(f"Setting up repo {repository['name']}")
+        PrintDebug(f"Setting up repo {repository['name']}")
         __RunRepoCommands("setup", repository["setup"])
 
 def Build(repositories, build_command):
@@ -783,7 +785,7 @@ def Build(repositories, build_command):
         repository = repositories[repo_id]
         __RunRepoCommands(f"before build ({repository['name']})", repository["before build"])
 
-    logging.info(f"Building project with {build_command}")
+    PrintDebug(f"Building project with {build_command}")
     returned = LaunchVerboseProcess(build_command)
     if(returned["code"] != 0):
         Settings.return_code = 1

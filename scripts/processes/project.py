@@ -51,7 +51,7 @@ class PROJECT(dict):
         LaunchSilentProcess(f"rm -rf {Settings["paths"]["temporary"]}/*")
 
     def load(self):
-        logging.info("Loading repositories")
+        PrintInfo("Loading repositories")
 
         # Reset configs state
         ResetConfigsState()
