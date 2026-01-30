@@ -4,6 +4,7 @@ import sys
 from data.settings import Settings
 from data.common import StringIsNumber
 from data.colors import *
+from data.print import *
 from processes.process import _LaunchCommand, SetupLocalEnvVars
 from processes.process import LaunchSilentProcess, ProcessError, RunInThreadsWithProgress
 from menus.menu import GetNextInput, MenuExit, PeekNextInput, PopNextInput
