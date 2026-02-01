@@ -341,6 +341,9 @@ def GetTime():
 def GetHost():
     return f"{getpass.getuser()}@{socket.gethostname()}"
 
+def GetTimeForPath():
+    return GetTime().replace(" ", "_").replace("/", "_")
+
 def ResetTerminal():
     # Initialize curses
     stdscr = curses.initscr()
