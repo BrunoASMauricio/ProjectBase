@@ -26,7 +26,7 @@ def GetBasePaths():
     paths["history"]   = paths["configs"]+"/history"
     ## What temporary folder to use for setting up projects
     paths["temporary"] = paths["configs"]+"/temporary"
-    paths["http"] = paths["configs"]+"/http"
+    paths["http"] = paths["temporary"]+"/http"
     ## Where the .git files are located
     paths["bare gits"] = paths["configs"]+"/bare_gits"
 
