@@ -529,13 +529,13 @@ def GlobalTemporaryCommit():
 
 def GlobalFixedCommit():
 
-    temp_commit_count = []
+    temp_commit_count = 0
 
     try:
         temporary_commmits = __GetCurrentTemporaryCommits()
         temp_commit_count = __CountTemporaryCommits(temporary_commmits)
     finally:
-        if len(temp_commit_count) == 0:
+        if temp_commit_count == 0:
             print("There are no temporary commits. Direct global commit message")
             commit_message = GetNextInput("[ fixed commit message ][<] ", True)
             RunOnAllManagedRepos(RepoSaveChanges, {"commit_message":commit_message})
