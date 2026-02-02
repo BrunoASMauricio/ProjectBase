@@ -249,6 +249,16 @@ def GitRebaseOrMergeAbort(path, operation):
 def GitGetHeadCommit(path):
     return ParseGitResult(f"git rev-parse HEAD", path)
 
+"""
+Get amount of commits desynced
+returns a list
+first element contains amount of local commits not in remote
+second element contains amount of remote commits not in local branch
+"""
+def GitGetRevDiff(path = None):
+    res = ParseGitResult("git rev-list --left-right --count HEAD...@{upstream}", path)
+    return res.split("\t")
+
 def GitCheckoutBranch(path = None, new_branch=None):
     local_branches = FindLocalBranchForRemote(path, new_branch)
 
@@ -414,6 +424,7 @@ def RepoPull(path = None):
 
 def RepoPush(path = None):
     # Push to bare git
+    # TODO: If repo has no changes between local local and remote local, it means it needs to be pushed
     ParseGitResult("git push", path)
     # Code below SHOULDNT be necessary again because remote ref is properly set
     # Leavign it for now just in case something fails and we need a bit more manual push
@@ -585,7 +596,14 @@ def SetupBareData(repo_url):
     msg = "New branches track the remote of the current local branch"
     LaunchGitCommandAt("git config branch.autoSetupMerge always", bare_git, msg)
 
-    msg = "Configuring branch.autoSetupMerge"
+    msg = "Configuring which name the pushed branch has"
+    """
+    nothing: Refuse to push unless a remote/branch is explicitly specified (not useful for automation).
+    matching: Push all local branches that have a matching remote branch (deprecated in Git 2.0+ due to safety risks).
+    upstream (or tracking): Push the current branch to its upstream (tracking) branch (requires prior tracking setup).
+    simple (default in Git 2.0+): Push the current branch to a remote branch with the same name only if the local branch is already tracking an upstream branch. If no upstream exists, it errors (the "fatal: no upstream branch" scenario we saw earlier).
+    current: Push the current branch to a remote branch with the exact same name, creating the remote branch if it doesn’t exist.
+    """
     LaunchGitCommandAt("git config push.default upstream", bare_git, msg)
 
     msg = "Pull will rebase instead of merge"
