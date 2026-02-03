@@ -228,7 +228,7 @@ def GitRebaseOrMergeBranch(path, branch, operation):
             if CheckMergeOperationConflict(result.returned["out"]):
                 result.error_nessage = f"Merge conflict in {path} when merging branch {branch}"
             elif not CheckMergeOperationSuccess(result.returned["out"]):
-                result.error_nessage = f"{UNKNOWN_ERR}: {output}"
+                result.error_nessage = f"{UNKNOWN_ERR}: {result}"
         else:
             if CheckRebaseOperationConflict(result.returned["out"]):
                 result.error_nessage = f"Rebase conflict in {path} when merging branch {branch}"
@@ -256,8 +256,11 @@ first element contains amount of local commits not in remote
 second element contains amount of remote commits not in local branch
 """
 def GitGetRevDiff(path = None):
-    res = ParseGitResult("git rev-list --left-right --count HEAD...@{upstream}", path)
-    return res.split("\t")
+    res = GIT_CMD("git rev-list --left-right --count HEAD...@{upstream}", path)
+    if res.returned["code"] != 0:
+        return None
+
+    return res.returned["out"].split("\t")
 
 def GitCheckoutBranch(path = None, new_branch=None):
     local_branches = FindLocalBranchForRemote(path, new_branch)
@@ -424,7 +427,13 @@ def RepoPull(path = None):
 
 def RepoPush(path = None):
     # Push to bare git
-    # TODO: If repo has no changes between local local and remote local, it means it needs to be pushed
+    # If repo has no changes between local local and remote local, it means it doesnt need to be pushed
+    rev = GitGetRevDiff()
+    if rev != None:
+        if rev[0] == "0":
+            PrintNotice(f"Not pushing \"empty\" branch for {GetRepositoryName(path)}")
+            return
+
     ParseGitResult("git push", path)
     # Code below SHOULDNT be necessary again because remote ref is properly set
     # Leavign it for now just in case something fails and we need a bit more manual push
