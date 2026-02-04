@@ -1,4 +1,5 @@
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
+from processes.filesystem import CreateDirectory
 from data.print import *
 import threading
 
@@ -9,6 +10,7 @@ http_lock = threading.Lock()
 htt_root_path = GetBasePaths()["http"]
 
 def GetHTTPRoot():
+    CreateDirectory(htt_root_path)
     return htt_root_path
 
 class CustomHandler(SimpleHTTPRequestHandler):
@@ -45,6 +47,7 @@ def StartHTTPServer(host="0.0.0.0", port=8000):
 
         http_server["server"] = ThreadingHTTPServer((host, port), CustomHandler)
         http_server["stopped"] = threading.Event()
+        PrintNotice("HTTP Server started for {host}:{port}")
 
         def _run():
             try:
