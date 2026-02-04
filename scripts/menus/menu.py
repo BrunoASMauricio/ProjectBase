@@ -15,20 +15,38 @@ class EntryType(Enum):
     MENU     = 2
     DYNAMIC  = 3
 
-def PeekNextInput():
-    if len(Settings["action"]) != 0:
-        # Next automated action
-        next_input = Settings["action"][0]
+def InputSplit(input_string):
+    parts = []
+    
+    # Pattern to match content inside single quotes
+    quote_pattern = r"'([^']*)'"
+    
+    # Find all quoted sections
+    quote_matches = list(re.finditer(quote_pattern, input_string))
+    
+    if quote_matches:
+        last_end = 0
+        
+        for match in quote_matches:
+            # Add everything before this quote as space-separated parts
+            before = input_string[last_end:match.start()].strip()
+            if before:
+                parts.extend(before.split())
+            
+            # Add the quoted content as a single part
+            parts.append(match.group(1))
+            
+            last_end = match.end()
+        
+        # Add anything remaining after the last quote
+        after = input_string[last_end:].strip()
+        if after:
+            parts.extend(after.split())
     else:
-        next_input = None
-    return next_input
-
-def PopNextInput():
-    next_input = None
-    if len(Settings["action"]) != 0:
-        next_input = Settings["action"][0]
-        del Settings["action"][0]
-    return next_input
+        # No quotes found, just split by spaces
+        parts = input_string.split()
+    
+    return parts
 
 def GetNextInput(prompt = "[<] ", single_string = False):
     global ProjectArgs
@@ -47,7 +65,7 @@ def GetNextInput(prompt = "[<] ", single_string = False):
         # No request to keep input as single string (non split)
         if not single_string:
             # Check if we received multiple commands
-            SplitInput = next_input.split(" ")
+            SplitInput = InputSplit(next_input)
             if len(SplitInput) > 1:
                 Settings["action"] += SplitInput[1:]
                 next_input = SplitInput[0]

@@ -7,7 +7,7 @@ from data.colors import *
 from data.print import *
 from processes.process import _LaunchCommand, SetupLocalEnvVars
 from processes.process import LaunchSilentProcess, ProcessError, RunInThreadsWithProgress
-from menus.menu import GetNextInput, MenuExit, PeekNextInput, PopNextInput
+from menus.menu import GetNextInput, MenuExit
 from data.paths import JoinPaths
 from processes.flamegraph import *
 
@@ -123,6 +123,7 @@ Parse user input and extract prefix and the actual user input
 """
 def __ParseInput(og_user_input, executables_available):
     args = None
+
     input_list = og_user_input.split(" ")
 
     modifier, input_list = __GetModifier(input_list)
@@ -140,13 +141,6 @@ def __ParseInput(og_user_input, executables_available):
         # Specify venvs' python executable, to keep the same Venv
         #  across python executables (i.e. pip installations and modules available)
         executable = f"{sys.executable} {executable}"
-
-    # Is there an automated next command? If so check if it is for arguments
-    next_inp = PeekNextInput()
-    if next_inp != None:
-        if next_inp.startswith("--args="):
-            PopNextInput()
-            args = next_inp.replace("--args=", "").split(" ")
 
     # Is there an interactive next argument?
     if len(input_list) > 1:
@@ -189,7 +183,7 @@ The available modifiers are:
         else:
             msg += f"\tcommand executed: {modifier["cmd"]}\n"
     msg += "Example invocation: '!g binary_to_test arg0 arg1 arg2'"
-    msg += "When inputs are received via command line, to pass arguments use `--args`` like --args='\"arg number 0\" arg1 arg2'"
+    msg += "When inputs are received via command line, to pass arguments use `'` like '\"arg number 0\" arg1 arg2'"
 
     SetExecMenuMessage(msg)
 

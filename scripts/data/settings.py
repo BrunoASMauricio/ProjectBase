@@ -119,7 +119,7 @@ class SETTINGS(dict):
         # Configurations for CI infrastructure 
         parser.add_argument("-ci", "--commitJsonPath", help = "JSON Information with all the repos that have commit changes, that have to be commit copied instead of usual by remote copy", default=None, required=False)
 
-        # --args="...." is accepted for launching executables, but it is not handled here
+        # --exec="...." is accepted for launching executables, but it is not handled here
 
         project_args, action_args = parser.parse_known_args()
 
