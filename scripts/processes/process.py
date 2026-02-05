@@ -13,6 +13,7 @@ from data.colors import ColorFormat, Colors
 from processes.progress_bar import PrintProgressBar
 from data.common import *
 from data.print import *
+from processes.filesystem import WriteFile
 
 #                           PROCESS OPERATIONS
 
@@ -413,3 +414,7 @@ def AssertProcessRun(Process, ExpectedCode, ExpectedOutput):
         Message += "="*30 + "\n>"+ExpectedOutput+"<"
         Abort(Message)
 
+def LaunchPager(data, path=None):
+    file = "/tmp/PB.pager.data"
+    WriteFile(file, data)
+    LaunchProcess(f"less -f < {file}", path, True)

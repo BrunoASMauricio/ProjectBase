@@ -3,7 +3,7 @@ from data.colors       import ColorFormat, Colors
 from data.common import RemoveEmpty, CLICenterString, RemoveSequentialDuplicates, AssembleTable, YES_NO_PROMPT, UserYesNoChoice
 from data.git import GetRepoNameFromURL, IsValidGitBranch
 from processes.project import Project, GetRelevantPath
-from processes.process import OpenBashOnDirectoryAndWait, RunOnFolders
+from processes.process import OpenBashOnDirectoryAndWait, RunOnFolders, LaunchPager
 from processes.git_operations import *
 from menus.menu import GetNextInput
 from processes.git_operations import *
@@ -26,7 +26,7 @@ class ProjectStatusInfo:
 Create a list of all unique branches from the provided per repository branches
 Effectively invert the dictionary. Instead of being branches per repo, make them repos per branch
 """
-def GetBranches(repo_branches):
+def OrganizeBranches(repo_branches):
     def AddReposToBranch(branches, repo, lst):
         for branch in branches:
             if branch not in lst:
@@ -79,7 +79,7 @@ def RunOnAllManagedRepos(callback, arguments={}):
 
 def SelectBranch(branches, callback):
     repo_branches = RunOnAllManagedRepos(GetAllRepoBranches)
-    repo_branches = GetBranches(repo_branches)[branches]
+    repo_branches = OrganizeBranches(repo_branches)[branches]
 
     dynamic_entries = []
     branch_names = list(repo_branches.keys())
@@ -91,7 +91,7 @@ def SelectBranch(branches, callback):
 
 def DeleteLocalBranch(branch_name):
     repo_branches = RunOnAllManagedRepos(GetAllRepoBranches)
-    repo_branches = GetBranches(repo_branches)["checkedout"]
+    repo_branches = OrganizeBranches(repo_branches)["checkedout"]
 
     # Check if the branch is checked out anywhere
     for branch in repo_branches.keys():
@@ -196,11 +196,13 @@ def GetFilesDiff():
             PrintInfo(diff)
 
 def GetDiff():
-    results = RunOnAllRepos(GetGitDiff)
+    results = RunOnAllManagedRepos(GetGitDiff)
+    msg = ""
     for path, diff in results.items():
         if len(diff) > 1:
-            PrintInfo(CLICenterString(path))
-            PrintInfo(diff)
+            msg += f"{CLICenterString(path)}\n"
+            msg += f"{diff}\n"
+    LaunchPager(msg)
 
 def DirectlyManageSingleRepository():
     all_paths, known_paths, _ = GetKnownAndUnknownGitRepos()
@@ -210,7 +212,6 @@ def DirectlyManageSingleRepository():
     for path_ind in range(len(all_paths)):
         new_entry = []
         path = all_paths[path_ind]
-        repo_url  = GetRepositoryUrl(path)
         repo_id   = GetRepoIdFromPath(path)
         path = RemoveSequentialDuplicates(path, "/")
 
@@ -337,7 +338,7 @@ def PrintAllBranches():
     repo_branches = RunOnAllManagedRepos(GetAllRepoBranches)
     # There is a high likelihood that the same branches will be present on multiple repos
     # Print by branch and not by repo
-    repo_branches = GetBranches(repo_branches)
+    repo_branches = OrganizeBranches(repo_branches)
 
     def PrintBranches(branches):
         for branch, repos in branches.items():
