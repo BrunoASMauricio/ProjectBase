@@ -191,8 +191,11 @@ def IsEmpty(object):
     if type(object) == type({}):
         return len(object.keys()) == 0
 
-    if type(object) == type([]) or type(object) == type(""):
+    if type(object) == type([]):
         return len(object) == 0
+
+    if type(object) == type(""):
+        return object.strip() == ""
 
     # Other values cannot be empty (no way to detect that)
     return False
