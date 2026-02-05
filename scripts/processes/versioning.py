@@ -583,3 +583,171 @@ def GlobalSave():
 def ResetToLatestSync():
     RunOnAllRepos(RepoResetToLatestSync)
 
+"""
+Create a stash across all managed repositories with a custom or timestamped message.
+"""
+def GlobalStashCreate():
+    print(CLICenterString(ColorFormat(Colors.Cyan, "Create Global Stash"), "="))
+    print("\nThis will create a stash in all managed repositories.")
+    message = GetNextInput("[stash message (leave empty for timestamp) <] ")
+
+    if message.strip() == "":
+        print(ColorFormat(Colors.Yellow, "Using timestamped default message"))
+
+    # Create stash in all managed repos
+    stash_results = RunOnAllManagedRepos(GitStashCreate, {"message": message if message.strip() else None})
+
+    # Count successful stashes
+    repos_stashed = sum(1 for result in stash_results.values() if result is not None)
+
+    print(f"\n{ColorFormat(Colors.Green, f'Stashed changes in {repos_stashed} repositories')}")
+
+def __PrintStashes(print_indices):
+    # Get stashes from all managed repos
+    all_stashes = RunOnAllManagedRepos(GitStashList)
+
+    total_stashes = 0
+    pb_managed_count = 0
+
+    org_stashes = {}
+
+    for path, stashes in all_stashes.items():
+        if not stashes:
+            continue
+        for index, message in stashes:
+            if message not in org_stashes:
+                total_stashes += 1
+                if StashIsPBManaged(message):
+                    pb_managed_count += 1
+                org_stashes[message] = []
+
+            org_stashes[message].append((path, index))
+
+    if total_stashes == 0:
+        print(ColorFormat(Colors.Yellow, "\nNo stashes found in any repository"))
+    else:
+        print(f"\n{CLICenterString('', '=')}")
+        print(f"Total: {total_stashes} stashes ({pb_managed_count} managed by ProjectBase)")
+
+    ind = 0
+    for stash_message, stashes in org_stashes.items():
+        msgs = []
+        for path, index in stashes:
+            repo_name = GetRepoNameFromPath(path)
+            msgs.append(ColorFormat(Colors.Blue, f"{repo_name}"))
+
+        msg = ""
+        if print_indices:
+            msg += f"[{ind}] "
+
+        if StashIsPBManaged(stash_message):
+            stash_message = stash_message[len(STASH_MARKER):].strip()
+            msg += ColorFormat(Colors.Green, "Managed")
+        else:
+            msg += ColorFormat(Colors.Yellow, "UnManaged")
+
+        msg += f" stash \"{stash_message}\" at: {', '.join(msgs)}"
+
+        print(msg)
+        ind += 1
+
+    return org_stashes
+
+"""
+List all stashes across all managed repositories.
+"""
+def GlobalStashList():
+    print(CLICenterString(ColorFormat(Colors.Cyan, "Global Stash List"), "="))
+    __PrintStashes(False)
+
+"""
+Helper function to display stashes and get user selection.
+Returns a dict mapping paths to selected stash indices.
+"""
+def __SelectStashesFromRepos():
+    all_stashes = __PrintStashes(True)
+
+    print(f"\n{CLICenterString('', '=')}")
+
+    # Get user selection
+
+    selection = int(GetNextInput("[stash <] "))
+    if selection >= len(all_stashes):
+        PrintError(f"Incorrect index {selection}/{len(all_stashes)}")
+        return
+
+    message = list(all_stashes.keys())[selection]
+
+    if not StashIsPBManaged(message):
+        PrintError(f"Refusing to touch unmanaged stash. Please use direct repo manipulation")
+        return
+
+    return all_stashes[message]
+
+"""
+Delete selected stashes from repositories.
+"""
+def GlobalStashDelete():
+    print(CLICenterString(ColorFormat(Colors.Cyan, "Delete Stashes"), "="))
+
+    selected = __SelectStashesFromRepos()
+    if selected is None:
+        return
+
+    # Confirm deletion TODO: Put confirmation in common for general purpose use
+    print(f"\n{ColorFormat(Colors.Red, 'WARNING:')} About to delete {len(selected)} stash(es)")
+    confirm = GetNextInput("[Type 'yes' to confirm <] ")
+
+    if confirm.lower() != 'yes':
+        print(ColorFormat(Colors.Yellow, "Deletion cancelled"))
+        return
+
+    # Delete stashes
+    for path, stash_idx in selected:
+        try:
+            GitStashDrop(path, stash_idx)
+            repo_name = GetRepoNameFromPath(path)
+            print(f"{ColorFormat(Colors.Green, 'v')} Deleted stash {stash_idx} from {repo_name}")
+        except Exception as ex:
+            repo_name = GetRepoNameFromPath(path)
+            print(f"{ColorFormat(Colors.Red, 'x')} Failed to delete stash from {repo_name}: {ex}")
+
+"""
+Apply selected stashes to repositories (without removing them).
+"""
+def GlobalStashApply():
+    print(CLICenterString(ColorFormat(Colors.Cyan, "Apply Stashes"), "="))
+
+    selected = __SelectStashesFromRepos()
+    if selected is None:
+        return
+
+    # Apply stashes
+    for path, index in selected:
+        try:
+            GitStashApply(path, index)
+            repo_name = GetRepoNameFromPath(path)
+            print(f"{ColorFormat(Colors.Green, 'v')} Applied stash {index} to {repo_name}")
+        except Exception as ex:
+            repo_name = GetRepoNameFromPath(path)
+            print(f"{ColorFormat(Colors.Red, 'x')} Failed to apply stash to {repo_name}: {ex}")
+
+"""
+Pop (apply and delete) selected stashes from repositories.
+"""
+def GlobalStashPop():
+    print(CLICenterString(ColorFormat(Colors.Cyan, "Pop Stashes"), "="))
+
+    selected = __SelectStashesFromRepos()
+    if selected is None:
+        return
+
+    # Pop stashes
+    for path, stash_idx in selected:
+        try:
+            GitStashPopByIndex(path, stash_idx)
+            repo_name = GetRepoNameFromPath(path)
+            print(f"{ColorFormat(Colors.Green, 'v')} Popped stash {stash_idx} from {repo_name}")
+        except Exception as ex:
+            repo_name = GetRepoNameFromPath(path)
+            print(f"{ColorFormat(Colors.Red, 'x')} Failed to pop stash from {repo_name}: {ex}")

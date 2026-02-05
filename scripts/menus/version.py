@@ -3,7 +3,8 @@ from processes.versioning import DirectlyManageSingleRepository, PrintProjectSta
 from processes.versioning import FetchAll, PullAll, PushAll, PrintCheckedoutState, SwitchBranch, CheckoutBranch
 from processes.versioning import GlobalFixedCommit, GlobalTemporaryCommit, GetCurrentTemporaryCommits
 from processes.versioning import SelectLocalBranchToDelete, SelectRemoteBranchToDelete, PrintAllBranches, SelectBranchToMerge, SelectBranchToRebase, SelectBranchToCheckout
-from processes.project import DeleteProject
+from processes.versioning import GlobalStashCreate, GlobalStashList, GlobalStashDelete, GlobalStashApply, GlobalStashPop
+
 from data.colors import ColorFormat, Colors
 
 #       Save Menu
@@ -66,6 +67,14 @@ ResetMenu.AddCallbackEntry("Reset files to latest sync", ResetToLatestSync, "Res
 DirectSingleRepoManageMenu = Menu("What repo to manage:", stay_in_menu=True)
 DirectSingleRepoManageMenu.AddDynamicEntries(DirectlyManageSingleRepository)
 
+#       Stash Menu
+StashMenu = Menu("Stash Menu")
+StashMenu.AddCallbackEntry("Create global stash", GlobalStashCreate)
+StashMenu.AddCallbackEntry("List all stashes", GlobalStashList)
+StashMenu.AddCallbackEntry("Apply stash (keep in list)", GlobalStashApply)
+StashMenu.AddCallbackEntry("Pop stash (apply and remove)", GlobalStashPop)
+StashMenu.AddCallbackEntry("Delete stash", GlobalStashDelete)
+
 #       Main versioning menu
 VersioningMenu = Menu("Version Menu", stay_in_menu=True)
 
@@ -76,10 +85,8 @@ VersioningMenu.AddCallbackEntry("Project Status", PrintProjectStatus, "Show loca
 # VersioningMenu.AddCallbackEntry("Get project commit history", None)
 # Normal add + commit
 VersioningMenu.AddSubmenuEntry("Save changes", SaveMenu, "Select how to save changes (locally)")
-# Save all changes and auto commit them
-# VersioningMenu.AddCallbackEntry("Temporary save (automatic commit)", None)
-# Squash current changes with previous automatic commits, and commit with a message
-# VersioningMenu.AddCallbackEntry("Save changes and squash previous temporary saves", None)
+# Stash management
+VersioningMenu.AddSubmenuEntry("Stash management", StashMenu)
 
 # Get all information from the server (do not merge/pull, only fetch)
 # Should print what changed (X branch has new changes, Y branch is new, Z branch has a conflict)

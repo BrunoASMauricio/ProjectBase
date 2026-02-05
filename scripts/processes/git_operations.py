@@ -742,3 +742,94 @@ def MoveWorkTree(bare_path, from_path, to_path):
     # RemoveWorkTree(bare_path, from_path)
     # GitStashPop(new_repo_path)
 
+# Marker to identify stashes created by ProjectBase
+STASH_MARKER = "[PB-MANAGED]"
+
+"""
+Create a stash with a custom or timestamped message.
+If no message is provided, uses a timestamp as the default message.
+Adds the STASH_MARKER prefix to identify ProjectBase-managed stashes.
+"""
+def GitStashCreate(path=None, message=None):
+    timestamp = GetTime()
+    if IsEmpty(message):
+        # Generate timestamped default message
+        message = "Auto-stash"
+
+    # Add marker to identify ProjectBase-managed stashes
+    full_message = f"{STASH_MARKER} {message} at {timestamp}"
+
+    try:
+        ParseGitResult(f'git stash push -m "{full_message}"', path)
+    except ProcessError as ex:
+        ex.RaiseIfNotInOutput("No local changes to save")
+
+def StashIsPBManaged(stash_message):
+    return stash_message.startswith(STASH_MARKER)
+
+"""
+List all stashes in the repository.
+Returns a list of tuples: (index, stash_ref, is_pb_managed, message)
+"""
+def GitStashList(path=None):
+    try:
+        stash_output = ParseGitResult("git stash list", path)
+        if not stash_output or stash_output.strip() == "":
+            return []
+
+        stashes = []
+        for line in stash_output.strip().split('\n'):
+            # Parse stash line format: stash@{0}: On branch: message
+            if not line.strip():
+                continue
+
+            # Extract stash reference and message
+            parts = line.split(':', 2)
+            if len(parts) >= 3:
+                stash_ref = parts[0].strip()  # e.g., "stash@{0}"
+                stash_message = parts[2].strip()  # The actual message
+
+                # Extract index from stash_ref
+                index_str = stash_ref.split('{')[1].split('}')[0]
+                index = int(index_str)
+
+                # Remove marker from display message if present
+                stash_message = stash_message.strip()
+
+                stashes.append((index, stash_message))
+
+        return stashes
+    except ProcessError as ex:
+        # No stashes exist
+        return []
+
+"""
+Delete a stash by index.
+"""
+def GitStashDrop(path=None, stash_index=0):
+    try:
+        ParseGitResult(f"git stash drop stash@{{{stash_index}}}", path)
+    except ProcessError as ex:
+        ex.RaiseIfNotInOutput("No stash entries found")
+
+"""
+Apply a stash by index without removing it from the stash list.
+"""
+def GitStashApply(path=None, stash_index=0):
+    try:
+        ParseGitResult(f"git stash apply stash@{{{stash_index}}}", path)
+    except ProcessError as ex:
+        # Re-raise if it's not a simple "no stash" error
+        if "No stash entries found" not in str(ex):
+            raise ex
+
+"""
+Pop (apply and delete) a stash by index.
+"""
+def GitStashPopByIndex(path=None, stash_index=0):
+    try:
+        # Git doesn't have a direct "pop by index" command, so we apply then drop
+        GitStashApply(path, stash_index)
+        GitStashDrop(path, stash_index)
+    except ProcessError as ex:
+        ex.RaiseIfNotInOutput("No stash entries found")
