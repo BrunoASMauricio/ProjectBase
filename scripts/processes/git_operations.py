@@ -428,10 +428,10 @@ def RepoPull(path = None):
 def RepoPush(path = None):
     # Push to bare git
     # If repo has no changes between local local and remote local, it means it doesnt need to be pushed
-    rev = GitGetRevDiff()
+    rev = GitGetRevDiff(path)
     if rev != None:
         if rev[0] == "0":
-            PrintNotice(f"Not pushing \"empty\" branch for {GetRepositoryName(path)}")
+            PrintDebug(f"Not pushing \"empty\" branch for {GetRepositoryName(path)}")
             return
 
     ParseGitResult("git push", path)
