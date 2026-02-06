@@ -121,11 +121,12 @@ def RunInThreadsWithProgress(run_callback, run_args, max_delay=None, print_callb
 
     PrintProgressBar(0, len(run_args), prefix = 'Starting...', suffix = '0/' + str(len(run_args)))
     ClearThreadLog()
-    # ToggleThreading(True)
-    if Settings["single thread"]:
-        for run_arg_ind in run_args:
-            run_arg = run_args[run_arg_ind]
-            try:
+    ToggleThreading(True)
+
+    try:
+        if Settings["single thread"]:
+            for run_arg_ind in run_args:
+                run_arg = run_args[run_arg_ind]
                 run_callback(*run_arg)
                 if print_callback != None:
                     if print_args != None:
@@ -135,27 +136,22 @@ def RunInThreadsWithProgress(run_callback, run_args, max_delay=None, print_callb
                 else:
                     PrintProgressBar(run_arg_ind, len(run_args), prefix = 'Running:', suffix = 'Work finished ' + str(run_arg_ind) + '/' + str(len(run_args)))
                 thread_return[run_arg_ind] = True
-            except KeyboardInterrupt:
-                PrintNotice("Keyboard Interrupt, stopping")
-                ClearThreadLog()
-                return
-            except Exception as ex:
-                AddTothreadLog(str(ex))
-                thread_return[run_arg_ind] = False
-    else:
-        try:
+        else:
             threads = RunInThreads(run_callback, run_args)
             PrintProgressWhileWaitOnThreads((threads, run_callback, run_args), max_delay, print_callback, print_args)
-        except KeyboardInterrupt:
-            print("Keyboard Interrupt, stopping threads")
-            # for thread in threads:
-            #     if thread.is_alive():
-            #         # thread.raise_exception()
-            #         thread._stop()
-            ClearThreadLog()
-
-    FlushthreadLog()
-    # ToggleThreading(False)
+    except Exception as ex:
+        AddTothreadLog(str(ex))
+        thread_return[run_arg_ind] = False
+        raise
+    except KeyboardInterrupt:
+        PrintNotice("Keyboard Interrupt, stopping")
+    finally:
+        # for thread in threads:
+        #     if thread.is_alive():
+        #         # thread.raise_exception()
+        #         thread._stop()
+        FlushthreadLog()
+        ToggleThreading(False)
 
     for val in thread_return.values():
         if val == False:
