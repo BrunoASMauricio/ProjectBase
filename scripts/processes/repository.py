@@ -331,6 +331,7 @@ def LoadRepository(imposed_configs):
 
 def __GenerateFullMenu(repositories):
     root = {}
+    logging.error(f"kconfig repositiories {repositories}")
     for repo_id in repositories:
         repository = repositories[repo_id]
         kconfig_path = None
@@ -343,20 +344,18 @@ def __GenerateFullMenu(repositories):
 
         if kconfig_path == None:
             kconfig_path = JoinPaths(repository['current repo path'], "configs", "Kconfig")
+
+            logging.error(f"kconfig path path {kconfig_path}")
             if not os.path.isfile(kconfig_path):
                 continue
+            repository["kconfig"] = kconfig_path
+            repository["kconfig_target"] = JoinPaths(Settings["paths"]["project configs"], repository["name"], "Kconfig")
 
-        # Use local_path to derive menu name
-        parts = repository["local path"].split("/")
-        menu = root
         logging.error(f"For repository {repository["name"]}")
-
-        for part in parts:
-            if part not in menu:
-                menu[part] = {}
-
-            menu = menu[part]
-        menu[repository["name"]] = kconfig_path
+        logging.error(f"kconfig repositiories {repositories}")
+        root[repository["name"]] = kconfig_path
+    
+    logging.error(f"kconfig root {root}")
     return root
 
 # Receives the root menu and its' name
@@ -399,47 +398,51 @@ def __CollapseSingleEntryMenus(root):
             result[to_root] = list(value.values())[0]
     return result
 
-def __GenerateKConfigs(config_dict, menu_path=""):
-    for key, value in config_dict.items():
-        current_path = JoinPaths(menu_path, key)
-        file_path = JoinPaths(Settings["paths"]["project configs"], current_path)
-        
-        # Ensure directory exists
-        os.makedirs(file_path, exist_ok=True)
-        
-        target_kconfig = JoinPaths(file_path, "Kconfig")
 
-        if isinstance(value, str):
-            # TRAMPOLINE METHOD:
-            # Instead of symlinking, write a Kconfig that sources the absolute path.
-            # This ensures relative includes INSIDE the repo's Kconfig resolve correctly.
-            with open(target_kconfig, "w") as f:
-                # 'value' is the absolute path to the repo Kconfig (from __GenerateFullMenu)
-                f.write(f'source "{value}"\n')
+
+##### NEED TO REDO THIS FROM SCRATCH FOR SURE 
+##### How to do it: On generate full menu i will save the kconfig current paths
+##### and the kconfig target paths , on repositories 
+
+# the targets will be setiings[configs]/configs/ Repo_name/ Kconfig 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def __GenerateKConfigs(repositories):
+
+    for repo_path in repositories:
+        repo = repositories[repo_path]
+        if("kconfig" not in repo):
+            continue 
+        repo_original_kconfig = repo["kconfig"]
+        repo_target_kconfig = repo["kconfig_target"]
+
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(repo_target_kconfig), exist_ok=True)
+
+        with open(repo_target_kconfig, "w") as f:
+            # 'value' is the absolute path to the repo Kconfig (from __GenerateFullMenu)
+            f.write(f'source "{repo_original_kconfig}"\n')
                 
-        elif isinstance(value, dict):
-            # Create Kconfig submenu
-            with open(target_kconfig, "w") as f:
-                f.write(f'menu "{key}"\n\n')
-                for subkey in value:
-                    # Calculate relative path to the child Kconfig
-                    # Because we are strictly controlling the structure, we can just use the subkey
-                    # structure we are about to generate.
-                    
-                    # NOTE: source paths in Kconfig are relative to $srctree if set, 
-                    # or relative to the current file if not. 
-                    # To be safe and consistent, we use the generated path structure.
-                    
-                    sub_kconfig_path = JoinPaths(file_path, subkey, "Kconfig")
-                    
-                    # We write the source path relative to the generated root or absolute.
-                    # Using absolute paths for 'source' is the safest way to prevent context errors.
-                    f.write(f'source "{sub_kconfig_path}"\n')
-                    
-                f.write(f'\nendmenu\n')
-            
-            # Recurse into submenus
-            __GenerateKConfigs(value, current_path)
 
 def __GenerateKConfigsold(config_dict, menu_path=""):
     for key, value in config_dict.items():
@@ -470,15 +473,8 @@ def __GenerateKConfigsold(config_dict, menu_path=""):
 
 def __CreateRootKConfig(menus):
     root_kconfig_path = JoinPaths(Settings["paths"]["project configs"], "Kconfig")
+    logging.info(f"Root Kconfig {root_kconfig_path}")
     with open(root_kconfig_path, "w") as f:
-        f.write(f'mainmenu "{Settings["ProjectName"]}"\n\n')
-        
-        # Add a dummy invisible symbol to ensure the configuration is never "Empty"
-        # This helps distinguish between "Broken Paths" and "No Configs"
-        f.write('config PROJECT_BASE_ROOT\n')
-        f.write('    bool\n')
-        f.write('    default y\n\n')
-
         for src in menus:
             f.write(f'menu "{src}"\n')
             # Source the intermediate Kconfig generated in __GenerateKConfigs
@@ -559,11 +555,21 @@ def __GenerateDefaultKconfig():
         logging.error("Falling back to ConvertKconfigToHeader()")
         ConvertKconfigToHeader()
 
+def __GenerateDefaultKconfigOld():
+    if not os.path.isfile(JoinPaths(Settings["paths"]["project configs"], ".config")):
+        LaunchProcess("kconfig-conf --alldefconfig Kconfig", Settings["paths"]["project configs"])
+    ConvertKconfigToHeader()
+
 def __SetupKConfig(repositories):
     logging.info("Setting up KConfig")
     menu_root = __GenerateFullMenu(repositories)
-    collapsed_menus = __CollapseSingleEntryMenus(menu_root)
-    __GenerateKConfigs(collapsed_menus, Settings["paths"]["project configs"])
+    logging.info(f"Menu root {menu_root}")
+    #collapsed_menus = __CollapseSingleEntryMenus(menu_root)
+    collapsed_menus = menu_root
+    logging.info(f"Collapsed menus] {collapsed_menus}")
+
+    #__GenerateKConfigs(collapsed_menus, Settings["paths"]["project configs"])
+    __GenerateKConfigs(repositories)
     __CreateRootKConfig(collapsed_menus)
     logging.error(collapsed_menus)
     __GenerateDefaultKconfig()
@@ -767,6 +773,7 @@ def __SetupCMake(repositories):
 
 def Setup(repositories):
     # Get KConfig ready
+
     __SetupKConfig(repositories)
 
     # Get CMakeLists ready
