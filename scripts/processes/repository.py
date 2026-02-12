@@ -349,7 +349,10 @@ def __GenerateFullMenu(repositories):
             if not os.path.isfile(kconfig_path):
                 continue
             repository["kconfig"] = kconfig_path
-            repository["kconfig_target"] = JoinPaths(Settings["paths"]["project configs"], repository["name"], "Kconfig")
+            project_code = Settings["paths"]["project code"]
+            project_suffix = repository["kconfig"][len(project_code)+1:]
+
+            repository["kconfig_target"] = JoinPaths(Settings["paths"]["project configs"], project_suffix)
 
         logging.error(f"For repository {repository["name"]}")
         logging.error(f"kconfig repositiories {repositories}")
@@ -421,14 +424,210 @@ def __CollapseSingleEntryMenus(root):
 
 
 
+# Suppose a repo is data/tools/Kconfig and another data/otherthinss/kconfig 
+# Instead of all this repos being tied to the root kconfig 
+# Thy are going to bbe tied to a sub menu kconfig on data 
+def __GenerateKConfigsMenus(repositories):
+    repos_with_kconfigs = []
+    for repo_path in repositories:
+        repo = repositories[repo_path]
+        if("kconfig" not in repo):
+            continue 
+        repos_with_kconfigs.append(repo)
+    
+    #
+
+
+#This Class builds a directory tree from paths and automatically detects branching points (submenus) based on how Kconfig files are distributed within the hierarch
+
+
+#This script builds a directory tree from paths and automatically detects branching points (submenus) based on how Kconfig files are distributed within the hierarch
+class Node:
+    def __init__(self, name: str):
+        self.name = name
+        self.path_from_root:list[str] = []
+        self.childs: list["Node"] = []
+        self.kconfig_rel_paths: list[list[str]] = []
+        self.is_submenu = False
+        self.is_kconfig = False
+
+    def add_path_str(self, parts: list[str]) -> bool:
+        if not parts:
+            return False
+
+        if parts[0] != self.name:
+            return False
+
+        if len(parts) == 1:
+            return True
+
+        for child in self.childs:
+            if child.add_path_str(parts[1:]):
+                return True
+
+        self.childs.append(create_long_node(parts[1:]))
+        return True
+    def pretty_print(self, prefix: str = "", is_last: bool = True):
+        connector = "└── " if is_last else "├── "
+        #print(prefix + connector + self.name + f"(Path: {self.path_from_root}" + f"(Kconf: {self.kconfig_rel_paths})")
+        print(prefix + connector + self.name + f" isSubmenu: {self.is_submenu}")
+
+        prefix += "    " if is_last else "│   "
+
+        for i, child in enumerate(self.childs):
+            is_child_last = i == len(self.childs) - 1
+            child.pretty_print(prefix, is_child_last)
+
+    def generate_k_config_paths(self) -> list[list[str]]:
+        # If this node is a Kconfig file
+        if self.name == "Kconfig":
+            self.is_kconfig = True
+            self.is_submenu = True
+            self.kconfig_rel_paths = [[self.name]]
+            return self.kconfig_rel_paths
+
+        kconfigs_childs: list[list[str]] = []
+
+        for child in self.childs:
+            child_paths = child.generate_k_config_paths()
+
+            for path in child_paths:
+                kconfigs_childs.append([self.name] + path)
+
+        self.kconfig_rel_paths = kconfigs_childs
+        return kconfigs_childs
 
 
 
+    # With this information I must find what are the submenus (The submenus are the menus where its number of rel kconfigs is different than any of its childs)
+    def get_submenu_nodes(self) -> list[Node]:
+        self_c = len(self.kconfig_rel_paths)
+        is_diff = False
+        list_n : list[Node] = []
+        for child in self.childs:
+            child_c = len(child.kconfig_rel_paths)
+            if(child_c != self_c):
+                self.is_submenu = True
+                is_diff = True 
+                break 
+        
+        if(is_diff):
+            list_n.append(self)
 
+        for child in self.childs:
+            list_n.extend(child.get_submenu_nodes())
+        return list_n
+
+    def populate_full_path(self, current_path: list[str]):
+        self.path_from_root = current_path + [self.name]
+
+        for child in self.childs:
+            child.populate_full_path(self.path_from_root)
+
+    # this is simpler it gets the paths is must have. 
+    # And it gets the name (naming being the first brnach of its childs)
+    def from_node_get_name_and_path_of_submenus_it_must_point_to(self, group_name: str | None = None) -> list[tuple[Node, str]]:
+
+     first_submenu_nodes: list[tuple[Node, str]] = []
+
+     for child in self.childs:
+
+        # Determine what group name should propagate downward
+        propagated_name = group_name if group_name else child.name
+
+        if child.is_submenu:
+            first_submenu_nodes.append((child, propagated_name))
+        else:
+            first_submenu_nodes.extend(
+                child.from_node_get_name_and_path_of_submenus_it_must_point_to(
+                    propagated_name
+                )
+            )
+
+     return first_submenu_nodes
+
+
+    def from_node_get_submenus_it_must_contain(self) -> list[Node]:
+        first_submenu_nodes: list[Node] = []
+        for child in self.childs:
+            if(child.is_submenu):
+                first_submenu_nodes.append(child)
+            else:
+                first_child_menus = child.from_node_get_submenus_it_must_contain()
+                first_submenu_nodes.extend(first_child_menus)
+
+        return first_submenu_nodes
+        
+def create_long_node(parts: list[str]) -> Node:
+    if not parts:
+        raise ValueError("Cannot call this with 0 parts")
+
+    node = Node(parts[0])
+
+    if len(parts) > 1:
+        node.childs.append(create_long_node(parts[1:]))
+
+    return node
+
+
+#root = Node("")
+#root.add_path_str("/amen/tre/aaa/s/Kconfig".split("/"))
+#root.add_path_str("/tre/aaa/s/Kconfig".split("/"))
+#root.add_path_str("/tre/aaa/safdsaf/Kconfig".split("/"))
+#root.generate_k_config_paths()
+#root.populate_full_path([])
+
+#nodes = root.get_submenu_nodes()
+
+#for node in nodes:
+#    print("----- Submenu Node ------")
+#    nodes_c = node.from_node_get_name_and_path_of_submenus_it_must_point_to()
+#    node.pretty_print()
+#    for (node_ci,name) in nodes_c:
+#        print("-----Must containt this")
+#        print(f"Name must be {name}")
+#        node_ci.pretty_print()
+#    break
+
+def __GenerateKConfigsSubmenus(repositories):
+    repo_targets: list[str] = []
+    for repo_path in repositories:
+        repo = repositories[repo_path]
+        if("kconfig" not in repo):
+            continue 
+        repo_target_kconfig = repo["kconfig_target"]
+        repo_targets.append(repo_target_kconfig)
+
+    # Create Root node 
+    root = Node("")
+    for path in repo_targets:
+        root.add_path_str(path.split("/"))
+    root.generate_k_config_paths()
+    root.populate_full_path([])
+
+    submenu_nodes = root.get_submenu_nodes()
+
+    for node in submenu_nodes:
+        pn = node.path_from_root
+        if(pn[-1] != "Kconfig"):
+                pn.append("Kconfig")
+        node_path =  "/".join(pn)
+        print(f"PATH PATH {node_path}")
+        
+        nodes_c = node.from_node_get_name_and_path_of_submenus_it_must_point_to()
+        with open(node_path, "w") as f:
+            for (node_ci,name) in nodes_c:
+                p = node_ci.path_from_root
+                if(p[-1] != "Kconfig"):
+                        p.append("Kconfig")
+                ps = "/".join(p)
+                f.write(f'menu "{name}"\n\n')
+                f.write(f'source "{ps}"\n')
+                f.write(f'\nendmenu\n')
+    return root.from_node_get_name_and_path_of_submenus_it_must_point_to()
 
 
 def __GenerateKConfigs(repositories):
-
     for repo_path in repositories:
         repo = repositories[repo_path]
         if("kconfig" not in repo):
@@ -443,42 +642,26 @@ def __GenerateKConfigs(repositories):
             # 'value' is the absolute path to the repo Kconfig (from __GenerateFullMenu)
             f.write(f'source "{repo_original_kconfig}"\n')
                 
-
-def __GenerateKConfigsold(config_dict, menu_path=""):
-    for key, value in config_dict.items():
-        current_path = JoinPaths(menu_path, key)
-        file_path = JoinPaths(Settings["paths"]["project configs"], current_path)
-
-        if isinstance(value, str):
-            # Link Kconfig
-            os.makedirs(file_path, exist_ok=True)
-            if os.path.isfile(JoinPaths(file_path, "Kconfig")):
-                LaunchProcess(f"unlink Kconfig", file_path)
-            LaunchProcess(f"ln -s {value} Kconfig", file_path)
-        elif isinstance(value, dict):
-            # Create Kconfig submenu
-            os.makedirs(file_path, exist_ok=True)
-            # Generate a menu with nested includes
-            with open(file_path + "/Kconfig", "w") as f:
-                f.write(f'menu "{key}"\n\n')
-                for subkey in value:
-                    subpath = JoinPaths(current_path, subkey).replace("/", os.sep)
-                    if isinstance(value[subkey], dict):
-                        f.write(f'source "{subpath}/Kconfig"\n')
-                    else:
-                        f.write(f'source "{subpath}/Kconfig"\n')
-                f.write(f'\nendmenu\n')
-            # Recurse into submenus
-            __GenerateKConfigs(value, current_path)
-
-def __CreateRootKConfig(menus):
+def __CreateRootKConfig(submenus_root : list[tuple[Node,str]]):
     root_kconfig_path = JoinPaths(Settings["paths"]["project configs"], "Kconfig")
+
+    # Note only do this if this was not done in generating the submenus at all! 
+    # easy to check by seing if submenus_root contains the root_kconfig_path
+    for node,s in submenus_root:
+        path = "/".join(node.path_from_root)
+        if(path == root_kconfig_path):
+            return 
+
     logging.info(f"Root Kconfig {root_kconfig_path}")
     with open(root_kconfig_path, "w") as f:
-        for src in menus:
-            f.write(f'menu "{src}"\n')
+        for node, name in submenus_root:
+            f.write(f'menu "{name}"\n')
             # Source the intermediate Kconfig generated in __GenerateKConfigs
-            f.write(f'    source "{Settings["paths"]["project configs"]}/{src}/Kconfig"\n')
+            p = node.path_from_root
+            if(p[-1] != "Kconfig"):
+                p.append("Kconfig")
+            ps = "/".join(p)
+            f.write(f'    source "{ps}"\n')
             f.write(f'endmenu\n\n')
 
             
@@ -568,10 +751,10 @@ def __SetupKConfig(repositories):
     collapsed_menus = menu_root
     logging.info(f"Collapsed menus] {collapsed_menus}")
 
-    #__GenerateKConfigs(collapsed_menus, Settings["paths"]["project configs"])
     __GenerateKConfigs(repositories)
-    __CreateRootKConfig(collapsed_menus)
-    logging.error(collapsed_menus)
+    submenus_info_root = __GenerateKConfigsSubmenus(repositories)
+    __CreateRootKConfig(submenus_info_root)
+
     __GenerateDefaultKconfig()
 
 def DependencyOf(repo, target):
