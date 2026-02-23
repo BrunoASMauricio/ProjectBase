@@ -4,10 +4,18 @@ import sys
 from data.settings import Settings
 from data.common import StringIsNumber
 from data.colors import *
+from data.print import *
 from processes.process import _LaunchCommand, SetupLocalEnvVars
 from processes.process import LaunchSilentProcess, ProcessError, RunInThreadsWithProgress
-from menus.menu import GetNextOption, MenuExit, PeekNextOption, PopNextOption
+from menus.menu import GetNextInput, MenuExit
 from data.paths import JoinPaths
+from processes.flamegraph import *
+
+exec_menu_mesg = ""
+
+def SetExecMenuMessage(msg):
+    global exec_menu_mesg
+    exec_menu_mesg = msg
 
 """
 scan PathToScan for appropriate executables
@@ -33,53 +41,184 @@ def __GetAvailableExecutables(PathToScan, CurrentAvailables=[]):
         executables_available.append(ExecPath)
     return executables_available
 
-"""
-Parse user input and extract prefix and the actual user input
-"""
-def __ParseInput(og_user_input):
-    prefix = ""
-    user_prefix = og_user_input[0:2]
-    prefixes = {
-        "!G": "gdb --args ",
-        "!S": "gdbserver 127.0.0.1:6175 ",
-        "!V": "valgrind --fair-sched=yes -s --leak-check=full --show-leak-kinds=all --track-origins=yes",
-        "!C": "valgrind --tool=callgrind",
-        "!g": "gdb",
-        "!s": "gdbserver",
-        "!v": "valgrind"
+def __SetupPrefix(name, cmd, desc):
+    return {
+        "name": name,
+        "cmd": cmd,
+        "desc": desc
     }
 
-    if user_prefix in prefixes:
-        prefix = prefixes[user_prefix]
-        user_input = og_user_input[2:]
+exec_prefix = "!"
+"""
+The modifiers below describe which programs exist that can be used to modify execution.
+The key is the value used to identify a modifier
+The second argument is the actual command, and can be a string, which will have the
+ $EXEC and $ARGS replaced with the appropriate executable and arguments, OR a function
+ that receives the executable and arguments and returns the command to execute
+"""
+modifiers = {
+    "g": __SetupPrefix("GDB",
+                       "gdb $EXEC $ARGS",
+                       "Base debugger"
+    ),
+    "G": __SetupPrefix("GDB",
+                       "gdb $EXEC --args $ARGS",
+                       "Debugger with arguments from command line"
+    ),
+    "v": __SetupPrefix("Valgrind",
+                       "valgrind $EXEC $ARGS",
+                       "Run valgrind to check for memory errors and leaks"
+    ),
+    "V": __SetupPrefix("Valgrind",
+                       "valgrind --fair-sched=yes -s --leak-check=full --show-leak-kinds=all --track-origins=yes $EXEC $ARGS",
+                       "Run valgrind to check for memory errors and leaks, with deep analytics options"
+    ),
+    "c": __SetupPrefix("Callgrind",
+                       "valgrind --tool=callgrind $EXEC $ARGS",
+                       "Valgrinds' callgrind tool for recording function calls"
+    ),
+    "C": __SetupPrefix("Callgrind",
+                       "valgrind --tool=callgrind  --inclusive=yes --tree=both --cache-sim=yes --branch-sim=yes --dump-instr=yes --collect-jumps=yes $EXEC $ARGS",
+                       "Valgrinds' callgrind tool for recording function calls, with deep analytics options"
+    ),
+    "F": __SetupPrefix("Flamegraph",
+                       RunFlamegraph,
+                       "Run the program, and generate a graph of the time spent on each function call"
+    )
+}
+
+"""
+Check for modifier
+If it exsists, return it alongside truncated input list
+"""
+def __GetModifier(input_list):
+    modifier_id = input_list[0]
+    modifier = None
+
+    if modifier_id[0] == exec_prefix and len(modifier_id) >= 2:
+        # Acceptable options: '!g<ID>' or '!g <ID'>
+        expected_modifier = modifier_id[1]
+        input_list = input_list[1:]
+
+        if len(modifier_id) != 2:
+            input_list.insert(0, modifier_id[2:].strip())
     else:
-        user_input = og_user_input
-    return prefix, user_input
+        return None, input_list
+
+    if expected_modifier not in modifiers.keys():
+        PrintError(f"Unknown modifier {expected_modifier}")
+        return None, None
+
+    modifier = modifiers[expected_modifier]
+    # Remove modifier from input list
+    return modifier, input_list
 
 """
 Locate the actual executable used and return its' path
 """
-def __LocateExecutable(user_input, executables_available):
-    input_list = user_input.split(' ')
-    executable = input_list[0]
+def __LocateExecutable(executable, executables_available):
     if StringIsNumber(executable):
         exec_ind = int(executable)
         if exec_ind > len(executables_available):
-            print("Out of bounds index: " + user_input)
-            return None, None
+            PrintWarning(f"Out of bounds index {exec_ind}/{len(executables_available)}")
+            return None
         path_to_exec = executables_available[exec_ind]
     else:
-        raise Exception("Unimplemented. First implement proper executable presentation per module and alphabetical")
-    return path_to_exec, input_list
+        raise Exception(f"Unimplemented. First implement proper executable {executable} presentation per module and alphabetical")
+
+    return path_to_exec
+
+"""
+Parse user input and extract prefix and the actual user input
+"""
+def __ParseInput(og_user_input, executables_available):
+    args = None
+
+    input_list = og_user_input.split(" ")
+
+    modifier, input_list = __GetModifier(input_list)
+    if input_list == None:
+        return None
+
+    # Locate executable. After modifier has been parsed out, the executable is the first element
+    executable = __LocateExecutable(input_list[0], executables_available)
+    if executable == None:
+        PrintError(f"Executable not found for input: {og_user_input}")
+        return None
+
+    # Check for Python scripts
+    if executable.endswith(".py"):
+        # Specify venvs' python executable, to keep the same Venv
+        #  across python executables (i.e. pip installations and modules available)
+        executable = f"{sys.executable} {executable}"
+
+    # Is there an interactive next argument?
+    if len(input_list) > 1:
+        if args != None:
+            raise Exception("Unexpected arguments from both next automated command ({args}) and interactive ({og_user_input})")
+        args = [x for x in input_list[1:] if x != ""]
+
+    # Either assemble full command based on modifier, or by itself
+    if modifier != None:
+        if type(modifier["cmd"]) == type(__ParseInput):
+            full_command, msg = modifier["cmd"](executable, args)
+            if msg != None:
+                SetExecMenuMessage(msg)
+        else:
+            # Text based modifier, just append
+            if args != None:
+                args = ' '.join(args)
+            else:
+                args = ' '
+
+            full_command = modifier["cmd"].replace("$EXEC", executable).replace("$ARGS", args)
+    else:
+        full_command = f"{executable} {args}"
+
+    return full_command
+
+def SetupExecHelp():
+    msg = """=== Exec help menu ===
+To run an executable, input its' index from the displayed list.
+There are some "modifiers" to the execution environment that can be used.
+To use a modifier, start the command with '!' followed by the modifier identifier.
+The available modifiers are:
+"""
+    for modifier_id in modifiers:
+        modifier = modifiers[modifier_id]
+        msg += f"=== {modifier["name"]} (id: {modifier_id}) ===\n"
+        msg += f"\tdescription: {modifier["desc"]}\n"
+        if type(modifier["cmd"]) == type(SetupExecHelp):
+            msg += f"\tcommand executed: defined by function {modifier["cmd"]}\n"
+        else:
+            msg += f"\tcommand executed: {modifier["cmd"]}\n"
+    msg += "Example invocation: '!g binary_to_test arg0 arg1 arg2'"
+    msg += "When inputs are received via command line, to pass arguments use `'` like '\"arg number 0\" arg1 arg2'"
+
+    SetExecMenuMessage(msg)
+
+def ParseInput(og_user_input, executables_available):
+    # No input (Enter pressed) or Exit this menu
+    if len(og_user_input) == 0 or MenuExit(og_user_input):
+        return None
+
+    # Help menu?
+    if og_user_input in ["help", "?"]:
+        SetupExecHelp()
+        return None
+
+    # Check extra program prefix
+    return __ParseInput(og_user_input, executables_available)
 
 def ExecuteMenu(PathToScan):
+    global exec_menu_mesg
     while True:
         executables_available = __GetAvailableExecutables(PathToScan)
         if len(executables_available) == 0:
-            print("No executables found")
+            PrintWarning("No executables found")
             return
 
-        print("Executables available in "+PathToScan+":")
+        PrintInfo("Executables available in "+PathToScan+":")
         executables_available.sort()
         previous_repo_name = ""
         for index in range(len(executables_available)):
@@ -92,64 +231,34 @@ def ExecuteMenu(PathToScan):
 
             if len(name) != 0:
                 if previous_repo_name != repo:
-                    print(ColorFormat(Colors.Yellow, "\t<" + repo + ">"))
+                    PrintInfo(ColorFormat(Colors.Yellow, "\t<" + repo + ">"))
                     previous_repo_name = repo
                 print("["+str(index)+"]" +ColorFormat(Colors.Blue, name))
             else:
                 print("["+str(index)+"] "+ColorFormat(Colors.Yellow, "<" + repo + ">"))
 
+        if exec_menu_mesg != "":
+            print(exec_menu_mesg)
+            exec_menu_mesg = ""
         print()
 
-        
-        print("!V for valgrind. !G for GDB. !S for GDB server @ 127.0.0.1:6175")
-        print("Upper case (V,G,S) uses default parameters, lower case doesn't.")
-        print("[![G|V|S]]<INDEX [0-9]+> [Space separated argument list]")
+        print("Input 'help' or '?' for exec launch information")
         print("exit or Ctr+D to exit")
         try:
-            og_user_input = GetNextOption(single_string=True)
-            # No input (Enter pressed)
-            if len(og_user_input) == 0:
-                print("No input")
+            # Properly parse input
+            full_command = ParseInput(GetNextInput(single_string=True), executables_available)
+            if full_command == None:
                 continue
-
-            if MenuExit(og_user_input):
-                return
-            # Check extra program prefix
-            prefix, user_input = __ParseInput(og_user_input)
-
-            # Locate executable
-            path_to_exec, input_list = __LocateExecutable(user_input, executables_available)
-            if path_to_exec == None:
-                print("Executable not found")
-                continue
-
-            # Assemble command and run
-            arguments = ' '.join([x for x in input_list[1:] if x != ""])
-            full_command = path_to_exec + " " + arguments
-            if prefix != "":
-                full_command = prefix + " " + full_command
-
-            if path_to_exec.endswith(".py"):
-                # Specify venvs' python executable, to keep the same Venv
-                #  across python executables (i.e. pip installations and modules available)
-                full_command = f"{sys.executable} {full_command}"
-
-            next_inp = PeekNextOption()
-            if next_inp != None:
-                # There is an automated next command
-                arg_name = "--args="
-                if next_inp.startswith(arg_name):
-                    PopNextOption()
-                    args = next_inp.replace(arg_name, "")
-                    full_command = f"{full_command} {args}"
 
             print("Running: \"" + full_command + "\"")
 
             try:
                 # Allow python scripts to use ProjectBase scripts
                 SetupLocalEnvVars()
-                result = _LaunchCommand(full_command, path=None, to_print=False)
+                result = _LaunchCommand(full_command, path=None, interactive=True)
                 print(result["stdout"])
+                if len(result["stderr"]) > 0:
+                    print(result["stderr"])
 
                 if result["code"] != 0:
                     print(ColorFormat(Colors.Red, '"' + full_command + '" returned code = '+str(result["code"])))

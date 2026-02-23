@@ -1,7 +1,9 @@
 # Created by venv; see https://docs.python.org/3/library/venv.html
+tags
 venv
 configs/bare_gits/*
 configs/history/*
 configs/project_cache/*
 configs/temporary/*
 projects
+scripts/FlameGraph

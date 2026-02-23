@@ -1,8 +1,7 @@
 from menus.menu import Menu
-from data.settings import Settings
 from data.colors import ColorFormat, Colors
 from processes.project import Project
-from data.settings import CLONE_TYPE
+from data.settings import CLONE_TYPE, Settings, GetBranch
 
 from menus.run import RunMenu
 from menus.settings import SettingsMenu
@@ -12,23 +11,42 @@ from menus.version import VersioningMenu
 from menus.kconfig import RunMenuConfig
 from menus.ci import CIMenu
 
+from data.paths import GetProjectBasePath
+from processes.git_operations import GitGetHeadCommit
+
+first_time = True
+
 def main_description():
-    ActiveSettings = Settings["active"]
-    BuildBanner = ""
-    if ActiveSettings["Mode"] == "Release":
-        BuildBanner = ColorFormat(Colors.Blue, "Release build")
+    global first_time
+    active_settings = Settings["active"]
+    if active_settings["Mode"] == "Release":
+        build_type = ColorFormat(Colors.Blue, "Release build")
     else:
-        BuildBanner = ColorFormat(Colors.Yellow, "Debug build")
+        build_type = ColorFormat(Colors.Yellow, "Debug build")
     
-    if ActiveSettings["Clone Type"] == CLONE_TYPE.SSH.value:
-        CloneType = ColorFormat(Colors.Magenta, "ssh access")
+    if active_settings["Clone Type"] == CLONE_TYPE.SSH.value:
+        clone_type = ColorFormat(Colors.Magenta, "ssh access")
     else:
-        CloneType = ColorFormat(Colors.Cyan, "http[s] access")
+        clone_type = ColorFormat(Colors.Cyan, "http[s] access")
     
-    if ActiveSettings["Speed"] == "Safe":
-        SpeedType = ColorFormat(Colors.Green, "Safe")
+    if active_settings["Speed"] == "Safe":
+        speed_type = ColorFormat(Colors.Green, "Safe")
     else:
-        SpeedType = ColorFormat(Colors.Yellow, "Fast")
+        speed_type = ColorFormat(Colors.Yellow, "Fast")
+
+    branch = GetBranch()
+    if branch != None:
+        checkedout_branch = ColorFormat(Colors.Magenta, branch)
+    else:
+        checkedout_branch = ColorFormat(Colors.Grey, "No project wide branch checkedout")
+
+    PB_commit = GitGetHeadCommit(GetProjectBasePath())
+
+    first_time_msg = ""
+    if first_time == True:
+        first_time_msg = ColorFormat(Colors.Magenta, "!Input `?` in any menu for a description of its' operations!\n")
+        first_time = False
+
 
     return ColorFormat(Colors.Yellow, r"""
  ______              __              __   ______
@@ -36,20 +54,20 @@ def main_description():
 |    __/|   _|  _  ||  ||  -__|  __||   _|   __ <|  _  |__ --|  -__|
 |___|   |__| |_____||  ||_____|____||____|______/|___._|_____|_____|
                    |___|
-""" ) + f"{BuildBanner} \n({Settings["url"]})\n({CloneType} - {SpeedType})\n({Settings["paths"]["project main"]})\n"
+""" ) + first_time_msg + PB_commit + f"\n{build_type} - {checkedout_branch}\n({Settings["url"]})\n({clone_type} - {speed_type})\n({Settings["paths"]["project main"]})\n"
 
 def generate_project_description():
-    return "Load project (" + str(len(Project.repositories)) + " loaded repositories)"
+    return "Load project (" + str(len(Project.repositories)) + " loaded)"
 
 MainMenu = Menu("Main Menu", True)
 MainMenu.prologue = main_description
 MainMenu.epilogue = ColorFormat(Colors.Green, "Ctrl + D to exit")
-MainMenu.AddCallbackEntry(generate_project_description, Project.setup)
-MainMenu.AddCallbackEntry("Build project (launches the build environment for this purpose)", Project.build)
-MainMenu.AddSubmenuEntry("Run", RunMenu)
-MainMenu.AddSubmenuEntry("Analyze", AnalysisMenu)
-MainMenu.AddSubmenuEntry("Versioning", VersioningMenu)
-MainMenu.AddSubmenuEntry("Clean", CleanMenu)
-MainMenu.AddSubmenuEntry("CI", CIMenu)
-MainMenu.AddCallbackEntry("Configure Project", RunMenuConfig)
-MainMenu.AddSubmenuEntry("ProjectBase settings", SettingsMenu)
+MainMenu.AddCallbackEntry(generate_project_description, Project.setup, "Download and setup the project")
+MainMenu.AddCallbackEntry("Build project", Project.build, "Launch build (CMake). Craete executables and tests")
+MainMenu.AddSubmenuEntry("Run", RunMenu, "Run an executable or test")
+MainMenu.AddSubmenuEntry("Analyze", AnalysisMenu, "Run linter (clang-tidy)")
+MainMenu.AddSubmenuEntry("Versioning", VersioningMenu, "Version manager menu")
+MainMenu.AddSubmenuEntry("Clean", CleanMenu, "Clean project state (binaries, objects, artifacts, etc)")
+MainMenu.AddSubmenuEntry("CI", CIMenu, "Launch CI")
+MainMenu.AddCallbackEntry("Configure Project", RunMenuConfig, "Launch configs")
+MainMenu.AddSubmenuEntry("ProjectBase settings", SettingsMenu, "Configure ProjectBase for the current project")

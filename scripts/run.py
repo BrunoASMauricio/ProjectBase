@@ -9,6 +9,7 @@ from data.settings import Settings
 from processes.project import Project, UserChooseProject
 from data.paths import GetBasePaths
 from processes.filesystem import CreateDirs
+from data.print import *
 
 if __name__ != "__main__":
     Abort("This script is not meant to be imported, please run directly")
@@ -27,12 +28,19 @@ else:
 sys.stdout = out
 sys.stderr = out
 
+# TODO Set log level from command line
+default_log_level = LogLevels.ERR
+
+SetLogLevel(default_log_level)
+
 # Configure logging
 logging.basicConfig(filename=Settings["log_file"],
-                    filemode='a', level = logging.DEBUG)
+                    filemode='a', level = log_dict[default_log_level])
+                    # filemode='a', level = logging.WARNING)
 
 logging.info("\n\n\n=============== PROJECTBASE start ===============")
 logging.info("=============== at " + GetNow() + " ===============")
+logging.info("=============== at " + os.getcwd() + " ===============")
 
 if Settings["debug"] == True:
     for handler in logging.getLogger().handlers:

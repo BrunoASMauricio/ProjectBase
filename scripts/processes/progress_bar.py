@@ -1,4 +1,7 @@
 import shutil
+import logging
+from data.print import *
+
 # From https://gist.github.com/greenstick/b23e475d2bfdc3a82e34eaa1f6781ee4
 # Print iterations progress
 def PrintProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', autosize = True):
@@ -20,12 +23,20 @@ def PrintProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
         print('\rNothing to progress on', end = '\r')
         return
 
+    if iteration > float(total):
+        PrintError(f"Unexpected iteration percentile: {iteration} / {total}. Assuming 100%")
+        iteration = float(total)
+
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+
     styling = '%s |%s| %s%% %s' % (prefix, fill, percent, suffix)
     if autosize:
         cols, _ = shutil.get_terminal_size(fallback = (length, 1))
         length = cols - len(styling)
+
     filledLength = int(length * iteration // total)
     bar = fill * filledLength + '-' * (length - filledLength)
     print('\r%s' % styling.replace(fill, bar), end = '\r')
     # Print New Line on Complete
+    if (iteration == float(total)):
+        print()

@@ -1,10 +1,10 @@
-import sys
 import argparse
 from data.common import *
 from data.json import *
 from data.git import GetRepoNameFromURL
 from enum import Enum
-import json 
+import json
+
 class CLONE_TYPE(Enum):
     HTTPS = "https"
     SSH   = "ssh"
@@ -12,6 +12,63 @@ class CLONE_TYPE(Enum):
 
 ActiveSettings ={}
 ActiveProjectName = ""
+
+DEFAULT_SETTINGS = {
+    "Speed":      "Safe",
+    "Mode":       "Debug",
+    "Clone Type": CLONE_TYPE.SSH.value
+}
+
+def ErrorCheckLogs(exception):
+    print(f"ERROR: Check logs at {Settings["log_file"]} for more information")
+    logging.error(f"Exception: {type(exception)} {exception}")
+    logging.error(get_full_traceback(exception))
+
+def ToggleSpeed():
+    current_type = Settings["active"]["Speed"]
+    if Settings["active"]["Speed"] == "Fast":
+        Settings["active"]["Speed"] = "Safe"
+    else:
+        Settings["active"]["Speed"] = "Fast"
+
+    if current_type != Settings["active"]["Speed"]:
+        Settings.save_persisted_settings()
+
+def SetBranch(branch):
+    Settings["active"]["Branch"] = branch
+    Settings.save_persisted_settings()
+
+def GetBranch():
+    if "Branch" in Settings["active"].keys() and Settings["active"]["Branch"] != None:
+        return Settings["active"]["Branch"]
+    # No project-wide branch configured
+    return None
+
+def ToggleMode():
+    current_type = Settings["active"]["Mode"]
+    if Settings["active"]["Mode"] == "Release":
+        Settings["active"]["Mode"] = "Debug"
+    else:
+        Settings["active"]["Mode"] = "Release"
+
+    if current_type != Settings["active"]["Mode"]:
+        Settings.save_persisted_settings()
+
+"""
+Return True if the clone type changed
+"""
+def ToggleCloneType():
+    current_type = Settings["active"]["Clone Type"]
+    if current_type == CLONE_TYPE.HTTPS.value:
+        Settings["active"]["Clone Type"] = CLONE_TYPE.SSH.value
+    else:
+        Settings["active"]["Clone Type"] = CLONE_TYPE.HTTPS.value
+
+    if current_type != Settings["active"]["Clone Type"]:
+        Settings.save_persisted_settings()
+        # Change existing repositories' URL
+        return True
+    return False
 
 class SETTINGS(dict):
     def init(self):
@@ -62,7 +119,7 @@ class SETTINGS(dict):
         # Configurations for CI infrastructure 
         parser.add_argument("-ci", "--commitJsonPath", help = "JSON Information with all the repos that have commit changes, that have to be commit copied instead of usual by remote copy", default=None, required=False)
 
-        # --args="...." is accepted for launching executables, but it is not handled here
+        # --exec="...." is accepted for launching executables, but it is not handled here
 
         project_args, action_args = parser.parse_known_args()
 
@@ -92,26 +149,23 @@ class SETTINGS(dict):
     def save_persisted_settings(self):
         dump_json_file(self["persisted"], self["paths"]["configs"] + "/project_cache/settings")
 
+    def reset_settings(self):
+        self["active"] = DEFAULT_SETTINGS
+
     def load_persistent_settings(self):
         global ActiveSettings
 
         project_name = self["ProjectName"]
 
-        default_settings = {
-            "Speed":      "Safe", 
-            "Mode":       "Debug",
-            "Clone Type": CLONE_TYPE.SSH.value
-        }
-
         default_project_settings = {
-            project_name: default_settings
+            project_name: DEFAULT_SETTINGS
         }
 
         # Get persisted project settings
         persisted_settings = load_json_file(self["paths"]["configs"]+"/project_cache/settings", default_project_settings)
 
         if project_name not in persisted_settings.keys():
-            persisted_settings[project_name] = default_settings
+            persisted_settings[project_name] = DEFAULT_SETTINGS
 
         self["persisted"] = persisted_settings
         self["active"]    = persisted_settings[project_name]

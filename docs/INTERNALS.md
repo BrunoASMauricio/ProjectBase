@@ -1,3 +1,37 @@
+# Internals
+
+## Developing in ProjectBase
+
+A good way to develop in PB is using it to test itself.
+
+Use the following command to generate the base repositories in /tmp/PBTests (using the `testSuite_create_test_repos.py` script)
+`./run.sh --url=git@gitlab.com:brunoasmauricio/ProjectBase.git 1 2 3 2 0 -e`
+It will print the default test repositories which can be used for development.
+To reset the repositories, simply re run the command anpve
+
+Use the test repos for developing PB
+`./ru
+
+```shell
+./run.sh -e --url=git@gitlab.com:brunoasmauricio/ProjectBase.git --branch=<branch to test>
+# Then in the menus:
+# Load the project
+1
+# Build (so the tests are placed appropriately)
+2
+# Commit and push
+
+# Run the tests in the appropriate a
+3 2 1 --args=BranchTests
+
+
+Changes to PB need to be committed to be tested
+Changes to tests dont, as long as they are done inside of the actual project being launched by PB and not the root PB
+
+Add sys.exit(0) to the end of a test so the state isnt lost, and you can do `cd /tmp/PBTests/ProjectBase`
+and then `. setup.sh; ./run.sh  --url=/tmp/PBTests/RemoteRepos/RepoA.git`
+
+```
 
 ### Structure
 
@@ -39,4 +73,13 @@ Depending on `to_print` argument, uses fast, non-interactive `pty.spawn`, or `su
 Sets up and returns information about the process (stdout, stderr, code, etc)
 TODO: Revise argument name
 
-From high to low complexity:
+## Versioning
+
+In git_operations there are the basic git operations
+This is also where the translation between the branches the user sees and the unique local nomenclature happens
+
+data/git is merely internal git data (no git commands required)
+
+git_operations: Perform the git operations and translate the result into internals
+
+versioning: Use git operations to perform versioning operations

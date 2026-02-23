@@ -66,9 +66,6 @@ def GetTemporaryPath(base_path):
         if not os.path.exists(path):
             return path
 
-def GetNewTemporaryPath(paths):
-    return GetTemporaryPath(paths["temporary"])
-
 # Create all directories in the `paths` list provided
 def CreateDirs(paths):
     if(type(paths) == type("")):

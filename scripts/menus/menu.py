@@ -4,36 +4,51 @@ import time
 import logging
 from enum import Enum
 
-from data.common import Formatter
+from data.common import *
 from data.colors import ColorFormat, Colors
-from data.common import ErrorCheckLogs, SlimError
-from data.common import Assert, GetText, GetHost, GetTime
-from processes.auto_completer import CustomCompleter
-from data.settings import Settings
-from data.common import RemoveNonAlfanumeric, ResetTerminal
+from data.settings import Settings, ErrorCheckLogs
 from data.paths import JoinPaths
+from processes.auto_completer import CustomCompleter
 
 class EntryType(Enum):
     CALLBACK = 1
     MENU     = 2
     DYNAMIC  = 3
 
-def PeekNextOption(prompt=None):
-    if len(Settings["action"]) != 0:
-        # Next automated action
-        next_input = Settings["action"][0]
+def InputSplit(input_string):
+    parts = []
+    
+    # Pattern to match content inside single quotes
+    quote_pattern = r"'([^']*)'"
+    
+    # Find all quoted sections
+    quote_matches = list(re.finditer(quote_pattern, input_string))
+    
+    if quote_matches:
+        last_end = 0
+        
+        for match in quote_matches:
+            # Add everything before this quote as space-separated parts
+            before = input_string[last_end:match.start()].strip()
+            if before:
+                parts.extend(before.split())
+            
+            # Add the quoted content as a single part
+            parts.append(match.group(1))
+            
+            last_end = match.end()
+        
+        # Add anything remaining after the last quote
+        after = input_string[last_end:].strip()
+        if after:
+            parts.extend(after.split())
     else:
-        next_input = None
-    return next_input
+        # No quotes found, just split by spaces
+        parts = input_string.split()
+    
+    return parts
 
-def PopNextOption():
-    next_input = None
-    if len(Settings["action"]) != 0:
-        next_input = Settings["action"][0]
-        del Settings["action"][0]
-    return next_input
-
-def GetNextOption(prompt = "[<] ", single_string = False):
+def GetNextInput(prompt = "[<] ", single_string = False):
     global ProjectArgs
 
     if len(Settings["action"]) != 0:
@@ -50,7 +65,7 @@ def GetNextOption(prompt = "[<] ", single_string = False):
         # No request to keep input as single string (non split)
         if not single_string:
             # Check if we received multiple commands
-            SplitInput = next_input.split(" ")
+            SplitInput = InputSplit(next_input)
             if len(SplitInput) > 1:
                 Settings["action"] += SplitInput[1:]
                 next_input = SplitInput[0]
@@ -74,13 +89,14 @@ class Menu():
     If stay_in_menu is True, entry completion will reprint the menu, and
      not return to previous menu
     """
-    def __init__(self, name=None, stay_in_menu=False):
+    def __init__(self, name=None, stay_in_menu=False, help=None):
         self.entries      = []
         self.prologue     = None
         self.epilogue     = None
         self.stay_in_menu = stay_in_menu
         self.history_file = None
         self.completer = None
+        self.help = help
         # Make sure menus don't have colliding names
         if name != None:
             name = RemoveNonAlfanumeric(name)
@@ -89,11 +105,11 @@ class Menu():
             self.completer = CustomCompleter(self.history_file, [])
             all_menu_names.append(name)
 
-    def AddCallbackEntry(self, entry, Callback):
-        self.entries.append([entry, EntryType.CALLBACK, Callback])
+    def AddCallbackEntry(self, entry, Callback, help=None):
+        self.entries.append([entry, EntryType.CALLBACK, Callback, help])
     
-    def AddSubmenuEntry(self, entry, menu):
-        self.entries.append([entry, EntryType.MENU, menu])
+    def AddSubmenuEntry(self, entry, menu, help=None):
+        self.entries.append([entry, EntryType.MENU, menu, help])
 
     """
     A function will run during menu selection and return the entries to show
@@ -107,11 +123,12 @@ class Menu():
     """
     Return string with menu data
     """
-    def GetMenu(self, depth):
+    def GetMenu(self, depth, help=False):
         index = 1
         menu = GetText(self.prologue)
         menu += ColorFormat(Colors.Yellow, f"({GetTime()})({GetHost()})\n")
 
+        table_entries = []
         for entry in self.entries:
             if entry[1] == EntryType.DYNAMIC:
                 # Remove previously generated entries
@@ -122,16 +139,30 @@ class Menu():
                     entry.append(GetText(entry[2]))
                 else:
                     for new_entry in entries:
-                        menu  += ("| " * depth) + str(index)+" ) " + new_entry[0] + "\n"
+                        table_entry = [("| " * depth) + str(index)+" ) " + new_entry[0], ""]
+                        table_entries.append(table_entry)
                         index += 1
                     # Store generated entries in dynamic entry
                 entry.append(entries)
             else:
+                table_entry = []
+                text = ("| " * depth) + str(index)+") "
                 if entry[1] == EntryType.MENU:
-                    menu  += ("| " * depth) + str(index)+">) " + GetText(entry[0]) + "\n"
+                    text += "(Menu) "
                 elif entry[1] == EntryType.CALLBACK:
-                    menu  += ("| " * depth) + str(index)+" ) " + GetText(entry[0]) + "\n"
+                    pass
+                text += GetText(entry[0])
+                table_entry.append(text)
                 index += 1
+
+                # Print help information
+                if help == True and len(entry) == 4 and entry[3] != None:
+                    table_entry.append(f" {ColorFormat(Colors.Green, entry[3])}")
+                else:
+                    table_entry.append("")
+                table_entries.append(table_entry)
+
+        menu += AssembleTable(table_entries, " ")
 
         menu += GetText(self.epilogue)
 
@@ -170,6 +201,10 @@ class Menu():
         else:
             dynamic_entry = picked_entry[3][picked_index]
             dynamic_entry[1](**dynamic_entry[2])
+
+    def PrintHelp(self):
+        pass
+
     """
     Print menu and handle input from user
     """
@@ -204,28 +239,25 @@ class Menu():
             if current_time - previous_time <= 1:
                 current_tries -= 1
                 if current_tries == 0:
-                    message = "Too many consecutive exceptions (maximum allowed is 5 with less than 1 second in between)"
-                    logging.critical(message)
-                    print(message)
-                    sys.exit(1)
+                    Abort("Too many consecutive exceptions (maximum allowed is 5 with less than 1 second in between)")
             else:
                 __ResetException()
 
-
+        help = False
         while True:
             try:
                 if Settings["exit"] and Settings.return_code != 0:
-                    print("\nLast thing failed to run :)")
-                    sys.exit(Settings.return_code)
-                   # If we are piping into a file, don't attempt to reset terminal
-                
+                    Abort("Last thing failed to run :)", Settings.return_code)
+
+                # If we are piping into a file, don't attempt to reset terminal
                 if len(Settings["out_file"]) == 0:    
                     ResetTerminal()
 
                 # Newline is useful in general here
                 print()
                 # Show menu
-                print(self.GetMenu(depth))
+                print(self.GetMenu(depth, help))
+                help = False
                 if previous_command != None:
                     print("Previous command: " +str(previous_command))
 
@@ -233,19 +265,24 @@ class Menu():
                 self.completer.setup()
                 # Get next input and save to history
                 try:
-                    next_input_str = GetNextOption()
+                    next_input_str = GetNextInput()
                     if (MenuExit(next_input_str) == True):
                         return Settings.return_code
                     
                     next_input = int(next_input_str)
                     previous_invalid = False
                     if(next_input == -1):
-                        # next input equal -1 goes to previous menu also                        return
+                        # next input equal -1 goes to previous menu also
                         return
                 except ValueError:
                     # Empty enter goes to previous menu
                     if len(next_input_str) == 0:
                         return
+                    # Print help
+                    if next_input_str == "?" or next_input_str == "help":
+                        help = True
+                        continue
+
                     if previous_invalid == False:
                         print("Invalid input")
                         previous_invalid = True
@@ -264,12 +301,10 @@ class Menu():
                 continue
             except SlimError as ex:
                 # An error has already been printed, stop here
-                msg = f"A thread errored out, operation canceled: {ex}"
-                logging.error(msg)
-                print(f"\n{msg}")
+                PrintError(f"\nA thread errored out, operation canceled: {ex}")
 
                 if Settings["exit"] == True:
-                    print("\nEarly exit")
+                    PrintNotice("\nEarly exit")
                     raise ex
             except EOFError:
                 # Ctrl+D

@@ -7,13 +7,12 @@
 
 
 import os
-import glob
+import re
 import json 
 
-from processes.process        import LaunchProcess
+from data.print import *
+from processes.process import LaunchProcess
 
-import re
-import urllib.parse
 
 def normalize_project_path(project_input: str) -> str:
     """
@@ -94,7 +93,6 @@ def _get_api_url_and_auth(project_path: str, branch: str = "main") -> Tuple[str,
             f"/repository/files/{file_path_enc}/raw?ref={branch_enc}"
         )
         auth_header = f'--header "PRIVATE-TOKEN: $GITLAB_TOKEN"'
-        print(url)
         return url, auth_header
         
     elif "github" in project_path:
@@ -103,7 +101,6 @@ def _get_api_url_and_auth(project_path: str, branch: str = "main") -> Tuple[str,
         url = f"https://api.github.com/repos/{repo_path}/contents/{config_file_path}?ref={branch}"
         # GitHub uses Authorization header from $GITHUB_TOKEN
         auth_header = f'--header "Authorization: token $GITHUB_TOKEN"'
-        print(url)
         return url, auth_header
 
     raise ValueError(f"Unsupported Git host in path: {project_path_normalized}")
@@ -121,7 +118,6 @@ def get_project_config_from_git_api(project_path, branch="main"):
 
         # Build and run curl
         command = f'curl -sS -L {auth_header} "{url}" --output "{output_file}"'
-        print(command)
         LaunchProcess(command)
 
         # Load JSON (GitHub API returns file content base64 encoded, GitLab returns raw)
@@ -129,9 +125,6 @@ def get_project_config_from_git_api(project_path, branch="main"):
         try:
             with open(output_file, "r", encoding="utf-8") as f:
                 raw_content = f.read()
-            
-            print(output_file)
-            print(raw_content)
             
             if "github" in url.lower() and '"content"' in raw_content:
                 # GitHub JSON response needs decoding
@@ -145,9 +138,7 @@ def get_project_config_from_git_api(project_path, branch="main"):
 
         except Exception as e:
             # helpful debug output
-            print(f"Failed to process API response for {project_path!r}: {e}")
-            print(url)
-            print(command)
+            PrintError(f"Failed to process API response for {project_path!r}: {e} {url}\n{command}")
             data = {}
 
         return data
@@ -166,7 +157,6 @@ def get_all_project_dependencies_single_threaded(project_path, checked_dependenc
 
     # initialize queue with the requested project and any extra to_check entries
     queue = [project_path] + list(to_check_dependencies)
-    print(queue)
     while queue:
         proj = queue.pop(0)  # FIFO; change to pop() for DFS
         if proj in checked_dependencies:
@@ -175,7 +165,7 @@ def get_all_project_dependencies_single_threaded(project_path, checked_dependenc
             data = get_project_config_from_git_api(proj)
         except Exception as e:
             # Print and skip this project on failure
-            print(f"Error fetching config for '{proj}': {e}")
+            PrintError(f"Error fetching config for '{proj}': {e}")
             checked_dependencies.append(proj)
             continue
 
@@ -191,9 +181,7 @@ def get_all_project_dependencies_single_threaded(project_path, checked_dependenc
                 queue.append(d)
 
     # queue here is the remaining to-check (should normally be empty)
-    print("Checked dependencies")
-    print(checked_dependencies)
-    print(len(checked_dependencies))
+    PrintInfo(f"Checked dependencies {len(checked_dependencies)} \n{checked_dependencies}")
     return checked_dependencies, queue
 
 

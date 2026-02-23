@@ -6,16 +6,16 @@ from data.settings import Settings, CLONE_TYPE
 from data.paths    import GetProjectPaths, JoinPaths
 from data.git      import GetRepoNameFromURL, url_HTTPS_to_SSH, url_SSH_to_HTTPS
 from data.common   import LoadFromFile, DumpToFile
+from data.print    import *
+from data.colors   import ColorFormat, Colors
 
-from processes.repository_configs     import ConfigsChanged, ResetConfigsState
+from processes.repository_configs import ConfigsChanged, ResetConfigsState
+from processes.repository         import LoadRepositories, Setup, Build, GetFullLoad
+from processes.process            import LaunchProcess, LaunchVerboseProcess, LaunchSilentProcess, GetEnvVarExports
+from processes.git_operations     import GetRepositoryUrl
+from processes.run_linter         import CleanLinterFiles
+from processes.filesystem         import CreateParentDirs
 
-from processes.repository     import LoadRepositories, Setup, Build
-from processes.process        import LaunchProcess, LaunchVerboseProcess
-from data.colors              import ColorFormat, Colors
-from processes.git_operations import GetRepositoryUrl
-from processes.process        import GetEnvVarExports
-from processes.run_linter     import CleanLinterFiles
-from processes.filesystem     import CreateParentDirs
 """
 Performs operations on a project
 Each project is built from a single repository
@@ -47,8 +47,12 @@ class PROJECT(dict):
         ## root url for automatic project detection
         DumpToFile(JoinPaths(Settings["paths"]["project main"], "root_url.txt"), Settings["url"])
 
+        # Clean temporary at startup
+        LaunchSilentProcess(f"rm -rf {Settings["paths"]["temporary"]}/*")
+
     def load(self):
-        logging.info("Loading repositories")
+        PrintInfo("Loading repositories")
+
         # Reset configs state
         ResetConfigsState()
 
@@ -73,16 +77,17 @@ class PROJECT(dict):
         else:
             self.root_repo_base_config["commitish"] = None
 
+        PrintNotice(f"Loading repositories with the following parameters: {self.root_repo_base_config}")
         self.repositories = LoadRepositories(self.root_repo_base_config, Settings["cache file"])
-        print("Project loaded")
+        PrintInfo("Project loaded")
 
     def setup(self):
         logging.info("Setting up project")
-        print("Setting up project")
+        PrintInfo("Setting up project")
 
         Setup(self.GetRepositories())
         logging.info("Finished setting up project")
-        print("Finished setting up project")
+        PrintInfo("Finished setting up project")
 
     def build(self):
         logging.info("Building project")
@@ -120,6 +125,7 @@ class PROJECT(dict):
             LaunchProcess("git remote rm origin; git remote add origin " + url, repository["full worktree path"])
 
     def GetRepositories(self):
+        global full_load
         # See if saved cache exist 
         base_path = "configs/project_cache/"
         load_file = base_path + Settings["ProjectName"] + "_load_project.pkl"
@@ -130,30 +136,34 @@ class PROJECT(dict):
                     self.__dict__.update(loaded.__dict__)
                     self.update(loaded)
                     logging.info("Loaded project from pickle.")
-                    print("Loaded project from pickle.")
+                    PrintInfo("Loaded project from pickle.")
             
-        # Not loaded, load and return
         if len(self.repositories) == 0:
-            logging.info("No repositories loaded")
             self.load()
+            PrintNotice(f"No repositories loaded")
             return self.repositories
 
-        if(Settings["active"]["Speed"] == "Safe"):
+        # print(f"X2 {id(full_load)} {full_load}")
+        if GetFullLoad() == False:
+            self.load()
+            PrintNotice(f"Last load failed")
+            return self.repositories
+
+        if Settings["active"]["Speed"] == "Safe":
             # Single change in configs must trigger full reloading of configs
             # Also internally this code is slower than it shoud there are proably ways to
             # speed it up. TODO 
-            for repository in self.repositories:
-                config_change = ConfigsChanged(self.repositories[repository]["configs path"])
+            for repo_id in self.repositories:
+                config_change = ConfigsChanged(self.repositories[repo_id]["configs path"])
                 if config_change != None:
-                    print(f"Config change detected ({self.repositories[repository]["configs path"]}: {config_change}), reloading")
+                    PrintNotice(f"Config change detected ({self.repositories[repo_id]["configs path"]}: {config_change}), reloading")
                     self.load()
                     break
 
         if(Settings["active"]["Speed"] == "Fast"):       
             with open(load_file, "wb") as f:
                 pickle.dump(self, f)
-                logging.info("Saved project to pickle.")
-                print("Saved project to pickle.")
+                PrintNotice("Saved project to disk")
 
         return self.repositories
 
@@ -182,7 +192,7 @@ def UserChooseProject():
             """
 
             if not entry.is_dir():
-                print("Unexpected file in projects "+entry.path+"/"+entry.name)
+                PrintWarning(f"Unexpected file in projects {entry.path}/{entry.name}")
                 continue
 
             url = LoadFromFile(JoinPaths(entry.path, "root_url.txt"), None)
@@ -227,20 +237,34 @@ def CleanAll():
     CleanCompiled()
     CleanLinterFiles()
 
+def CleanCMake():
+    CleanAll()
+    LaunchVerboseProcess(f"rm -rf {Settings["paths"]["build env"]}/*")
+    Setup(Project.GetRepositories())
+
 def DeleteProject():
     LaunchVerboseProcess(f"rm -rf {Settings["paths"]["project main"]}")
 
-def CleanPBCache():
+def _CleanPBCache():
     global Project
     LaunchVerboseProcess(f"rm -rf {Settings["cache file"]}")
     LaunchVerboseProcess(f"rm -rf {Settings["paths"]["temporary"]}/*")
     Project.DeleteRepositories()
+    Settings.reset_settings()
+
+def CleanPBCache():
+    global Project
+    _CleanPBCache()
+
+    Settings.start()
+    Project.init()
 
 def PurgePB():
     global Project
-    LaunchVerboseProcess(f"rm -rf {Settings["cache file"]}")
-    LaunchVerboseProcess(f"rm -rf {Settings["paths"]["temporary"]}/*")
+    _CleanPBCache()
 
-    Project.DeleteRepositories()
     LaunchVerboseProcess(f"rm -rf {Settings["paths"]["project base"]}/projects/*")
     LaunchVerboseProcess(f"rm -rf {Settings["paths"]["bare gits"]}/*")
+
+    Settings.start()
+    Project.init()

@@ -15,6 +15,7 @@ import getpass # for getuser
 
 from data.paths import GetBasePaths
 from data.colors import ColorFormat, Colors
+from data.print import *
 
 # Exception for stopping current operation without printing stack/operation information
 # Used when we know the error has been output (i.e. inside a thread) and we don't store it
@@ -97,11 +98,6 @@ class INDENT_FORMATTER(logging.Formatter):
 
 Formatter = INDENT_FORMATTER()
 
-def ErrorCheckLogs(exception):
-    print("ERROR: Check logs at /tmp/project_base.log for more information")
-    logging.error(f"Exception: {type(exception)} {exception}")
-    logging.error(get_full_traceback(exception))
-
 def RemoveDuplicates(lst):
     return list(set(lst))
 
@@ -120,16 +116,38 @@ def AppendToEnvVariable(env_variable, new_value):
 def PrintableCharacterLength(string):
     return len(RemoveAnsiEscapeCharacters(RemoveControlCharacters(string)))
 
+"""
+Assemble a string based on the table (2D list) provided.
+Each column is aligned to its' largest member
+"""
+
+def AssembleTable(rows, sep="|", headers=None):
+    msg = ""
+    if headers != None:
+        hdr_row = []
+        for header in headers:
+            hdr_row.append(ColorFormat(Colors.Grey, header))
+        rows.insert(0, hdr_row)
+
+    # Use `RemoveAllNonPrintable` and  direct padding to avoid color characters and such to be counted in padding
+    widths = [max(len(RemoveAllNonPrintable(x)) for x in col) for col in zip(*rows)]
+    for row in rows:
+        msg += f" {sep} ".join((val + " " * (width - len(RemoveAllNonPrintable(val))) for val, width in zip(row, widths)))+"\n"
+    return msg
+
 def CLICenterString(string, pad=" "):
     # Color characters count for length :()
     string_len = PrintableCharacterLength(string)
     cols, _ = shutil.get_terminal_size(fallback=(string_len, 1))
-    padding_len = int((cols - string_len) / 2)
+    padding_len = int((cols - string_len) / 2) - 1
     return pad * padding_len + string + pad * padding_len
 
 def GetTextDiff(Text1, Text2):
     diff = difflib.ndiff(Text1.split("\n"), Text2.split("\n"))
     return ''.join(diff)
+
+def RemoveAllNonPrintable(str):
+    return RemoveControlCharacters(RemoveTerminalColorCodes(RemoveNonAscii(str)))
 
 def RemoveControlCharacters(str):
     """
@@ -138,6 +156,10 @@ def RemoveControlCharacters(str):
     allowed_CCs = ['\n', '\t']
     new_str = "".join(ch for ch in str if (unicodedata.category(ch)[0] != "C" or ch in allowed_CCs))
     return new_str.rstrip()
+
+def RemoveTerminalColorCodes(text):
+    # return re.sub(r'\x1b\[[0-9;]*m', '', text)
+    return re.sub(r'\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', text)
 
 def RemoveNonAscii(str):
     return ''.join(char for char in str if ord(char) < 128)
@@ -169,8 +191,11 @@ def IsEmpty(object):
     if type(object) == type({}):
         return len(object.keys()) == 0
 
-    if type(object) == type([]) or type(object) == type(""):
+    if type(object) == type([]):
         return len(object) == 0
+
+    if type(object) == type(""):
+        return object.strip() == ""
 
     # Other values cannot be empty (no way to detect that)
     return False
@@ -200,10 +225,15 @@ def GetValueOrDefault(dict, name, default = None):
 """
 Abort running program
 """
-def Abort(message):
-    print(ColorFormat(Colors.Red, message))
+def Abort(message, err_ret=-1):
+    message = ColorFormat(Colors.Red, message)
+
+    print(message)
+    logging.error(message)
+
+    FlushthreadLog()
     sys.stdout.flush()
-    sys.exit(-1)
+    sys.exit(err_ret)
 
 """
 Abort if a condition is false
@@ -247,19 +277,14 @@ def DumpToFile(file_path, data, mode='w'):
 Present Message to user and return True if the response is y or Y, False if n or N
 Loop if response is not in nNyY
 """
-def UserYesNoChoice(message):
-    while True:
-        print(message)
-        answer = input("("+ColorFormat(Colors.Green,"Yy")+"/"+ColorFormat(Colors.Red,"Nn")+"): ")
-        if answer in ["y", "Y"]:
-            answer = True
-            break
-        elif answer in ["n", "N"]:
-            answer = False
-            break
-        else:
-            continue
-    return answer
+YES_NO_PROMPT = "[yY/nN]"
+def UserYesNoChoice(choice, default_no = False):
+    # answer = input("("+ColorFormat(Colors.Green,"Yy")+"/"+ColorFormat(Colors.Red,"Nn")+"): ")
+    if choice in ["y", "Y"]:
+        return True
+    elif choice in ["n", "N"]:
+        return False
+    return default_no
 
 """
 Copy some script over and replace variables
@@ -318,6 +343,9 @@ def GetTime():
 
 def GetHost():
     return f"{getpass.getuser()}@{socket.gethostname()}"
+
+def GetTimeForPath():
+    return GetTime().replace(" ", "_").replace("/", "_")
 
 def ResetTerminal():
     # Initialize curses

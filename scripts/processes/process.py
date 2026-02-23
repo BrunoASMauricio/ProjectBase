@@ -1,7 +1,6 @@
 import os
 import sys
 import pty
-import logging
 import traceback
 import threading
 from time import time
@@ -9,43 +8,14 @@ import subprocess
 
 from time import sleep
 from threading import Thread, Lock
-from data.settings import Settings
+from data.settings import Settings, ErrorCheckLogs
 from data.colors import ColorFormat, Colors
 from processes.progress_bar import PrintProgressBar
-from data.common import Abort, AppendToEnvVariable, RemoveControlCharacters, RemoveAnsiEscapeCharacters
-from data.common import ErrorCheckLogs, SlimError, GetNow, RemoveNonAscii
-from menus.menu import PeekNextOption, PopNextOption
+from data.common import *
+from data.print import *
+from processes.filesystem import WriteFile
 
 #                           PROCESS OPERATIONS
-
-import threading
-thread_log = ""
-thread_log_lock = threading.Lock()
-
-def GetThreadId():
-    return threading.get_ident()
-
-def AddTothreadLog(message):
-    global thread_log
-    global thread_log_lock
-
-    with thread_log_lock:
-        thread_log += f"({GetThreadId()}) {message}\n"
-
-def ClearThreadLog():
-    global thread_log
-    global thread_log_lock
-    with thread_log_lock:
-        thread_log = ""
-
-def Flushthread_log():
-    global thread_log
-    global thread_log_lock
-    with thread_log_lock:
-        if len(thread_log) > 0:
-            print(thread_log,end="")
-            logging.info(thread_log)
-        thread_log = ""
 
 def PrintProgressWhileWaitOnThreads(thread_data, max_delay=None, print_function=None, print_arguments=None):
     threads, callback, args = thread_data
@@ -87,7 +57,7 @@ def PrintProgressWhileWaitOnThreads(thread_data, max_delay=None, print_function=
             # Ask user if we should kill, reset timer, or ignore
 
         # Keep flushing log
-        Flushthread_log()
+        FlushthreadLog()
         sleep(0.05)
 
     PrintProgress()
@@ -112,7 +82,7 @@ def ThreadWrapper(run_callback, run_arg):
         run_callback(*run_arg)
         return_val = True
     except KeyboardInterrupt as ex:
-        print("Keyboard Interrupt, stopping")
+        PrintNotice("Keyboard Interrupt, stopping")
         raise ex
     except ProcessError as ex:
         return_val = False
@@ -151,10 +121,12 @@ def RunInThreadsWithProgress(run_callback, run_args, max_delay=None, print_callb
 
     PrintProgressBar(0, len(run_args), prefix = 'Starting...', suffix = '0/' + str(len(run_args)))
     ClearThreadLog()
-    if Settings["single thread"]:
-        for run_arg_ind in run_args:
-            run_arg = run_args[run_arg_ind]
-            try:
+    ToggleThreading(True)
+
+    try:
+        if Settings["single thread"]:
+            for run_arg_ind in run_args:
+                run_arg = run_args[run_arg_ind]
                 run_callback(*run_arg)
                 if print_callback != None:
                     if print_args != None:
@@ -164,30 +136,26 @@ def RunInThreadsWithProgress(run_callback, run_args, max_delay=None, print_callb
                 else:
                     PrintProgressBar(run_arg_ind, len(run_args), prefix = 'Running:', suffix = 'Work finished ' + str(run_arg_ind) + '/' + str(len(run_args)))
                 thread_return[run_arg_ind] = True
-            except KeyboardInterrupt:
-                print("Keyboard Interrupt, stopping")
-                ClearThreadLog()
-                return
-            except Exception as ex:
-                AddTothreadLog(str(ex))
-                thread_return[run_arg_ind] = False
-    else:
-        try:
+        else:
             threads = RunInThreads(run_callback, run_args)
             PrintProgressWhileWaitOnThreads((threads, run_callback, run_args), max_delay, print_callback, print_args)
-        except KeyboardInterrupt:
-            print("Keyboard Interrupt, stopping threads")
-            for thread in threads:
-                if thread.is_alive():
-                    # thread.raise_exception()
-                    thread._stop()
-            ClearThreadLog()
-
-    Flushthread_log()
+    except Exception as ex:
+        AddTothreadLog(str(ex))
+        thread_return[run_arg_ind] = False
+        raise
+    except KeyboardInterrupt:
+        PrintNotice("Keyboard Interrupt, stopping")
+    finally:
+        # for thread in threads:
+        #     if thread.is_alive():
+        #         # thread.raise_exception()
+        #         thread._stop()
+        FlushthreadLog()
+        ToggleThreading(False)
 
     for val in thread_return.values():
         if val == False:
-            raise SlimError("One of the threads errored out")
+            raise SlimError(f"One of the threads errored out with {val}")
 
 def __RunOnFoldersThreadWrapper(callback, path, arguments = None):
     global operation_lock
@@ -203,7 +171,9 @@ def __RunOnFoldersThreadWrapper(callback, path, arguments = None):
             assert path == separate_arguments["path"]
             del arguments[0]
             arguments = separate_arguments
-            print(arguments)
+        elif type(arguments) != dict:
+            arguments = [arguments]
+            raise Exception(f"Invalid arguments type of {type(arguments)}, must be dictionary")
 
         arguments["path"] = path
 
@@ -213,8 +183,9 @@ def __RunOnFoldersThreadWrapper(callback, path, arguments = None):
         operation_status[path] = result
         operation_lock.release()
     except ProcessError as exception:
-        ErrorCheckLogs(exception)
-        AddTothreadLog(str(exception.simple_message))
+        operation_lock.acquire()
+        operation_status[path] = exception
+        operation_lock.release()
     except Exception as exception:
         ErrorCheckLogs(exception)
 
@@ -245,7 +216,7 @@ def RunOnFolders(paths, callback, arguments={}):
 class ProcessError(Exception):
     def __init__(self, simple_message, trace_message, returned):
         # Call the base class constructor with the parameters it needs
-        message  = f"\n\t========================= Process failed (start) ({GetNow()}) =========================\n"
+        message  = f"\n\t========================= Process failed (start) ({GetNow()}) ({threading.get_ident()}) =========================\n"
         message += f"{simple_message}\nTrace:\n{trace_message}"
         message += "\n\t========================= Process failed (end) =========================\n"
 
@@ -274,7 +245,7 @@ def SetupLocalEnvVars():
 def GetEnvVarExports():
     return "; ".join(f"export {var}='{val}'" for var, val in GetEnvVars().items())
 
-def _LaunchCommand(command, path=None, to_print=False):
+def _LaunchCommand(command, path=None, interactive=False):
     if path == None:
         path = os.getcwd()
     else:
@@ -282,8 +253,10 @@ def _LaunchCommand(command, path=None, to_print=False):
             raise Exception(f"No such path ({path}) for executing command ({command}) ")
 
     returned = {
-        "stdout": "<UNINITIALIZED STDOUT>",
-        "stderr": "<UNINITIALIZED STDERR>",
+        "stdout": "",
+        "stderr": "",
+        # TODO: Replace stdout/stderr with plain out. There are too many programs that send errors to stderr
+        "out": "",
         "code": -1,
         "path": path,
         "command": command
@@ -294,25 +267,24 @@ def _LaunchCommand(command, path=None, to_print=False):
 
     command = f"cd '{path}'; {command}"
 
-    if to_print == True:
+    if interactive == True:
         print(ColorFormat(Colors.Blue, command))
         output_bytes = []
         def read(fd):
-            Data = os.read(fd, 1024)
-            output_bytes.append(Data)
+            data = os.read(fd, 1024)
+            output_bytes.append(data)
             # If stdout changed, the spawned process will not have the same stdout
             # Need to explicitly print the data into the scripts stdout
             if sys.stdout != sys.__stdout__:
-                print(Data.decode('utf-8'), end='')
-            return Data
+                print(data.decode('utf-8'), end='')
+            return data
 
         # Remove all types of whitespace repetitions `echo  \t  a` -> `echo a`
         command = " ".join(command.split())
 
         returned["code"] = int(pty.spawn(['bash', '-c', command], read))
 
-        if to_print == True:
-            print(ColorFormat(Colors.Blue, "Returned " + str(returned["code"])))
+        print(ColorFormat(Colors.Blue, "Returned " + str(returned["code"])))
 
         if len(output_bytes) != 0:
             output_bytes = b''.join(output_bytes)
@@ -320,7 +292,8 @@ def _LaunchCommand(command, path=None, to_print=False):
             no_escape_utf8 = RemoveAnsiEscapeCharacters(output_utf8)
             clean_utf8 = RemoveControlCharacters(no_escape_utf8)
 
-            returned["stdout"] = clean_utf8
+            returned["stdout"] = output_utf8
+            returned["out"] = clean_utf8
         else:
             returned["stdout"] = ""
     else:
@@ -329,33 +302,40 @@ def _LaunchCommand(command, path=None, to_print=False):
                                 stderr=subprocess.PIPE,
                                 text=True)
         returned["command"] = command
-        try:
-            returned["stdout"]  = result.stdout
-            returned["stderr"]  = result.stderr
-            # returned["stdout"]  = result.stdout.decode('utf-8')
-            # returned["stderr"]  = result.stderr.decode('utf-8')
-        except UnicodeDecodeError as Ex:
-            print(f"Decoding error: {Ex}")
-            try:
-                returned["stdout"]  = RemoveNonAscii(RemoveControlCharacters(result.stdout))
-                returned["stderr"]  = RemoveNonAscii(RemoveControlCharacters(result.stderr))
-            except Exception as Ex:
-                print(f"Exception trying to handle decoding error: {Ex}")
-                returned["stdout"] = result.stdout
-                returned["stderr"] = result.stderr
+        returned["stdout"]  = result.stdout
+        returned["stderr"]  = result.stderr
+        # try:
+        #     returned["stdout"]  = result.stdout
+        #     returned["stderr"]  = result.stderr
+        #     # returned["stdout"]  = result.stdout.decode('utf-8')
+        #     # returned["stderr"]  = result.stderr.decode('utf-8')
+        # except UnicodeDecodeError as Ex:
+        #     print(f"Decoding error: {Ex}")
+        #     try:
+        #         returned["stdout"]  = RemoveNonAscii(RemoveControlCharacters(result.stdout))
+        #         returned["stderr"]  = RemoveNonAscii(RemoveControlCharacters(result.stderr))
+        #     except Exception as Ex:
+        #         print(f"Exception trying to handle decoding error: {Ex}")
+        #         returned["stdout"] = result.stdout
+        #         returned["stderr"] = result.stderr
+        returned["stdout"] = returned["stdout"].rstrip()
+        returned["stderr"] = returned["stderr"].rstrip()
 
-        returned["code"]    = int(result.returncode)
+        returned["code"] = int(result.returncode)
+
+        returned["out"] = f"{returned["stdout"]}{returned["stderr"]}"
+        returned["out"] = RemoveNonAscii(RemoveControlCharacters(returned["out"]))
     return returned
 
 """
 Changes to the given directory, launches the Command in a forked process and
 returns the { "stdout": "..." , "code": "..."  } dictionary
 """
-def LaunchProcess(command, path=None, to_print=False):
+def LaunchProcess(command, path=None, interactive=False):
     """
     Launch new process
 
-    to_print: whether to print the output (process thinks it is in a TY)
+    interactive: whether to have an interactive TTY session or just run as a process and return output
 
     Returns:
         _type_: {"stdout":"<stdout>", "code": return code}
@@ -368,10 +348,7 @@ def LaunchProcess(command, path=None, to_print=False):
     # Allow python scripts to use ProjectBase scripts
     SetupLocalEnvVars()
 
-    returned = _LaunchCommand(command, path, to_print)
-
-    if returned["code"] == -1:
-        return returned
+    returned = _LaunchCommand(command, path, interactive)
 
     if returned["code"] != 0:
         simple_message = "\t\tProcess returned failure (" + ColorFormat(Colors.Yellow, str(returned["code"])) + "):\n"
@@ -396,9 +373,6 @@ def LaunchProcess(command, path=None, to_print=False):
         raise ProcessError(simple_message, trace_message, returned)
 
     return returned
-
-def ParseProcessResponse(response):
-    return RemoveControlCharacters(response["stdout"].rstrip())
 
 def OpenBashOnDirectoryAndWait(working_directory):
     print("Opening new slave terminal")
@@ -436,3 +410,7 @@ def AssertProcessRun(Process, ExpectedCode, ExpectedOutput):
         Message += "="*30 + "\n>"+ExpectedOutput+"<"
         Abort(Message)
 
+def LaunchPager(data, path=None):
+    file = "/tmp/PB.pager.data"
+    WriteFile(file, data)
+    LaunchProcess(f"less -f < {file}", path, True)

@@ -3,7 +3,14 @@
 ## General
 
 - [X] Dependency visualizer
+- [ ] Usually if there are too many `No such path` errors it means that the state is messed up. Maybe check for it and a dd a helpful tip?
+- [ ] Project specific repos. It might be useful to group together repositories
+  - [ ] Allow repositories to specify group IDs somehow
+  - [ ] Create shared objects per repo group
+  - [ ] Visualize the groups in a project
 - [ ] ProjectBase documentation
+- [X] Allow certain menus to receive multiple inputs (i.e. by using, to separate the list like 1,2,3,4)
+  - [X] Implicitly done by menus that "hold" input
 - [ ] Add ProjectBase configs
   - [ ] For project wide flags
   - [ ] For build system setup
@@ -16,6 +23,7 @@
   - [ ] Just like build folder is separate, use links to generate a view that only contains headers and source code
 - [X] Add abstraction similar to menu, but for multiple choice stuff (i.e. executable/test/project/single repo to manage operations)
 - [X] Add "There have been errors, please check the logs at PATH" message for logged exceptions
+- [ ] Remove all loops that can be reoved in place of multi threaded actoin
 - [ ] Find a way to identify repositories without using URLs (different URLs can point to the same repo)
       Use the X commit of the default branch?
   - [ ] Overhaul handling of repositories by name/url/path. Use unique internal ID that can link to those three attributes
@@ -34,7 +42,11 @@
     - [ ] Default example?
     - [ ] Use options (y/n/a yes/no/all)
 - [ ] Project metadata visualization (dependency tree, test amount and percentage of failures, ...)
+- [ ] If a repository is moved automatically, empty folders should be removed (i.e. local path changed from Runtime to Data, if Runtime becomes empty, it should be removed)
+- [ ] If a repository is removed, PB should set it back from the bare git as per configs
 - [X] Add time (with seconds) to banner. Helps in knowing when we ran the last commands
+- [ ] Improve print handling in multi threaded context. Make it automatically beave a expected
+- [ ] Add "Are you sure" for dangerous operations like "Purge projects"
 - [ ] Detect when ProjectBase was copy pasted into a different repository (messed up worktrees) and fix it
 - [ ] Inserting commands during other commands does not work, but it should be possible to chain commands using a separator like ';'. (unclear now on what todo here)
 - [X] Reset terminal after recovering control from external programs
@@ -43,6 +55,7 @@
   - [ ] Collect how many bytes are lost and how many different errors, per each test
 - [ ] Fix completion
   - [ ] Current input counts for completion. i.e. '3 3 ' and then TAB would show the possible completions of menu 3.3 and not current menu
+- [ ] Allow selection of menu entries by their values instead of index, at least for the dynamically generated entries
 - [ ] Deal with projects that have no code (simple message stating nothing to do)
 - [X] Modify how processes are called. Multiple attempts should not be necessary and are very error prone
 - [ ] Check config file on all config checks, dont cache
@@ -105,6 +118,7 @@
   - [ ] object
   - [ ] module
   - [ ] globally
+- [ ] Add support for any linter system (not just clang-tidy)
 - [ ] Add support for a configuration system (i.e. Kconfig)
 - [ ] Add support for a hardware description language (i.e. devicetree)
 - [ ] Investigate necessity/feasibility of sending strings into code
@@ -114,8 +128,14 @@
 
 ## Versioning
 
+- [X] Make `--branch` work even if the project has already been loaded
+- [ ] If branch is new and no changes, dont push it
+- [X] If a repo has "no commit" flag, branches aren't created
+- [ ] Temporary commits might be interrupted by other commits (i.e. in rebases/merges). Make the global commit be split among the existing "groups" of temporary commits and marked with [X/Y]
+- [ ] Improve how git is used (use by repo instead of by path)
 - [X] In status, warn if there are dirty repos that will not be commited (have the no commit flag set)
 - [X] Add information on sync status in getting repo status
+- [ ] Test access to repos (i.e. ssh is properly configured) before parallel load. Otherwise its impossible to input the password or whatever and the errors are mangled
 - [ ] Toggle between project wide and specific repository operations
 - [X] Allow two types of commits
   - [X] "fixed" commits (other word isencouraged) are normal commits

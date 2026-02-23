@@ -1,6 +1,6 @@
 import os
 
-from processes.filesystem import JoinPaths
+from processes.filesystem import JoinPaths, GetTemporaryPath
 
 # Assume scripts is on the base folder
 def GetProjectBasePath():
@@ -26,12 +26,17 @@ def GetBasePaths():
     paths["history"]   = paths["configs"]+"/history"
     ## What temporary folder to use for setting up projects
     paths["temporary"] = paths["configs"]+"/temporary"
+    paths["http"] = paths["temporary"]+"/http"
     ## Where the .git files are located
     paths["bare gits"] = paths["configs"]+"/bare_gits"
 
     paths["caches"] = JoinPaths(paths["configs"], "project_cache", "repositories")
 
     return paths
+
+
+def GetNewTemporaryPath():
+    return GetTemporaryPath(GetBasePaths()["temporary"])
 
 def GetProjectPaths(project_name):
     """
