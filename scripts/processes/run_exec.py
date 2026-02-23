@@ -94,13 +94,23 @@ If it exsists, return it alongside truncated input list
 def __GetModifier(input_list):
     modifier_id = input_list[0]
     modifier = None
-    if len(modifier_id) == 2 and modifier_id[0] == exec_prefix:
-        if modifier_id[1] not in modifiers.keys():
-            PrintError(f"Unknown modifier {modifier_id[1]}")
-            return None, None
-        modifier = modifiers[modifier_id[1]]
-        # Remove modifier from input list
+
+    if modifier_id[0] == exec_prefix and len(modifier_id) >= 2:
+        # Acceptable options: '!g<ID>' or '!g <ID'>
+        expected_modifier = modifier_id[1]
         input_list = input_list[1:]
+
+        if len(modifier_id) != 2:
+            input_list.insert(0, modifier_id[2:].strip())
+    else:
+        return None, input_list
+
+    if expected_modifier not in modifiers.keys():
+        PrintError(f"Unknown modifier {expected_modifier}")
+        return None, None
+
+    modifier = modifiers[expected_modifier]
+    # Remove modifier from input list
     return modifier, input_list
 
 """
@@ -114,7 +124,7 @@ def __LocateExecutable(executable, executables_available):
             return None
         path_to_exec = executables_available[exec_ind]
     else:
-        raise Exception("Unimplemented. First implement proper executable presentation per module and alphabetical")
+        raise Exception(f"Unimplemented. First implement proper executable {executable} presentation per module and alphabetical")
 
     return path_to_exec
 
