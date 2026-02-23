@@ -253,10 +253,10 @@ def _LaunchCommand(command, path=None, interactive=False):
             raise Exception(f"No such path ({path}) for executing command ({command}) ")
 
     returned = {
-        "stdout": "<UNINITIALIZED STDOUT>",
-        "stderr": "<UNINITIALIZED STDERR>",
+        "stdout": "",
+        "stderr": "",
         # TODO: Replace stdout/stderr with plain out. There are too many programs that send errors to stderr
-        "out": "<UNINITIALIZED OUT>",
+        "out": "",
         "code": -1,
         "path": path,
         "command": command
