@@ -65,8 +65,6 @@ import tempfile
 
 from urllib.parse import quote
 
-
-
 def _get_api_url_and_auth(project_path: str, branch: str = "main") -> Tuple[str, str]:
     """Determines the API URL and curl header based on the host."""
     

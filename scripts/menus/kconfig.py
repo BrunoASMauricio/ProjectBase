@@ -6,7 +6,11 @@ from menus.menu import Menu
 from data.settings import Settings
 from data.colors import ColorFormat, Colors
 from processes.repository import ConvertKconfigToHeader
+import sys
+import kconfiglib
 
+
+# Should not be used
 def find_kconfig_tool(tool_name):
     """Find a kconfig tool in common locations."""
     common_paths = [
@@ -20,6 +24,9 @@ def find_kconfig_tool(tool_name):
     return None
 
 def EnsureKConfigTools():
+    return True
+
+def EnsureKConfigToolsOld():
     """Check if required Kconfig tools are available."""
     required_tools = ['kconfig-conf', 'kconfig-mconf']
     missing_tools = []
@@ -34,7 +41,49 @@ def EnsureKConfigTools():
         return False
     return True
 
+
 def RunMenuConfig():
+    """Run Kconfig interactive menu."""
+    project_configs = Settings["paths"]["project configs"]
+    root_kconfig = JoinPaths(project_configs, "Kconfig")
+    config_file  = JoinPaths(project_configs, ".config")
+    
+    # Ensure the root file exists before running
+    if not os.path.isfile(root_kconfig):
+        logging.error(f"Root Kconfig not found at {root_kconfig}")
+        return
+
+    # Setup Environment
+    env = os.environ.copy()
+    env["KCONFIG_CONFIG"] = config_file
+    
+    # Setting srctree to the project configs folder makes the UI 
+    # show simpler paths, but ensure your 'source' paths are absolute 
+    # or correctly relative to this root.
+    env["srctree"] = project_configs 
+
+    # Command: python -m menuconfig path/to/Kconfig
+    # This is the standard way to invoke kconfiglib's menuconfig
+    cmd = [sys.executable, "-m", "menuconfig", root_kconfig]
+    
+    print(f"Running: {' '.join(cmd)}")
+    
+    try:
+        subprocess.run(
+            cmd,
+            cwd=project_configs,
+            check=True,
+            env=env,
+        )
+        # After menuconfig closes, we should regenerate headers
+        ConvertKconfigToHeader() 
+        
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Menuconfig exited with error: {e}")
+    except Exception as e:
+        logging.error(f"Failed to launch menuconfig: {e}")
+
+def RunMenuConfigOld():
     """Run Kconfig menuconfig interface."""
     if not EnsureKConfigTools():
         return

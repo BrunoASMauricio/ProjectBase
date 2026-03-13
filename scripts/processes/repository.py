@@ -15,6 +15,7 @@ from processes.progress_bar import PrintProgressBar
 from threading import Lock
 from data.paths import JoinPaths
 from data.print import *
+import kconfiglib
 
 # Repository operation lock
 repositories_lock = Lock()
@@ -421,12 +422,12 @@ def LoadRepositories(root_configs, cache_path):
 
     return repositories
 
-def __GenerateFullMenu(repositories):
+def __InitKconfigRepoSettings(repositories):
     root = {}
+    logging.error(f"kconfig repositiories {repositories}")
     for repo_id in repositories:
         repository = repositories[repo_id]
         kconfig_path = None
-
         if "kconfig" in repository:
             kconfig_path = repository["kconfig"]
             if not os.path.isfile(kconfig_path):
@@ -435,95 +436,37 @@ def __GenerateFullMenu(repositories):
 
         if kconfig_path == None:
             kconfig_path = JoinPaths(repository['current repo path'], "configs", "Kconfig")
+            logging.error(f"kconfig path path {kconfig_path}")
             if not os.path.isfile(kconfig_path):
                 continue
+            repository["kconfig"] = kconfig_path
+            project_code = Settings["paths"]["project code"]
+            project_suffix = repository["kconfig"][len(project_code)+1:]
+            repository["kconfig_target"] = JoinPaths(Settings["paths"]["project configs"], project_suffix)
 
-        # Use local_path to derive menu name
-        parts = repository["local path"].split("/")
-        menu = root
-
-        for part in parts:
-            if part not in menu:
-                menu[part] = {}
-
-            menu = menu[part]
-        menu[repository["name"]] = kconfig_path
+        root[repository["name"]] = kconfig_path
+    
+    logging.error(f"kconfig root {root}")
     return root
 
-# Receives the root menu and its' name
-# Returns the collapsed root menu
-# input = {'Core': {'Core': "path to Core kconfig"}, 'Runtime': {'Data': {'Memory': {'Val1': "path to Val1 kconfig"}, 'Map': "path to Map kconfig"}, 'Binary': "path to Binary kconfig"}}
-# outputs: {'Core/Core': "path to Core kconfig", 'Runtime': {'Data': {'Memory/Val1': "path to Val1 kconfig", 'Map': "path to Map kconfig"}, 'Binary': "path to Binary kconfig"}}
-def __CollapseSingleEntryMenus(root):
-    result = {}
-    def RecursivelyCollapse(key, value):
-        if isinstance(value, str):
-            return value
 
-        # Collapse dictionary
-        if len(value.keys()) == 1:
-            return key + "/" + list(value.keys())[0]
+# Generate Kconfigs for the directories that actually have those files
+# Returns the kconfigs that are target that were cactually created
+def __GenerateMainKConfigs(repositories) -> list[str]:
+    target_kconfigs : list[str] = []
+    for repo_path in repositories:
+        repo = repositories[repo_path]
+        if("kconfig" not in repo):
+            continue 
+        repo_original_kconfig = repo["kconfig"]
+        repo_target_kconfig = repo["kconfig_target"]
 
-        to_return = {}
-        for subkey, subval in value.items():
-            # Other leaves remain
-            if isinstance(subval, str):
-                to_return[subkey] = subval
-                continue
+        os.makedirs(os.path.dirname(repo_target_kconfig), exist_ok=True)
+        with open(repo_target_kconfig, "w") as f:
+            f.write(f'source "{repo_original_kconfig}"\n')
 
-            # Investigate sub dictionaries
-            collapsed = RecursivelyCollapse(subkey, subval)
-            if isinstance(collapsed, dict):
-                to_return[subkey] = collapsed
-            elif collapsed != None:
-                # Child collapsed
-                to_return[collapsed] = list(subval.values())[0]
-        return to_return
-
-    for key, value in root.items():
-        to_root = RecursivelyCollapse(key, value)
-        if isinstance(to_root, dict):
-            # Child is dict, keep it as is
-            result[key] = to_root
-        else:
-            # Child collapsed
-            result[to_root] = list(value.values())[0]
-    return result
-
-def __GenerateKConfigs(config_dict, menu_path=""):
-    for key, value in config_dict.items():
-        current_path = JoinPaths(menu_path, key)
-        file_path = JoinPaths(Settings["paths"]["project configs"], current_path)
-
-        if isinstance(value, str):
-            # Link Kconfig
-            os.makedirs(file_path, exist_ok=True)
-            if os.path.isfile(JoinPaths(file_path, "Kconfig")):
-                LaunchProcess(f"unlink Kconfig", file_path)
-            LaunchProcess(f"ln -s {value} Kconfig", file_path)
-        elif isinstance(value, dict):
-            # Create Kconfig submenu
-            os.makedirs(file_path, exist_ok=True)
-            # Generate a menu with nested includes
-            with open(file_path + "/Kconfig", "w") as f:
-                f.write(f'menu "{key}"\n\n')
-                for subkey in value:
-                    subpath = JoinPaths(current_path, subkey).replace("/", os.sep)
-                    if isinstance(value[subkey], dict):
-                        f.write(f'source "{subpath}/Kconfig"\n')
-                    else:
-                        f.write(f'source "{subpath}/Kconfig"\n')
-                f.write(f'\nendmenu\n')
-            # Recurse into submenus
-            __GenerateKConfigs(value, current_path)
-
-def __CreateRootKConfig(menus):
-    root_kconfig_path = JoinPaths(Settings["paths"]["project configs"], "Kconfig")
-    with open(root_kconfig_path, "w") as f:
-        for src in menus:
-            f.write(f'menu "{src}"\n')
-            f.write(f'source "{Settings["paths"]["project configs"]}/{src}/Kconfig"\n')
-            f.write(f'\nendmenu\n')
+        target_kconfigs.append(repo_target_kconfig)
+    return target_kconfigs
 
 def ConvertKconfigToHeader():
     # LaunchProcess(f"cat .config | kconfig-config2h > {JoinPaths(Settings["paths"]["project configs"], "autogen.h")}", )
@@ -557,19 +500,49 @@ def ConvertKconfigToHeader():
         header.write("\n#endif\n")
 
 def __GenerateDefaultKconfig():
-    # kconfig is to be removed it is an unmaitained project that is very hard to download
-    #if not os.path.isfile(JoinPaths(Settings["paths"]["project configs"], ".config")):
-    #    LaunchProcess("kconfig-conf --alldefconfig Kconfig", Settings["paths"]["project configs"])
-    #ConvertKconfigToHeader()
-    pass
+    """Create .config from the root Kconfig using kconfiglib (alldefconfig semantics)."""
+    config_dir = Settings["paths"]["project configs"]
+    root_kconfig = JoinPaths(config_dir, "Kconfig")
+    config_file = JoinPaths(config_dir, ".config")
 
+    if not os.path.isfile(config_file):
+        try:
+            kconf = kconfiglib.Kconfig(root_kconfig)
+            kconf.load_config(None)
+            kconf.write_config(config_file)
+            logging.info(f"Generated default .config at {config_file} via kconfiglib")
+        except Exception as e:
+            logging.error(f"Failed to generate .config via kconfiglib: {e}")
+            return
+
+    # Try to generate autogen header using kconfiglib if available
+    try:
+        kconf = kconfiglib.Kconfig(root_kconfig)
+        kconf.load_config(config_file)   # populate symbol values from .config
+        header_path = JoinPaths(Settings["paths"]["autogened headers"], "autogen.h")
+        # kconfiglib provides write_autoconf(header_path) which writes the C header
+        kconf.write_autoconf(header_path)
+        logging.info(f"Wrote autoconf header via kconfiglib to {header_path}")
+
+    except Exception as e:
+        logging.error(f"kconfiglib autoconf generation failed: {e}")
+        logging.error("Falling back to ConvertKconfigToHeader()")
+        ConvertKconfigToHeader()
+
+import processes.kconfig_generaton as kconf
 def __SetupKConfig(repositories):
-    PrintDebug("Setting up KConfig")
-    menu_root = __GenerateFullMenu(repositories)
-    collapsed_menus = __CollapseSingleEntryMenus(menu_root)
-    __GenerateKConfigs(collapsed_menus, Settings["paths"]["project configs"])
-    __CreateRootKConfig(collapsed_menus)
-    logging.error(collapsed_menus)
+    logging.info("Setting up KConfig")
+    __InitKconfigRepoSettings(repositories)
+    base_kconfigs_paths = __GenerateMainKConfigs(repositories)
+    base_path = JoinPaths(Settings["paths"]["project configs"])
+    kconf_tree = kconf.Tree(base_path)
+    for path in base_kconfigs_paths:
+        kconf_tree.add_path(path)
+    #kconfig_info = kconf_tree.get_kconfigs_info_flat()
+    kconfig_info = kconf_tree.get_kconfigs_info_organized()
+    logging.error(f"KCONF INFO: {kconfig_info}")
+    kconf.create_kconfigs(kconfig_info)
+
     __GenerateDefaultKconfig()
 
 def DependencyOf(repo, target):
@@ -769,6 +742,7 @@ def __SetupCMake(repositories):
 
 def Setup(repositories):
     # Get KConfig ready
+
     __SetupKConfig(repositories)
 
     # Get CMakeLists ready
