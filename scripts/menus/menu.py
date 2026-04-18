@@ -97,6 +97,7 @@ class Menu():
         self.history_file = None
         self.completer = None
         self.help = help
+        self.name = None
         # Make sure menus don't have colliding names
         if name != None:
             name = RemoveNonAlfanumeric(name)
@@ -104,6 +105,7 @@ class Menu():
             self.history_file = JoinPaths(Settings["paths"]["history"], name)
             self.completer = CustomCompleter(self.history_file, [])
             all_menu_names.append(name)
+            self.name = name
 
     def AddCallbackEntry(self, entry, Callback, help=None):
         self.entries.append([entry, EntryType.CALLBACK, Callback, help])
