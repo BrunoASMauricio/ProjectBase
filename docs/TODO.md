@@ -3,6 +3,10 @@
 ## General
 
 - [X] Dependency visualizer
+- [ ] Make ProjectBase detect if the project base path changed (i.e. pwd), ask the user and if prompted to, auto fix
+- [ ] Test git is working properly and offer automatic fixes
+  - [ ] 'Author identity unknown' in commit
+  - [ ] required repo permissions
 - [ ] Usually if there are too many `No such path` errors it means that the state is messed up. Maybe check for it and a dd a helpful tip?
 - [ ] Project specific repos. It might be useful to group together repositories
   - [ ] Allow repositories to specify group IDs somehow
