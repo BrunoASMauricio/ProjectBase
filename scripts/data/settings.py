@@ -123,6 +123,8 @@ class SETTINGS(dict):
                             help = "Do not run PB in multiple threads",
                             default=False, required=False, action=argparse.BooleanOptionalAction)
 
+        parser.add_argument("--selftest", action='store_true', help="Use the current working directory as the project URL (shorthand for --url=<cwd>)", default=False, required=False)
+
         parser.add_argument("-e", "--exit", action='store_true', help = "Exit after running command line arguments. Performs early exit in case one of the operations ends in error", default=False, required=False)
 
         parser.add_argument("-d", "--debug", action='store_true', help = "Increase log verbosity to debug ProjectBase", default=False, required=False)
@@ -138,7 +140,12 @@ class SETTINGS(dict):
 
         self["log_file"]      = project_args.log_file
         self["out_file"]      = project_args.out_file
-        self["url"]           = project_args.url
+
+        if project_args.selftest:
+            self["url"] = os.getcwd()
+        else:
+            self["url"] = project_args.url
+
         self["commit"]        = project_args.commit
         self["branch"]        = project_args.branch
         self["exit"]          = project_args.exit
