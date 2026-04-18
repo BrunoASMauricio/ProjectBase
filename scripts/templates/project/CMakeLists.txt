@@ -6,7 +6,7 @@
 ### RESPECT THE CURRENT ORDER OF COMMANDS
 
 ### Cmake minimum version
-CMAKE_MINIMUM_REQUIRED(VERSION 4.0)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.0...5.0)
 ### Setup configuration file in binary tree
 #configure_file(TutorialConfig.h.in TutorialConfig.h)
 
@@ -110,5 +110,5 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GCC_COMPILE_FLAGS} \
     -Wno-unused-function -pg")
 
 # link flags: libraries and profiling
-set(CMAKE_EXE_LINKER_FLAGS   "${CMAKE_EXE_LINKER_FLAGS}   -pg -lX11 -lXext -lncurses -lm")
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pg -lX11 -lXext -lncurses -lm")
+set(CMAKE_EXE_LINKER_FLAGS   "${CMAKE_EXE_LINKER_FLAGS}     -lrt -pg -lX11 -lXext -lncurses -lm")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -lrt -pg -lX11 -lXext -lncurses -lm")
