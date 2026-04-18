@@ -124,8 +124,30 @@ def __LocateExecutable(executable, executables_available):
             return None
         path_to_exec = executables_available[exec_ind]
     else:
-        raise Exception(f"Unimplemented. First implement proper executable {executable} presentation per module and alphabetical")
+        # Name-based lookup: match against the exec name (part after the repo prefix)
+        matches = []
+        for idx, path in enumerate(executables_available):
+            basename = os.path.basename(path)
+            # Try exact basename match first
+            if basename == executable:
+                matches.append(idx)
+                continue
+            # Try matching just the name part (after first underscore = repo prefix)
+            parts = basename.split("_", 1)
+            exec_name = parts[1] if len(parts) > 1 else parts[0]
+            if exec_name == executable:
+                matches.append(idx)
 
+        if len(matches) == 1:
+            path_to_exec = executables_available[matches[0]]
+        elif len(matches) > 1:
+            PrintWarning(
+                f"Ambiguous name '{executable}': matches {[os.path.basename(executables_available[i]) for i in matches]}"
+            )
+            return None
+        else:
+            PrintWarning(f"No executable found matching '{executable}'")
+            return None
     return path_to_exec
 
 """
