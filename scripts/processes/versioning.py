@@ -251,6 +251,29 @@ def DirectlyManageSingleRepository():
 
     return dynamic_entries
 
+def RunCustomCommandOnAllRepos():
+    """Prompt for a shell command and run it on every known repo path."""
+    try:
+        cmd = input("Command to run on all repos: ").strip()
+    except EOFError:
+        return
+    if not cmd:
+        return
+
+    results = []
+    def _RunCmd(path=None):
+        lock = threading.Lock()
+        with lock:
+            try:
+                result = LaunchProcess(cmd, path, False)
+                # PrintInfo(f"[{path}] OK")
+                results.append(f"{path}$ {cmd}\n{result["stdout"]} {result["stderr"]}\n")
+            except ProcessError as ex:
+                PrintError(f"[{path}] FAILED: {ex}")
+
+    RunOnAllRepos(_RunCmd)
+    print('\n'.join(results))
+
 def __AssembleReposStatusMessage(statuses)-> ProjectStatusInfo:
     status_message: str = ""
     dirty: list[str] = []

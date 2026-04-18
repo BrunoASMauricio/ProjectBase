@@ -4,7 +4,7 @@ from processes.versioning import FetchAll, PullAll, PushAll, PrintCheckedoutStat
 from processes.versioning import GlobalFixedCommit, GlobalTemporaryCommit, GetCurrentTemporaryCommits
 from processes.versioning import SelectLocalBranchToDelete, SelectRemoteBranchToDelete, PrintAllBranches, SelectBranchToMerge, SelectBranchToRebase, SelectBranchToCheckout
 from processes.versioning import GlobalStashCreate, GlobalStashList, GlobalStashDelete, GlobalStashApply, GlobalStashPop
-
+from processes.versioning import RunCustomCommandOnAllRepos
 from processes.versioning import GlobalDiffCreate, GlobalDiffApply
 
 from data.colors import ColorFormat, Colors
@@ -98,6 +98,8 @@ VersioningMenu.AddSubmenuEntry("Branches", BranchMenu, "Manage branch state acro
 VersioningMenu.AddSubmenuEntry("Reset", ResetMenu, "Reset changes (saved, unsaved, etc)")
 # Spawn a console on the repository's directory
 VersioningMenu.AddSubmenuEntry("Manage single repository (spawn console)", DirectSingleRepoManageMenu, "Spawn terminal on specific repo")
+VersioningMenu.AddCallbackEntry("Run custom command on all repos", RunCustomCommandOnAllRepos, "Prompt for a shell command and run it on every known repo path")
+
 # Use above menu for a single repository
 # VersioningMenu.AddCallbackEntry("Manage single repository (via ProjectBase)", None)
 

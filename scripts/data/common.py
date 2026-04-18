@@ -59,11 +59,6 @@ class INDENT_FORMATTER(logging.Formatter):
 
 Formatter = INDENT_FORMATTER()
 
-def ErrorCheckLogs(exception):
-    print(f"ERROR: Check logs at {Settings["log_file"]} for more information")
-    logging.error(f"Exception: {type(exception)} {exception}")
-    logging.error(get_full_traceback(exception))
-
 def RemoveDuplicates(lst):
     return list(set(lst))
 

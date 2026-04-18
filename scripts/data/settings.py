@@ -186,6 +186,10 @@ class SETTINGS(dict):
 
 Settings = SETTINGS()
 
+def ErrorCheckLogs(exception):
+    print(f"ERROR: Check logs at {Settings["log_file"]} for more information")
+    logging.error(f"Exception: {type(exception)} {exception}")
+    logging.error(get_full_traceback(exception))
 
 """
 Prompt the user with a yes/no question and return True only if they answer y/Y.
