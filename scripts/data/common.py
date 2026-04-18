@@ -35,7 +35,7 @@ def get_full_traceback(exc):
         filename = code.co_filename
 
         # Basic location
-        msg += f'  File "{filename}", line {lineno}, in {func_name}'
+        msg += f'  File "{filename}", line {lineno}, in {func_name}\n'
 
         # Get argument values
         arg_info = inspect.getargvalues(frame)
@@ -43,13 +43,13 @@ def get_full_traceback(exc):
         locals_ = arg_info.locals
 
         # Print args with their values
-        if args:
-            arg_strs = []
-            for arg in args:
-                # repr to avoid huge dumps
-                val = locals_.get(arg, '<no value>')
-                arg_strs.append(f"{arg}={val!r}")
-            msg += f"    Arguments: {', '.join(arg_strs)}"
+        # if args:
+        #     arg_strs = []
+        #     for arg in args:
+        #         # repr to avoid huge dumps
+        #         val = locals_.get(arg, '<no value>')
+        #         arg_strs.append(f"{arg}={val!r}")
+        #     msg += f"    Arguments: {', '.join(arg_strs)}"
 
         tb = tb.tb_next
 
