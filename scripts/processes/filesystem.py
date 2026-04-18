@@ -68,14 +68,14 @@ def GetTemporaryPath(base_path):
 
 # Create all directories in the `paths` list provided
 def CreateDirs(paths):
-    if(type(paths) == type("")):
+    if type(paths) == type(""):
         raise Exception("Invalid types "+str(type(paths)))
     for path in paths:
         CreateDirectory(path)
 
 # Create all parent directories in the `paths` list provided
 def CreateParentDirs(paths):
-    if(type(paths) == type("")):
+    if type(paths) == type(""):
         raise Exception("Invalid types "+str(type(paths)))
     for path in paths:
         CreateParentDirectory(path)

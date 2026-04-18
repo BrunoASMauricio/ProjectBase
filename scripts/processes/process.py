@@ -19,11 +19,11 @@ from processes.filesystem import WriteFile
 
 def PrintProgressWhileWaitOnThreads(thread_data, max_delay=None, print_function=None, print_arguments=None):
     threads, callback, args = thread_data
-    if print_arguments == None:
+    if print_arguments is None:
         print_arguments = {}
 
     def PrintProgress():
-        if print_function != None:
+        if print_function is not None:
             print_function(**print_arguments)
         else:
             progress = len(threads) - threads_alive
@@ -45,7 +45,7 @@ def PrintProgressWhileWaitOnThreads(thread_data, max_delay=None, print_function=
             PrintProgress()
             prev_alive = threads_alive
 
-        if max_delay != None and time() - initial_timestamp > max_delay:
+        if max_delay is not None and time() - initial_timestamp > max_delay:
             initial_timestamp = time()
             print(f"\n{threads_alive - progress} threads are taking more time than expected ({max_delay}s). Currently running threads:")
             for thread_ind in range(len(threads)):
@@ -128,8 +128,8 @@ def RunInThreadsWithProgress(run_callback, run_args, max_delay=None, print_callb
             for run_arg_ind in run_args:
                 run_arg = run_args[run_arg_ind]
                 run_callback(*run_arg)
-                if print_callback != None:
-                    if print_args != None:
+                if print_callback is not None:
+                    if print_args is not None:
                         print_callback(print_args)
                     else:
                         print_callback()
@@ -154,7 +154,7 @@ def RunInThreadsWithProgress(run_callback, run_args, max_delay=None, print_callb
         ToggleThreading(False)
 
     for val in thread_return.values():
-        if val == False:
+        if val is False:
             raise SlimError(f"One of the threads errored out with {val}")
 
 def __RunOnFoldersThreadWrapper(callback, path, arguments = None):
@@ -162,7 +162,7 @@ def __RunOnFoldersThreadWrapper(callback, path, arguments = None):
     global operation_status
 
     try:
-        if arguments == None:
+        if arguments is None:
             raise Exception("Arguments must not be None")
 
         # Different arguments per call?
@@ -246,7 +246,7 @@ def GetEnvVarExports():
     return "; ".join(f"export {var}='{val}'" for var, val in GetEnvVars().items())
 
 def _LaunchCommand(command, path=None, interactive=False):
-    if path == None:
+    if path is None:
         path = os.getcwd()
     else:
         if not os.path.isdir(path):
@@ -267,7 +267,7 @@ def _LaunchCommand(command, path=None, interactive=False):
 
     command = f"cd '{path}'; {command}"
 
-    if interactive == True:
+    if interactive is True:
         print(ColorFormat(Colors.Blue, command))
         output_bytes = []
         def read(fd):

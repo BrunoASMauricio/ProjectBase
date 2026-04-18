@@ -40,8 +40,8 @@ def StartHTTPServer(host="0.0.0.0", port=8000):
         http_server = http_servers[host][port]
 
         # Check if server has stopped
-        is_alive =              http_server["stopped"] != None and not http_server["stopped"].is_set()
-        is_alive = is_alive and http_server["thread"]  != None and http_server["thread"].is_alive()
+        is_alive =              http_server["stopped"] is not None and not http_server["stopped"].is_set()
+        is_alive = is_alive and http_server["thread"]  is not None and http_server["thread"].is_alive()
         if is_alive:
             return
 

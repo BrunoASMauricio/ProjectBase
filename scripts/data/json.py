@@ -25,13 +25,13 @@ def load_json_file(path, error_value=None, variable_substitutions={}):
         for variable_name in variable_substitutions:
             json_data = json_data.replace("$$" + variable_name + "$$", variable_substitutions[variable_name])
 
-        if json_data == None:
+        if json_data is None:
             raise Exception("Null json data")
 
         return json_data
 
     except Exception as Ex:
-        if error_value == None:
+        if error_value is None:
             raise Exception(f"Could not load json from file {path} {traceback.format_exc()}")
         PrintWarning(f"Failed to parse json in {path}, using default: {str(Ex)}")
 

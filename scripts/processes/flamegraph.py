@@ -21,7 +21,7 @@ def GetFlameGraphLocation():
 
 def SetupFlamegraph():
     path = GetFlameGraphLocation()
-    if path == None:
+    if path is None:
         try:
             CreateParentDirectory(path)
             PrintNotice("Cloning flame graph")
@@ -36,7 +36,7 @@ def SetupFlamegraph():
 
 def RunFlamegraph(executable, args):
     fg_path = SetupFlamegraph()
-    if fg_path == None:
+    if fg_path is None:
         raise Exception("Can not run with flamegraph, could not setup")
 
     # Start default server in case it isnt already started

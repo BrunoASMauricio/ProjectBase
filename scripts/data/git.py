@@ -89,7 +89,7 @@ def IsValidGitBranch(name):
 
 
 def GetRepoNameFromURL(url):
-    if url == None or len(url) == 0:
+    if url is None or len(url) == 0:
         raise Exception("Requested URL ("+url+") is empty")
     url = url_SSH_to_HTTPS(url)
 

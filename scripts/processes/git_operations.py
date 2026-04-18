@@ -14,7 +14,7 @@ UNKNOWN_ERR = f"Unknown issue. Please send this message in a ticket for better e
 
 class GIT_CMD():
     def __init__(self, command, path):
-        if path == None:
+        if path is None:
             path = os.getcwd()
 
         self.command = command
@@ -53,7 +53,7 @@ def ParseGitResult(git_command, path):
 Obtain the URL of the repository located at path
 """
 def GetRepositoryUrl(path = None):
-    if path == None:
+    if path is None:
         path = os.getcwd()
 
     url = ParseGitResult("git config --get remote.origin.url", path)
@@ -203,7 +203,7 @@ while read -r branch upstream; do
     fi
 done"""
     ret = GIT_CMD(code, path)
-    if ret.proc_error != None:
+    if ret.proc_error is not None:
         status = GetRepoStatus(path)
         if "Diverging branches" in ret.returned["stderr"]:
             ret.error_nessage =f"Branches diverged, can't pull (merge) in {path}. Need manual intervention!"
@@ -223,7 +223,7 @@ def GitRebaseOrMergeBranch(path, branch, operation):
     local_branches = FindLocalBranchForRemote(path, branch)
     result = GIT_CMD(f"git {operation} {local_branches[0]}", path)
 
-    if result.proc_error != None:
+    if result.proc_error is not None:
         if operation == "merge":
             if CheckMergeOperationConflict(result.returned["out"]):
                 result.error_nessage = f"Merge conflict in {path} when merging branch {branch}"
@@ -419,7 +419,7 @@ def RepoPull(path = None):
     else:
         ret = GitFastForwardFetch(path, False)
     
-    if ret.error_nessage != None:
+    if ret.error_nessage is not None:
         PrintWarning(ret.error_nessage)
     # ParseGitResult("git pull origin --rebase", path)
     # ParseGitResult("git fetch --all", path)
@@ -429,7 +429,7 @@ def RepoPush(path = None):
     # Push to bare git
     # If repo has no changes between local local and remote local, it means it doesnt need to be pushed
     rev = GitGetRevDiff(path)
-    if rev != None:
+    if rev is not None:
         if rev[0] == "0":
             PrintDebug(f"Not pushing \"empty\" branch for {GetRepositoryName(path)}")
             return
@@ -475,7 +475,7 @@ def GetAllCommits(path):
 def RepoResetToLatestSync(path=None):
     branch = GetCurrentBranchsUpstream(path)
     ParseGitResult(f"git reset --hard {branch}", path)
-    if path == None:
+    if path is None:
         path = os.getcwd()
 
 """
@@ -519,7 +519,7 @@ def FindGitRepo(base_path, repo_url, repo_commitish = None, depth=-1):
     try:
         url_base_path = GetRepositoryUrl(base_path)
         if SameUrl(repo_url,  url_base_path ):
-            if repo_commitish != None:
+            if repo_commitish is not None:
                 # Look into commit
                 if repo_commitish["type"] == "commit":
                     commit = GetRepoLocalCommit(base_path)
@@ -562,7 +562,7 @@ def FindGitRepo(base_path, repo_url, repo_commitish = None, depth=-1):
         else:
             Result = FindGitRepo(full_path, repo_url, repo_commitish, depth - 1)
 
-        if Result != None:
+        if Result is not None:
             return Result
 
     return None
@@ -635,13 +635,13 @@ def GetBareGit(repo_url):
     # TODO: Calculate the path and try to check for it directly first
     # Here we might not even need to do Find for baregit at all
     bare_git  = FindGitRepo(Settings["paths"]["bare gits"], repo_url)
-    if bare_git == None:
+    if bare_git is None:
         bare_git = SetupBareData(repo_url)
 
     return bare_git
 
 def LaunchGitCommandAt(command, path=None, message=None):
-    if message != None:
+    if message is not None:
         logging.debug(message)
         logging.debug(command + " at " + str(path))
 
@@ -649,7 +649,7 @@ def LaunchGitCommandAt(command, path=None, message=None):
     if result_code["code"] != 0:
         raise Exception("Could not run " + command)
 
-    if message != None:
+    if message is not None:
         logging.debug(result_code)
 """
 Adds a worktree at target_path
@@ -657,7 +657,7 @@ Returns path to worktree: target_path + "/" + wortkree_name
 """
 def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
     existing_tree  = FindGitRepo(target_path, repo_url, repo_commitish)
-    if existing_tree != None and GetParentPath(existing_tree) == target_path:
+    if existing_tree is not None and GetParentPath(existing_tree) == target_path:
         # Already exists, skip
         return existing_tree
 
@@ -672,12 +672,12 @@ def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
     LaunchProcess("rm -rf " + new_repo_path)
     LaunchGitCommandAt('git worktree prune', bare_path)
     # If commit is defined, set it detached (it wont be updated)
-    if repo_commitish != None and repo_commitish["type"] == "commit":
+    if repo_commitish is not None and repo_commitish["type"] == "commit":
         worktree_command = "git worktree add --force --detach " + new_repo_path + " " + repo_commitish["commit"]
         LaunchGitCommandAt(worktree_command, bare_path)
         logging.debug("\tAdding git commit worktree with: " + worktree_command + " from bare at " + bare_path)
     else: # Branch comitish
-        if repo_commitish == None:
+        if repo_commitish is None:
             branch_to_follow = GetRepoDefaultBranch(bare_path)
             local_branch_name = GenerateLocalBranchName(branch_to_follow)
         # If branch is defined, create a new random branch and make it follow the remote (it will be updated)
@@ -703,7 +703,7 @@ def AddWorkTree(bare_path, repo_url, repo_commitish, target_path):
         raise Exception(f"Could not add worktree for {repo_url} at {target_path} from bare git at {bare_path}")
 
     new_tree_path = FindGitRepo(new_repo_path, repo_url, repo_commitish, depth=1)
-    if new_tree_path == None or new_tree_path != new_repo_path:
+    if new_tree_path is None or new_tree_path != new_repo_path:
         raise Exception(f"Could not add correct worktree for {repo_url} at {target_path} from bare git at {bare_path}.\nGot {new_tree_path} instead of {new_repo_path}")
 
     return new_repo_path
