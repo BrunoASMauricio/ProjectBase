@@ -2,7 +2,7 @@ import os
 import logging
 import pickle
 
-from data.settings import Settings, CLONE_TYPE
+from data.settings import Settings, CLONE_TYPE, UserPromptConfirm
 from data.paths    import GetProjectPaths, JoinPaths
 from data.git      import GetRepoNameFromURL, url_HTTPS_to_SSH, url_SSH_to_HTTPS
 from data.common   import LoadFromFile, DumpToFile, PrintInColumns
@@ -239,11 +239,18 @@ def CleanAll():
     CleanLinterFiles()
 
 def CleanCMake():
+    if not UserPromptConfirm("Reset build will delete all CMake artifacts and requires a full reload. Are you sure?"):
+        PrintInfo("Operation cancelled")
+        return
     CleanAll()
     LaunchVerboseProcess(f"rm -rf {Settings["paths"]["build env"]}/*")
     Setup(Project.GetRepositories())
 
 def DeleteProject():
+    if not UserPromptConfirm(f"This will permanently delete project '{Settings["ProjectName"]}'. Are you sure?"):
+        PrintInfo("Operation cancelled")
+        return
+
     LaunchVerboseProcess(f"rm -rf {Settings["paths"]["project main"]}")
 
 def _CleanPBCache():
@@ -262,6 +269,9 @@ def CleanPBCache():
 
 def PurgePB():
     global Project
+    if not UserPromptConfirm("DANGER: This will remove ALL projects and bare gits. This cannot be undone. Are you sure?"):
+        PrintInfo("Operation cancelled")
+        return
     _CleanPBCache()
 
     LaunchVerboseProcess(f"rm -rf {Settings["paths"]["project base"]}/projects/*")

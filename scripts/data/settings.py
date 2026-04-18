@@ -1,6 +1,7 @@
 import argparse
-from data.common import *
 from data.json import *
+from data.error import *
+from data.common import *
 from data.git import GetRepoNameFromURL
 from enum import Enum
 import json
@@ -21,11 +22,6 @@ DEFAULT_SETTINGS = {
 }
 
 LOG_LEVEL_OPTIONS = ["Error", "Warning", "Notice", "Info"]
-
-def ErrorCheckLogs(exception):
-    print(f"ERROR: Check logs at {Settings["log_file"]} for more information")
-    logging.error(f"Exception: {type(exception)} {exception}")
-    logging.error(get_full_traceback(exception))
 
 def ToggleSpeed():
     current_type = Settings["active"]["Speed"]
@@ -189,3 +185,32 @@ class SETTINGS(dict):
         # self["active"]    = GetValueOrDefault(persisted_settings[ProjectName][""])
 
 Settings = SETTINGS()
+
+
+"""
+Prompt the user with a yes/no question and return True only if they answer y/Y.
+Default is No (returns False) unless answered affirmatively.
+Respects the automated-input queue (Settings["action"]) so that integration
+tests and command-line automation can supply the answer.
+"""
+def UserPromptConfirm(message):
+
+    prompt = ColorFormat(Colors.Yellow, f"{message} {YES_NO_PROMPT}: ")
+
+    # Check automated-input queue first
+    if len(Settings.get("action", [])) > 0:
+        answer = Settings["action"][0]
+        del Settings["action"][0]
+        print(f"[< Auto confirm <] {{{answer}}}")
+    elif Settings.get("exit", False):
+        # Running in non-interactive exit mode with no queued answer (safe default)
+        print(f"[< Auto confirm (exit mode) <] {{n}}")
+        answer = "n"
+    else:
+        try:
+            answer = input(prompt).strip()
+        except EOFError:
+            return False
+
+    return UserYesNoChoice(answer)
+
