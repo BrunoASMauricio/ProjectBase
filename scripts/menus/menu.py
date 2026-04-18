@@ -255,8 +255,14 @@ class Menu():
 
                 # Newline is useful in general here
                 print()
-                # Show menu
-                print(self.GetMenu(depth, help))
+                # Show menu (skip full render when there is a queued automated input)
+                if Settings["action"] and not help:
+                    next_action = Settings["action"][0]
+                    menu_label = self.name if self.name is not None else "<menu>"
+                    print(f"[{menu_label}] Auto: {next_action}")
+                else:
+                    print(self.GetMenu(depth, help))
+
                 help = False
                 if previous_command != None:
                     print("Previous command: " +str(previous_command))
