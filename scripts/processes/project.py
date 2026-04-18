@@ -5,7 +5,7 @@ import pickle
 from data.settings import Settings, CLONE_TYPE
 from data.paths    import GetProjectPaths, JoinPaths
 from data.git      import GetRepoNameFromURL, url_HTTPS_to_SSH, url_SSH_to_HTTPS
-from data.common   import LoadFromFile, DumpToFile
+from data.common   import LoadFromFile, DumpToFile, PrintInColumns
 from data.print    import *
 from data.colors   import ColorFormat, Colors
 
@@ -180,8 +180,9 @@ def UserChooseProject():
 
     Index = 0
     projects_available = []
+    project_items = []
     print("Installed projects:")
-    if(os.path.exists("projects")):
+    if os.path.exists("projects"):
         for entry in  os.scandir("projects"):
             if entry.name == "" or entry.name == ".gitignore":
                 continue
@@ -196,16 +197,16 @@ def UserChooseProject():
                 continue
 
             url = LoadFromFile(JoinPaths(entry.path, "root_url.txt"), None)
-            if url == None:
+            if url is None:
                 logging.error("Invalid project at " + entry.path + ", cannot load root_url.txt")
                 continue
 
-            # Url = file.read()[:-1].strip()
-
             name = GetRepoNameFromURL(url)
-            print("\t["+str(Index)+"] " + ColorFormat(Colors.Blue, name) + " : " + url)
+            project_items.append("[" + str(Index) + "] " + ColorFormat(Colors.Blue, name) + " : " + url)
             projects_available.append(url)
             Index += 1
+    if project_items:
+        PrintInColumns(project_items)
     if Index == 0:
         UserInput = input("Remote project repository URL: ")
     else:
