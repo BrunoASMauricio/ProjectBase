@@ -1,3 +1,5 @@
+import os
+
 from data.settings     import Settings, SetBranch
 from data.colors       import ColorFormat, Colors
 from data.common import RemoveEmpty, CLICenterString, RemoveSequentialDuplicates, AssembleTable, YES_NO_PROMPT, UserYesNoChoice
@@ -751,3 +753,147 @@ def GlobalStashPop():
         except Exception as ex:
             repo_name = GetRepoNameFromPath(path)
             print(f"{ColorFormat(Colors.Red, 'x')} Failed to pop stash from {repo_name}: {ex}")
+
+
+# Header/footer used to delimit per-repository sections inside a combined diff file.
+# Format:  # === PB-REPO: <repo_name> | <repo_path> ===
+_DIFF_SECTION_HEADER_PREFIX = "# === PB-REPO:"
+_DIFF_SECTION_FOOTER        = "# === END-REPO ==="
+
+def _MakeDiffSectionHeader(repo_name, repo_path):
+    return f"{_DIFF_SECTION_HEADER_PREFIX} {repo_name} | {repo_path} ==="
+
+def _ParseDiffSections(combined_diff):
+    """
+    Parse a combined diff file produced by GlobalDiffCreate.
+    Returns a list of (repo_name, repo_path, diff_text) tuples.
+    """
+    sections = []
+    current_name = None
+    current_path = None
+    current_lines = []
+
+    for line in combined_diff.splitlines(keepends=True):
+        stripped = line.strip()
+        if stripped.startswith(_DIFF_SECTION_HEADER_PREFIX):
+            # Save previous section if any
+            if current_path is not None:
+                sections.append((current_name, current_path, "".join(current_lines)))
+            # Parse: "# === PB-REPO: <name> | <path> ==="
+            inner = stripped[len(_DIFF_SECTION_HEADER_PREFIX):].strip().rstrip("=").strip()
+            parts = inner.split("|", 1)
+            current_name = parts[0].strip()
+            current_path = parts[1].strip() if len(parts) > 1 else None
+            current_lines = []
+        elif stripped == _DIFF_SECTION_FOOTER:
+            if current_path is not None:
+                sections.append((current_name, current_path, "".join(current_lines)))
+            current_name = None
+            current_path = None
+            current_lines = []
+        else:
+            if current_path is not None:
+                current_lines.append(line)
+
+    # Handle file not ending with a footer
+    if current_path is not None and current_lines:
+        sections.append((current_name, current_path, "".join(current_lines)))
+
+    return sections
+
+
+"""
+Create a single unified diff file combining the current changes
+(staged, unstaged, and untracked) from every managed repository.
+"""
+def GlobalDiffCreate():
+    print(CLICenterString(ColorFormat(Colors.Cyan, "Create Global Diff"), "="))
+
+    default_path = os.path.join(os.getcwd(), "project.patch")
+    output_path = GetNextInput(f"[output file (default: {default_path}) <] ").strip()
+    if not output_path:
+        output_path = default_path
+
+    repos = Project.GetRepositories()
+    known_paths = [repos[r]["repo source"] for r in repos]
+
+    sections = []
+    repos_with_changes = 0
+
+    for repo_path in known_paths:
+        try:
+            repo_name = GetRepoNameFromPath(repo_path)
+        except Exception:
+            repo_name = os.path.basename(repo_path)
+
+        diff_text = GetGitFullDiff(repo_path)
+
+        if not diff_text.strip():
+            PrintDebug(f"No changes in {repo_name}, skipping")
+            continue
+
+        header = _MakeDiffSectionHeader(repo_name, repo_path)
+        sections.append(f"{header}\n{diff_text}\n{_DIFF_SECTION_FOOTER}\n")
+        repos_with_changes += 1
+        print(f"  {ColorFormat(Colors.Green, 'v')} {repo_name}: captured diff")
+
+    if repos_with_changes == 0:
+        print(ColorFormat(Colors.Yellow, "No changes found in any repository — diff file not written"))
+        return
+
+    combined = "\n".join(sections)
+
+    try:
+        with open(output_path, "w") as f:
+            f.write(combined)
+        print(f"\n{ColorFormat(Colors.Green, 'Diff written to:')} {output_path}")
+        print(f"Captured changes from {repos_with_changes} repository/repositories")
+    except IOError as ex:
+        PrintError(f"Could not write diff file: {ex}")
+
+
+"""
+Apply a combined diff file (created by GlobalDiffCreate) back to the
+corresponding managed repositories using `git apply`.
+"""
+def GlobalDiffApply():
+    import os
+    print(CLICenterString(ColorFormat(Colors.Cyan, "Apply Global Diff"), "="))
+
+    patch_path = GetNextInput("[patch file path <] ").strip()
+    if not patch_path:
+        PrintError("No path provided")
+        return
+
+    if not os.path.isfile(patch_path):
+        PrintError(f"File not found: {patch_path}")
+        return
+
+    with open(patch_path, "r") as f:
+        combined_diff = f.read()
+
+    sections = _ParseDiffSections(combined_diff)
+    if not sections:
+        PrintError("No repository sections found in patch file")
+        return
+
+    print(f"Found {len(sections)} section(s) in patch file\n")
+
+    repos = Project.GetRepositories()
+    known_paths = {repos[r]["repo source"] for r in repos}
+
+    for repo_name, repo_path, diff_text in sections:
+        if not diff_text.strip():
+            print(f"  {ColorFormat(Colors.Yellow, '-')} {repo_name}: empty diff, skipping")
+            continue
+
+        if repo_path not in known_paths:
+            PrintWarning(f"Repository path not found in current project: {repo_path} ({repo_name}) — skipping")
+            continue
+
+        try:
+            GitApplyPatch(diff_text, repo_path)
+            print(f"  {ColorFormat(Colors.Green, 'v')} {repo_name}: patch applied successfully")
+        except Exception as ex:
+            print(f"  {ColorFormat(Colors.Red, 'x')} {repo_name}: failed to apply patch — {ex}")
+

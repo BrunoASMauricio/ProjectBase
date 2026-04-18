@@ -375,6 +375,33 @@ def GetGitDiff(path = None):
     tracked = GIT_CMD("git --no-pager diff", path).returned["stdout"]
     return tracked + "\n" + untracked
 
+def GetGitFullDiff(path = None):
+    """
+    Get the complete diff for a repository: staged changes, unstaged changes,
+    and untracked files (as new-file diffs against /dev/null).
+    Returns the combined unified diff string.
+    """
+    staged   = GIT_CMD("git --no-pager diff --cached", path).returned["stdout"]
+    unstaged = GIT_CMD("git --no-pager diff", path).returned["stdout"]
+    untracked = __GetUntrackedDiff(path)
+    return staged + unstaged + untracked
+
+def GitApplyPatch(patch_content, path = None):
+    """
+    Apply a unified diff patch to the repository at `path`.
+    The patch is written to a temporary file and fed to `git apply`.
+    Raises ProcessError on failure.
+    """
+    import tempfile
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".patch", delete=False) as tmp:
+        tmp.write(patch_content)
+        tmp_path = tmp.name
+    try:
+        result = GIT_CMD(f"git apply --whitespace=nowarn {tmp_path}", path)
+    finally:
+        os.unlink(tmp_path)
+    return result
+
 def GetRepoRemote(path = None):
     return ParseGitResult("git remote show", path)
 

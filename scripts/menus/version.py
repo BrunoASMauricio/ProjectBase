@@ -5,6 +5,8 @@ from processes.versioning import GlobalFixedCommit, GlobalTemporaryCommit, GetCu
 from processes.versioning import SelectLocalBranchToDelete, SelectRemoteBranchToDelete, PrintAllBranches, SelectBranchToMerge, SelectBranchToRebase, SelectBranchToCheckout
 from processes.versioning import GlobalStashCreate, GlobalStashList, GlobalStashDelete, GlobalStashApply, GlobalStashPop
 
+from processes.versioning import GlobalDiffCreate, GlobalDiffApply
+
 from data.colors import ColorFormat, Colors
 
 #       Save Menu
@@ -98,3 +100,9 @@ VersioningMenu.AddSubmenuEntry("Reset", ResetMenu, "Reset changes (saved, unsave
 VersioningMenu.AddSubmenuEntry("Manage single repository (spawn console)", DirectSingleRepoManageMenu, "Spawn terminal on specific repo")
 # Use above menu for a single repository
 # VersioningMenu.AddCallbackEntry("Manage single repository (via ProjectBase)", None)
+
+#       Diff Menu
+DiffMenu = Menu("Diff Menu")
+DiffMenu.AddCallbackEntry("Create diff", GlobalDiffCreate, "Save uncommitted changes from all repos into a single patch file")
+DiffMenu.AddCallbackEntry("Apply diff", GlobalDiffApply, "Apply a previously created patch file back to the matching repos")
+VersioningMenu.AddSubmenuEntry("Diff", DiffMenu, "Create or apply a combined diff across all repositories")
