@@ -4,8 +4,9 @@ from data.colors import ColorFormat, Colors
 from processes.project import Project
 from dependency_graph import BuildGraph, VisualizeGraph
 from processes.project import CleanPBCache, PurgePB
-from data.settings import ToggleCloneType, ToggleSpeed, ToggleMode
+from data.settings import ToggleCloneType, ToggleSpeed, ToggleMode, CycleLogLevel, GetLogLevel
 from processes.PB_debug_terminal import PBTerminal
+from data.print import SetLogLevel, LogLevels
 
 def CurrentSpeedEntry():
     if Settings["active"]["Speed"] == "Fast":
@@ -28,6 +29,21 @@ def CurrentCloneTypeEntry():
         return "Change from " + CLONE_TYPE.HTTPS.value + " to " + CLONE_TYPE.SSH.value
     else:
         return "Change from " + CLONE_TYPE.SSH.value + " to " + CLONE_TYPE.HTTPS.value
+
+_log_level_to_enum = {
+    "Error":   LogLevels.ERR,
+    "Warning": LogLevels.WARN,
+    "Notice":  LogLevels.NOTICE,
+    "Info":    LogLevels.INFO,
+}
+
+def CurrentLogLevelEntry():
+    return f"Log level: {GetLogLevel()} (click to cycle)"
+
+def _CycleLogLevel():
+    new_level = CycleLogLevel()
+    if new_level in _log_level_to_enum:
+        SetLogLevel(_log_level_to_enum[new_level])
 
 def SettingsPrologue():
     prologue = ""
@@ -73,6 +89,7 @@ def ShowRepositories():
 SettingsMenu = Menu("Settings Menu")
 SettingsMenu.prologue = SettingsPrologue
 SettingsMenu.AddCallbackEntry(CurrentModeEntry, ToggleMode, "Toggle release type")
+SettingsMenu.AddCallbackEntry(CurrentLogLevelEntry, _CycleLogLevel, "Cycle log verbosity: Error → Warning → Notice → Info")
 SettingsMenu.AddCallbackEntry(CurrentCloneTypeEntry, _ToggleCloneType, "Toggle how clone is performed")
 SettingsMenu.AddCallbackEntry(CurrentSpeedEntry, ToggleSpeed, "Toggle fast vs stable behaviors")
 SettingsMenu.AddCallbackEntry("Create dependency graph", CreateDependencyGraph, "Create a graph based on repo dependencies")

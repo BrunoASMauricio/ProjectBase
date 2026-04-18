@@ -16,8 +16,11 @@ ActiveProjectName = ""
 DEFAULT_SETTINGS = {
     "Speed":      "Safe",
     "Mode":       "Debug",
-    "Clone Type": CLONE_TYPE.SSH.value
+    "Clone Type": CLONE_TYPE.SSH.value,
+    "Log Level":  "Error"
 }
+
+LOG_LEVEL_OPTIONS = ["Error", "Warning", "Notice", "Info"]
 
 def ErrorCheckLogs(exception):
     print(f"ERROR: Check logs at {Settings["log_file"]} for more information")
@@ -39,7 +42,7 @@ def SetBranch(branch):
     Settings.save_persisted_settings()
 
 def GetBranch():
-    if "Branch" in Settings["active"].keys() and Settings["active"]["Branch"] != None:
+    if "Branch" in Settings["active"].keys() and Settings["active"]["Branch"] is not None:
         return Settings["active"]["Branch"]
     # No project-wide branch configured
     return None
@@ -53,6 +56,20 @@ def ToggleMode():
 
     if current_type != Settings["active"]["Mode"]:
         Settings.save_persisted_settings()
+
+def GetLogLevel():
+    return Settings["active"].get("Log Level", "Error")
+
+def CycleLogLevel():
+    current = GetLogLevel()
+    try:
+        idx = LOG_LEVEL_OPTIONS.index(current)
+    except ValueError:
+        idx = 0
+    next_level = LOG_LEVEL_OPTIONS[(idx + 1) % len(LOG_LEVEL_OPTIONS)]
+    Settings["active"]["Log Level"] = next_level
+    Settings.save_persisted_settings()
+    return next_level
 
 """
 Return True if the clone type changed
@@ -80,10 +97,10 @@ class SETTINGS(dict):
 
     def start(self):
         # Commit or branch
-        if self["commit"] != None and self["branch"] != None:
+        if self["commit"] is not None and self["branch"] is not None:
             Abort("Please use either commit or branch, not both")
 
-        if self["url"] == None and (self["commit"] != None or self["branch"] != None):
+        if self["url"] is None and (self["commit"] is not None or self["branch"] is not None):
             Abort("If you provide a commit/branch, you also need to provide a URL")
 
         # Set base project settings
@@ -143,7 +160,7 @@ class SETTINGS(dict):
             with open(self["commitJsonPath"], "r") as f:
                self["commitJson"] = json.load(f)
 
-            if(self["url"] is None):
+            if self["url"] is None:
                 raise ValueError("In CI Build, url should always be provided")
 
     def save_persisted_settings(self):
