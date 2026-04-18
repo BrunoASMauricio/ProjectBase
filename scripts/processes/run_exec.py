@@ -294,9 +294,17 @@ def RunSingleTest():
 def RunSingleExecutable():
     ExecuteMenu(Settings["paths"]["executables"])
 
-def _RunAllTests(Prefix=""):
+def _RunAllTests(Prefix="", module_filter=None):
     all_outputs = []
     tests = __GetAvailableExecutables(Settings["paths"]["tests"])
+
+    # Apply module filter when requested
+    if module_filter is not None:
+        tests = [t for t in tests if _GetTestModule(t) == module_filter]
+        if not tests:
+            print(ColorFormat(Colors.Yellow,
+                  f"No tests found in module '{module_filter}'."))
+            return []
 
     print("Running " + str(len(tests)) + " tests in " + Settings["paths"]["tests"].replace(Settings["paths"]["project base"], ""))
     # Allow python scripts to use ProjectBase scripts
@@ -326,9 +334,9 @@ def _RunAllTests(Prefix=""):
 
     return all_outputs
 
-def RunAllTests():
+def RunAllTests(module_filter=None):
     errors = []
-    all_outputs = _RunAllTests()
+    all_outputs = _RunAllTests(module_filter=module_filter)
     for output in all_outputs:
         if output["code"] != 0:
             header_msg = ColorFormat(Colors.Red, output["test name"] + " ( " + str(output["code"]) + " )")
@@ -350,6 +358,59 @@ def RunAllTests():
 
     print(ColorFormat(Colors.Red, f"\nErrors reported {len(errors)}\n" + ("="*40)+"\n" + '\n'.join(errors) + "\n" + ("="*40)))
     print(ColorFormat(Colors.Green, "Successes: ["+str(len(all_outputs) - len(errors))+"]"))
+
+def _GetTestModule(test_name):
+    """Extract module/repo name from a test path like /path/to/RepoName_TestName."""
+    basename = os.path.basename(test_name)
+    parts = basename.split("_", 1)
+    return parts[0]
+
+def RunModuleTests():
+    """Show all installed modules with test counts, let user select one, then run its tests."""
+    tests = __GetAvailableExecutables(Settings["paths"]["tests"])
+    if not tests:
+        print(ColorFormat(Colors.Yellow, "No tests found."))
+        return
+
+    # Group tests by module (the repo prefix of each test binary)
+    module_tests = {}
+    for test in sorted(tests):
+        module = _GetTestModule(test)
+        if module not in module_tests:
+            module_tests[module] = []
+        module_tests[module].append(test)
+
+    modules = sorted(module_tests.keys())
+    print("Available modules:")
+    items = []
+    for idx, module in enumerate(modules):
+        count = len(module_tests[module])
+        test_word = "test" if count == 1 else "tests"
+        items.append(f"  [{idx}] {ColorFormat(Colors.Yellow, module)} - {count} {test_word}")
+    PrintInColumns(items)
+
+    print("\nSelect a module by index or name (exit/Ctrl+D to cancel):")
+    try:
+        raw = GetNextInput(single_string=True)
+    except EOFError:
+        return
+
+    if MenuExit(raw) or not raw.strip():
+        return
+
+    if StringIsNumber(raw.strip()):
+        idx = int(raw.strip())
+        if idx < 0 or idx >= len(modules):
+            PrintError(f"Index {idx} out of range")
+            return
+        selected_module = modules[idx]
+    else:
+        selected_module = raw.strip()
+        if selected_module not in module_tests:
+            PrintError(f"Module '{selected_module}' not found")
+            return
+
+    RunAllTests(module_filter=selected_module)
 
 def RunAllTestsWithValgrind():
     errors = 0
