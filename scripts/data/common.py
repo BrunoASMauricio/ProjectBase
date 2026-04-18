@@ -135,6 +135,96 @@ def AssembleTable(rows, sep="|", headers=None):
         msg += f" {sep} ".join((val + " " * (width - len(RemoveAllNonPrintable(val))) for val, width in zip(row, widths)))+"\n"
     return msg
 
+
+"""
+Print pre-formatted strings in aligned columns, fitting as many columns per
+line as the terminal width allows.
+
+Accepted shapes for `items`:
+  - a flat list of strings: printed as a single columnar group.
+  - a list of (header, items_list) tuples: each group is printed under its
+    header (printed verbatim when not None, via `header_fn`). Column widths
+    and column count are computed jointly across ALL groups, so column j on
+    any line of any group sits at the same x-position — cross-group vertical
+    alignment is preserved.
+
+Each column is sized to the widest entry that actually lands in that column,
+across all groups, so a single long outlier in one group does not inflate
+every column in every other group.
+
+Items within a group are laid out column-major (read down, then across).
+Handles ANSI color codes correctly when measuring widths.
+"""
+def PrintInColumns(items, gap=3, header_fn=print):
+    if not items:
+        return
+
+    # Normalize to [(header, items_list), ...]
+    if isinstance(items[0], str):
+        groups = [(None, items)]
+    else:
+        groups = list(items)
+
+    group_lengths = [
+        [PrintableCharacterLength(it) for it in group_items]
+        for _, group_items in groups
+    ]
+    all_lengths = [l for lengths in group_lengths for l in lengths]
+
+    if not all_lengths:
+        for header, _ in groups:
+            if header is not None:
+                header_fn(header)
+        return
+
+    cols, _ = shutil.get_terminal_size(fallback=(80, 24))
+    min_len = min(all_lengths)
+    max_group_size = max(len(g) for _, g in groups)
+    # Upper bound: can't exceed largest group, nor terminal packing limit
+    max_candidate = min(
+        max_group_size,
+        max(1, (cols + gap) // (min_len + gap))
+    )
+
+    num_cols = 1
+    col_widths = [max(all_lengths)]
+    for candidate in range(max_candidate, 0, -1):
+        widths = [0] * candidate
+        for lengths in group_lengths:
+            if not lengths:
+                continue
+            num_rows = (len(lengths) + candidate - 1) // candidate
+            for j in range(candidate):
+                start = j * num_rows
+                end = min(start + num_rows, len(lengths))
+                if start >= end:
+                    continue
+                col_max = max(lengths[start:end])
+                if col_max > widths[j]:
+                    widths[j] = col_max
+        # Last column has no trailing gap
+        total = sum(widths) + gap * (candidate - 1)
+        if total <= cols:
+            num_cols = candidate
+            col_widths = widths
+            break
+
+    for (header, group_items), lengths in zip(groups, group_lengths):
+        if header is not None:
+            header_fn(header)
+        if not group_items:
+            continue
+        num_rows = (len(group_items) + num_cols - 1) // num_cols
+        for row in range(num_rows):
+            line = ""
+            for col in range(num_cols):
+                idx = col * num_rows + row
+                if idx < len(group_items):
+                    padding = col_widths[col] - lengths[idx] + gap
+                    line += group_items[idx] + " " * padding
+            print(line.rstrip())
+
+
 def CLICenterString(string, pad=" "):
     # Color characters count for length :()
     string_len = PrintableCharacterLength(string)

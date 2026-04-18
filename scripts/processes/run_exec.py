@@ -220,22 +220,35 @@ def ExecuteMenu(PathToScan):
 
         PrintInfo("Executables available in "+PathToScan+":")
         executables_available.sort()
-        previous_repo_name = ""
+
+        # Pad index prefix to a fixed width so names align across rows
+        idx_width = len(str(len(executables_available) - 1))
+
+        # Group executables by repo for columnar display
+        grouped = {}
+        ungrouped = []
         for index in range(len(executables_available)):
             exploded = executables_available[index].split("_")
             repo = exploded[0]
             name = '_'.join(exploded[1:])
-            # Parse out path
-            exploded = repo.split("/")
-            repo = exploded[-1]
+            repo = repo.split("/")[-1]
 
+            prefix = f"[{index:>{idx_width}}] "
             if len(name) != 0:
-                if previous_repo_name != repo:
-                    PrintInfo(ColorFormat(Colors.Yellow, "\t<" + repo + ">"))
-                    previous_repo_name = repo
-                print("["+str(index)+"]" +ColorFormat(Colors.Blue, name))
+                if repo not in grouped:
+                    grouped[repo] = []
+                grouped[repo].append(prefix + ColorFormat(Colors.Blue, name))
             else:
-                print("["+str(index)+"] "+ColorFormat(Colors.Yellow, "<" + repo + ">"))
+                ungrouped.append(prefix + ColorFormat(Colors.Yellow, "<" + repo + ">"))
+
+        # Assemble all groups for a single aligned render
+        layout_input = []
+        if ungrouped:
+            layout_input.append((None, ungrouped))
+        for repo, items in grouped.items():
+            layout_input.append((ColorFormat(Colors.Yellow, "\t<" + repo + ">"), items))
+        if layout_input:
+            PrintInColumns(layout_input, header_fn=PrintInfo)
 
         if exec_menu_mesg != "":
             print(exec_menu_mesg)
