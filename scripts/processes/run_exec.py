@@ -412,32 +412,79 @@ def RunModuleTests():
 
     RunAllTests(module_filter=selected_module)
 
+import re as _re
+def _ParseValgrindStats(stderr):
+    """Parse valgrind stderr output and return dict with errors and bytes_lost counts."""
+    errors = 0
+    bytes_lost = 0
+
+    error_match = _re.search(r"ERROR SUMMARY:\s*(\d+)\s+errors", stderr)
+    if error_match:
+        errors = int(error_match.group(1))
+
+    def_lost_match = _re.search(r"definitely lost:\s*([\d,]+)\s+bytes", stderr)
+    if def_lost_match:
+        bytes_lost += int(def_lost_match.group(1).replace(",", ""))
+
+    ind_lost_match = _re.search(r"indirectly lost:\s*([\d,]+)\s+bytes", stderr)
+    if ind_lost_match:
+        bytes_lost += int(ind_lost_match.group(1).replace(",", ""))
+
+    return {"errors": errors, "bytes_lost": bytes_lost}
+
 def RunAllTestsWithValgrind():
     errors = 0
     all_outputs = _RunAllTests("valgrind --fair-sched=yes -s --leak-check=full --track-origins=yes")
     summary_leaks = ""
     summary_no_leaks = ""
+    # Group by module
+    modules = {}
     for output in all_outputs:
-        if "ERROR SUMMARY: 0 errors from 0 contexts" not in output["stderr"]:
-            print(ColorFormat(Colors.Red, f"\t{output["test name"]} ({str(output["code"])})"))
-            if len(output["stderr"]) != 0:
-                print(ColorFormat(Colors.Yellow, "\t\tSTDERR"))
-                print(output["stderr"])
+        module = _GetTestModule(output["test name"])
+        if module not in modules:
+            modules[module] = []
+        stats = _ParseValgrindStats(output.get("stderr", ""))
+        output["_valgrind_errors"] = stats["errors"]
+        output["_valgrind_bytes_lost"] = stats["bytes_lost"]
+        modules[module].append(output)
 
-            if len(output["stdout"]) != 0:
-                print(ColorFormat(Colors.Blue, "\t\tSTDOUT"))
-                print(output["stdout"])
-            errors = errors+ 1
-            summary_leaks += ColorFormat(Colors.Red, f"  {output["test name"]} is leaking\n")
-        else:
-            summary_no_leaks += ColorFormat(Colors.Green, f"  {output["test name"]} is not leaking\n")
+    for module, tests in modules.items():
+        print(ColorFormat(Colors.Yellow, f"=== Module: {module} ==="))
+        for output in tests:
+            if "ERROR SUMMARY: 0 errors from 0 contexts" not in output["stderr"]:
+                print(ColorFormat(Colors.Red, f"\t{output["test name"]} ({str(output["code"])})"))
+                if len(output["stderr"]) != 0:
+                    print(ColorFormat(Colors.Yellow, "\t\tSTDERR"))
+                    print(output["stderr"])
+
+                if len(output["stdout"]) != 0:
+                    print(ColorFormat(Colors.Blue, "\t\tSTDOUT"))
+                    print(output["stdout"])
+                errors = errors + 1
+                summary_leaks += ColorFormat(Colors.Red, f"  {output["test name"]} is leaking\n")
+            else:
+                summary_no_leaks += ColorFormat(Colors.Green, f"  {output["test name"]} is not leaking\n")
 
     if errors == 0:
         print(ColorFormat(Colors.Green, "No leaks found in "+str(len(all_outputs))+" tests!"))
     else:
-        # ErrorSentence = "Leaks found in " + str(errors) + " tests"
-        # print(ColorFormat(Colors.Red, ("="*40)+"\n          " + ErrorSentence + "\n"+("="*40)))
         print(ColorFormat(Colors.Green, "Clean:\t["+str(len(all_outputs) - errors)+"]"))
         print(ColorFormat(Colors.Red, "Leaks:\t["+str(errors)+"]\n"))
         print(summary_no_leaks)
         print(summary_leaks)
+
+    # Print valgrind stats table
+    if all_outputs:
+        print(ColorFormat(Colors.Yellow, "\n=== Valgrind Stats Summary ==="))
+        header = f"{'TestName':<50} {'Errors':>8} {'BytesLost':>12}"
+        print(header)
+        print("-" * len(header))
+        for output in all_outputs:
+            name = os.path.basename(output["test name"])
+            err_count = output.get("_valgrind_errors", 0)
+            bytes_lost = output.get("_valgrind_bytes_lost", 0)
+            row = f"{name:<50} {err_count:>8} {bytes_lost:>12}"
+            if err_count > 0 or bytes_lost > 0:
+                print(ColorFormat(Colors.Red, row))
+            else:
+                print(ColorFormat(Colors.Green, row))
