@@ -132,7 +132,7 @@ def __LocateExecutable(executable, executables_available):
 Parse user input and extract prefix and the actual user input
 """
 def __ParseInput(og_user_input, executables_available):
-    args = None
+    args = ""
 
     input_list = og_user_input.split(" ")
 
@@ -154,9 +154,9 @@ def __ParseInput(og_user_input, executables_available):
 
     # Is there an interactive next argument?
     if len(input_list) > 1:
-        if args != None:
+        if len(args) != 0:
             raise Exception("Unexpected arguments from both next automated command ({args}) and interactive ({og_user_input})")
-        args = [x for x in input_list[1:] if x != ""]
+        args = ' '.join([x for x in input_list[1:] if x != ""])
 
     # Either assemble full command based on modifier, or by itself
     if modifier != None:
@@ -166,7 +166,7 @@ def __ParseInput(og_user_input, executables_available):
                 SetExecMenuMessage(msg)
         else:
             # Text based modifier, just append
-            if args != None:
+            if len(args) != 0:
                 args = ' '.join(args)
             else:
                 args = ' '
