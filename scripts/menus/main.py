@@ -10,6 +10,7 @@ from menus.clean import CleanMenu
 from menus.version import VersioningMenu
 from menus.kconfig import RunMenuConfig
 from menus.ci import CIMenu
+from new import CreateNewRepository
 
 from data.paths import GetProjectBasePath
 from processes.git_operations import GitGetHeadCommit
@@ -35,7 +36,7 @@ def main_description():
         speed_type = ColorFormat(Colors.Yellow, "Fast")
 
     branch = GetBranch()
-    if branch != None:
+    if branch is not None:
         checkedout_branch = ColorFormat(Colors.Magenta, branch)
     else:
         checkedout_branch = ColorFormat(Colors.Grey, "No project wide branch checkedout")
@@ -43,7 +44,7 @@ def main_description():
     PB_commit = GitGetHeadCommit(GetProjectBasePath())
 
     first_time_msg = ""
-    if first_time == True:
+    if first_time is True:
         first_time_msg = ColorFormat(Colors.Magenta, "!Input `?` in any menu for a description of its' operations!\n")
         first_time = False
 
@@ -71,3 +72,4 @@ MainMenu.AddSubmenuEntry("Clean", CleanMenu, "Clean project state (binaries, obj
 MainMenu.AddSubmenuEntry("CI", CIMenu, "Launch CI")
 MainMenu.AddCallbackEntry("Configure Project", RunMenuConfig, "Launch configs")
 MainMenu.AddSubmenuEntry("ProjectBase settings", SettingsMenu, "Configure ProjectBase for the current project")
+MainMenu.AddCallbackEntry("Create new repository", CreateNewRepository, "Interactively create a new repository skeleton")

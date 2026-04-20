@@ -1,99 +1,124 @@
-from time import time
-import argparse
-import logging
-import sys
+"""
+new.py – Interactive repository creation for ProjectBase.
+
+Call CreateNewRepository() from a menu entry or directly.
+"""
+
 import os
+import sys
+import logging
 
-from common import *
-from process import *
-
-if __name__ != "__main__":
-    Abort("This script is not meant to be imported, please run directly")
-
-logging.basicConfig(stream = sys.stdout, level = logging.DEBUG)
-
-def parse_arguments():
-    # Initialize parser
-    parser = argparse.ArgumentParser()
-
-    # Adding optional argument
-    parser.add_argument("-u", "--url", help = "Repository to setup", default=None, required=False)
-
-    parser.add_argument("-s", "--simple",
-                        help = "Basic setup, only ",
-                        default=None, required=False, nargs=1)
-
-    parser.add_argument("-", "--branch",
-                        help = "Root repository's branch",
-                        default=None, required=False, type=str, nargs=1)
-
-    # Read arguments from command line
-    return parser.parse_known_args()
-
-# Get remote repository
-if len(sys.argv) > 1:
-    RemoteRepoUrl = sys.argv[1]
+from data.settings import Settings
+from data.common import SetupTemplate
+from data.git import GetRepoNameFromURL
+from processes.filesystem import CreateDirectory
+from data.json import dump_json_file
+from data.print import PrintInfo, PrintError, PrintWarning
+from data.settings import UserPromptConfirm
+from processes.git_operations import ParseGitResult
 
 
-main_repo_name = GetRepoNameFromURL(RemoteRepoUrl)
-repo_dir = "/tmp/"+main_repo_name+"_"+str(time())
+def CreateNewRepository():
+    """
+    Interactive flow to create a new repository skeleton and push it.
+    Asks for repo name, initial directory, whether to add a README, and
+    whether to add example source files.
+    """
+    print("=== Create New Repository ===\n")
 
-ret = LaunchProcess("git clone \""+RemoteRepoUrl+"\" \""+repo_dir+"\"")
+    # Ask for repo name
+    try:
+        repo_name = input("Repository name: ").strip()
+    except EOFError:
+        PrintWarning("Cancelled.")
+        return
+    if not repo_name:
+        PrintError("Repository name cannot be empty.")
+        return
 
+    # Ask for initial/target directory
+    default_dir = os.path.join(Settings["paths"]["project code"], repo_name)
+    try:
+        repo_dir = input(f"Directory to create repository in [{default_dir}]: ").strip()
+    except EOFError:
+        PrintWarning("Cancelled.")
+        return
+    if not repo_dir:
+        repo_dir = default_dir
 
+    # Ask whether to add README
+    add_readme = UserPromptConfirm("Add a default README?")
 
-# Setup base structure
-repository_structure = [
-    "",
-    "configs",
-    "code/source",
-    "code/headers",
-    "executables",
-    "executables/tests",
-]
-LaunchProcess("mkdir -p "+(' '+repo_dir+'/').join(repository_structure))
+    # Ask whether to add example source files
+    add_example = UserPromptConfirm("Add example source/header/test files?")
 
-# Setup empty dependencies
-LaunchProcess('echo "{}" > '+repo_dir+'/configs/configs.json')
+    # Create directory structure
+    subdirs = [
+        "",
+        "configs",
+        "code/source",
+        "code/headers",
+        "executables",
+        "executables/tests",
+    ]
+    for sub in subdirs:
+        target = os.path.join(repo_dir, sub)
+        CreateDirectory(target)
+        logging.debug(f"Created directory: {target}")
 
-# Setup template readme
-SetupTemplateScript("repository/README.md", repo_dir+"/README.md", {"PROJECTNAME":main_repo_name})
+    # Write empty configs.json
+    configs_json_path = os.path.join(repo_dir, "configs", "configs.json")
+    dump_json_file({}, configs_json_path)
 
-SetupTemplateScript("repository/gitIgnore", repo_dir+"/.gitignore")
+    # Write .gitignore from template if available
+    try:
+        SetupTemplate("repository/gitIgnore", os.path.join(repo_dir, ".gitignore"), {})
+    except FileNotFoundError:
+        pass
 
-# Setup example CMakeLists.txt
-SetupTemplateScript("examples/exampleCustomCMakeLists.txt", repo_dir+"/configs/CMakeLists.txt")
+    # Optionally add README
+    if add_readme:
+        try:
+            SetupTemplate(
+                "repository/README.md",
+                os.path.join(repo_dir, "README.md"),
+                {"PROJECTNAME": repo_name},
+            )
+        except FileNotFoundError:
+            # Fallback: write minimal README
+            with open(os.path.join(repo_dir, "README.md"), "w") as f:
+                f.write(f"# {repo_name}\n")
 
-# Setup example main test
-SetupTemplateScript("examples/exampleTest.cpp", repo_dir+"/executables/tests/test.cpp", {"REPOSITORYNAME":main_repo_name})
+    # Optionally add example files
+    if add_example:
+        vars_ = {"REPOSITORYNAME": repo_name}
+        example_map = {
+            "examples/exampleCustomCMakeLists.txt": "configs/CMakeLists.txt",
+            "examples/exampleTest.cpp":             "executables/tests/test.cpp",
+            "examples/exampleSource.cpp":           "code/source/exampleSource.cpp",
+            "examples/exampleHeader.hpp":           "code/headers/exampleHeader.hpp",
+        }
+        for tmpl, dest in example_map.items():
+            try:
+                SetupTemplate(tmpl, os.path.join(repo_dir, dest), vars_)
+            except FileNotFoundError:
+                logging.warning(f"Template {tmpl} not found, skipping.")
 
-# Setup example source
-SetupTemplateScript("examples/exampleSource.cpp", repo_dir+"/code/source/exampleSource.cpp", {"REPOSITORYNAME":main_repo_name})
+    PrintInfo(f"\nRepository skeleton created at: {repo_dir}")
 
-# Setup example header
-SetupTemplateScript("examples/exampleHeader.hpp", repo_dir+"/code/headers/exampleHeader.hpp", {"REPOSITORYNAME":main_repo_name})
+    # Git init + initial commit + push
+    if UserPromptConfirm("Initialise a git repository and commit the files?"):
+        ParseGitResult("git init", repo_dir)
+        ParseGitResult("git add -A", repo_dir)
+        try:
+            commit_msg = input("[commit message]: ").strip()
+        except EOFError:
+            commit_msg = f"Initial commit for {repo_name}"
+        if not commit_msg:
+            commit_msg = f"Initial commit for {repo_name}"
+        ParseGitResult(f'git commit -m "{commit_msg}"', repo_dir)
 
-os.chdir(repo_dir)
+        if UserPromptConfirm("Push to remote?", default_no=True):
+            ParseGitResult("git push", repo_dir)
 
-LaunchVerboseProcess("git add *")
-LaunchVerboseProcess("git add -u")
-LaunchVerboseProcess("git add .gitignore")
-
-status = Git.GetStatus(repo_dir)
-
-print(ColorFormat(Colors.Green, """
-Repository set up in """+repo_dir+""", verify and commit the changes
-
-Keep in mind that if even 1 source file is listed, a library and a test are automatically generated.
-This is imposed behaviour because, if a repository has code that can be included/linked against, it must both belong to some library file, and have tests to validate its' behaviour and exemplify its' usage.
-For now, validation isn't automatic.
-
-These are the changes to commit, please insert a commit message (or Ctrl+C to cancel)
-( You can always cancel, go to """+repo_dir+""" and adapt these changes to your will )
-"""))
-print(status)
-print("Dont use \" in your commit message")
-commit_message = input("[commit message >]")
-
-LaunchVerboseProcess('git commit -m "'+commit_message+'"')
-LaunchVerboseProcess("git push")
+    PrintInfo("Done.")
