@@ -204,7 +204,7 @@ Default is No (returns False) unless answered affirmatively.
 Respects the automated-input queue (Settings["action"]) so that integration
 tests and command-line automation can supply the answer.
 """
-def UserPromptConfirm(message):
+def UserPromptConfirm(message, default_no = False):
 
     prompt = ColorFormat(Colors.Yellow, f"{message} {YES_NO_PROMPT}: ")
 
@@ -223,5 +223,5 @@ def UserPromptConfirm(message):
         except EOFError:
             return False
 
-    return UserYesNoChoice(answer)
+    return UserYesNoChoice(answer, default_no)
 
