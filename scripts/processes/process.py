@@ -232,6 +232,7 @@ def GetEnvVars():
     return {
         "PYTHONPATH":       Settings["paths"]["scripts"],
         "PB_ROOT_NAME":     Settings["name"],
+        "EXEC_PATH":        Settings["paths"]["executables"],
         # The ':' in `Settings["url"]` is creating serious issues. Commenting for now
         # "PB_ROOT_URL":      Settings["url"],
     }
