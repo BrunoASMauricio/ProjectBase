@@ -35,14 +35,19 @@ class CustomCompleter(object):  # Custom completer
         self.old_len = readline.get_current_history_length()
 
     def complete(self, text, state):
+        # Only complete based on the last word of the current input, not the full line.
+        # This prevents "3 3 " + TAB from trying to complete "3.3" style paths.
+        line_buffer = readline.get_line_buffer()
+        last_word = line_buffer.split(' ')[-1]
+
         # Add paths as options
-        current_opts = self.options + list(glob.glob(os.path.expanduser(text)+'*')+[None])
+        current_opts = self.options + list(glob.glob(os.path.expanduser(last_word)+'*')+[None])
 
         if state == 0:  # on first trigger, build possible matches
-            if not text:
-                self.matches = self.options[:] + current_opts
+            if not last_word:
+                self.matches = self.options[:]
             else:
-                self.matches = [s for s in current_opts if s and s.startswith(text)]
+                self.matches = [s for s in current_opts if s and s.startswith(last_word)]
         try:
             return self.matches[state]
         except IndexError:
