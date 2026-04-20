@@ -205,6 +205,79 @@ def GetDiff():
             msg += f"{CLICenterString(path)}\n"
             msg += f"{diff}\n"
     LaunchPager(msg)
+from menus.menu import GetNextInput, MenuExit
+
+def _SelectModuleRepo():
+    """
+    Present all managed repositories as numbered choices and return the
+    (repo_name, repo_path) tuple for the one the user selects.
+    Returns None if the user cancels.
+    """
+    repos = Project.GetRepositories()
+
+    # Build a name -> repo_id mapping so we display names, not hash IDs
+    name_to_id = {}
+    for repo_id, repo_data in repos.items():
+        name_to_id[repo_data["name"]] = repo_id
+    modules = sorted(name_to_id.keys())
+
+    if not modules:
+        PrintError("No managed repositories found")
+        return None
+
+    print("Available modules:")
+    items = [f"  [{idx}] {ColorFormat(Colors.Yellow, name)}" for idx, name in enumerate(modules)]
+    PrintInColumns(items)
+
+    print("\nSelect a module by index or name (exit/Ctrl+D to cancel):")
+    try:
+        raw = GetNextInput(single_string=True)
+    except EOFError:
+        return None
+
+    if MenuExit(raw) or not raw.strip():
+        return None
+
+    if StringIsNumber(raw.strip()):
+        idx = int(raw.strip())
+        if idx < 0 or idx >= len(modules):
+            PrintError(f"Index {idx} out of range")
+            return None
+        selected = modules[idx]
+    else:
+        selected = raw.strip()
+        if selected not in name_to_id:
+            PrintError(f"Module '{selected}' not found")
+            return None
+
+    repo_id = name_to_id[selected]
+    return selected, repos[repo_id]["repo source"]
+
+def GetFilesDiffForModule():
+    """Show file-statistics diff (--stat) for a single user-selected module."""
+    result = _SelectModuleRepo()
+    if result is None:
+        return
+    repo_name, repo_path = result
+    diff = GetGitFileDiff(repo_path)
+    if len(diff) > 1:
+        PrintInfo(CLICenterString(repo_name))
+        PrintInfo(diff)
+    else:
+        print(ColorFormat(Colors.Yellow, f"No changes in {repo_name}"))
+
+def GetDiffForModule():
+    """Show full content diff for a single user-selected module, via pager."""
+    result = _SelectModuleRepo()
+    if result is None:
+        return
+    repo_name, repo_path = result
+    diff = GetGitDiff(repo_path)
+    if len(diff) > 1:
+        msg = f"{CLICenterString(repo_name)}\n{diff}\n"
+        LaunchPager(msg)
+    else:
+        print(ColorFormat(Colors.Yellow, f"No changes in {repo_name}"))
 
 def DirectlyManageSingleRepository():
     all_paths, known_paths, _ = GetKnownAndUnknownGitRepos()

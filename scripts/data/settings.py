@@ -158,7 +158,7 @@ class SETTINGS(dict):
         # CI Build options (they will mimick original options with extra commit Json option)
         self["commitJsonPath"] = project_args.commitJsonPath
         self["isCI"] = False
-        if(self["commitJsonPath"]):
+        if self["commitJsonPath"]:
             self["isCI"] = True
             with open(self["commitJsonPath"], "r") as f:
                self["commitJson"] = json.load(f)
