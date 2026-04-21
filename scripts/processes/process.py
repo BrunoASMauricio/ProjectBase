@@ -229,13 +229,16 @@ class ProcessError(Exception):
         raise self
 
 def GetEnvVars():
-    return {
-        "PYTHONPATH":       Settings["paths"]["scripts"],
-        "PB_ROOT_NAME":     Settings["name"],
-        "EXEC_PATH":        Settings["paths"]["executables"],
-        # The ':' in `Settings["url"]` is creating serious issues. Commenting for now
-        # "PB_ROOT_URL":      Settings["url"],
-    }
+    env = {}
+    # Settings["paths"] may not be initialized (e.g. in standalone test processes)
+    if "paths" in Settings:
+        env["PYTHONPATH"] = Settings["paths"]["scripts"]
+        env["EXEC_PATH"]  = Settings["paths"]["executables"]
+    if "name" in Settings:
+        env["PB_ROOT_NAME"] = Settings["name"]
+    # The ':' in `Settings["url"]` is creating serious issues. Commenting for now
+    # "PB_ROOT_URL":      Settings["url"],
+    return env
 
 # Setup necessary/useful environment variables
 def SetupLocalEnvVars():

@@ -162,10 +162,12 @@ def RunTests(tests):
 
     # Only clone if PB doesnt exist
     if not os.path.isdir("/tmp/PB"):
-        LaunchCommand(f"[ -d \"\" ] || git clone {PB_url} /tmp/PB")
+        LaunchCommand(f"git clone {PB_url} /tmp/PB")
     else:
         # If it exists, make sure it is up to date
-        LaunchCommand(f"git -C /tmp/PB pull")
+        LaunchCommand(f"git -C /tmp/PB fetch")
+        LaunchCommand(f"git -C /tmp/PB checkout {branch}")
+        LaunchCommand(f"git -C /tmp/PB pull origin {branch}")
 
     try:
         Reset()
@@ -176,11 +178,14 @@ def RunTests(tests):
             Reset()
         print(f"Successfully ran {len(tests)} tests")
     except Exception as ex:
-        log = GetTemporaryPath(tmp_path)
-        WriteFile(log, ReadFile(PB_log))
+        # Save log/output files for debugging if they exist
+        if os.path.isfile(PB_log):
+            log = GetTemporaryPath(tmp_path)
+            WriteFile(log, ReadFile(PB_log))
 
-        out = GetTemporaryPath(tmp_path)
-        WriteFile(out, ReadFile(PB_out))
+        if os.path.isfile(PB_out):
+            out = GetTemporaryPath(tmp_path)
+            WriteFile(out, ReadFile(PB_out))
 
         print(f"Test {test_ind} failed!: {ex}")
         sys.exit(1)

@@ -304,15 +304,15 @@ class GIT_REPO():
         self.instances = []
         self.bare_path = f"{repos_path}/{name}.git"
         self.url  = self.bare_path
-        self.id   = GetRepoIdFromPath(self.bare_path)
         self.name = GetRepoNameFromURL(self.url)
         Assert(name == self.name)
 
         # Initialize remote repository
         LaunchCommand(f"mkdir {self.bare_path}; cd {self.bare_path}; git init --bare {self.bare_path}")
 
-        # Setup first commit data 
+        # Setup first commit data (needed before GetRepoIdFromPath, which reads the first commit hash)
         RepoInit(self)
+        self.id = GetRepoIdFromPath(self.bare_path)
 
     def AddInstance(self, path):
         instance = GIT_REPO_INSTANCE(self, path)
