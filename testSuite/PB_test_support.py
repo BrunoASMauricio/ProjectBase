@@ -25,7 +25,7 @@ def TestNotFile(path):
 def TestFile(path, content=None):
     if False == os.path.isfile(path):
         raise Exception(f"Expected file {path} does not exist")
-    if content != None:
+    if content is not None:
         actual_content = ReadFile(path)
         if content != actual_content:
             raise Exception(f"File content differs:\nExpected: f{content}\nActual: {actual_content}")
@@ -154,7 +154,7 @@ def GetAllCommitsFromPath(path):
     def ParseDiff(diff):
         lines = diff.split('\n')
 
-        if lines[0].startswith("diff") == False:
+        if lines[0].startswith("diff") is False:
             return ""
 
         for ind in range(len(lines)):

@@ -95,7 +95,7 @@ def GetAllRepoBranches(path = None):
     not_pushed = []
     local_branches = ParseBranches(local)
     for local_branch in local_branches:
-        if GitCheckRemoteBranchExists(path, local_branch) == False:
+        if GitCheckRemoteBranchExists(path, local_branch) is False:
             not_pushed.append(local_branch)
 
 

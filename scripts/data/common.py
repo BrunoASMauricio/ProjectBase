@@ -33,7 +33,7 @@ class INDENT_FORMATTER(logging.Formatter):
             stack = inspect.stack()
 
             # For DEBUG logs after base_depth has been set, also print a light version of the stack
-            if self.base_depth == None or record.levelno == logging.INFO:
+            if self.base_depth is None or record.levelno == logging.INFO:
                 relevant_stack = ""
             else:
                 relevant_stack = stack[10:-1*self.base_depth]
@@ -63,7 +63,7 @@ def RemoveDuplicates(lst):
     return list(set(lst))
 
 def AppendToEnvVariable(env_variable, new_value):
-    if new_value == None:
+    if new_value is None:
         new_value = ""
 
     if env_variable not in os.environ.keys():
@@ -84,7 +84,7 @@ Each column is aligned to its' largest member
 
 def AssembleTable(rows, sep="|", headers=None):
     msg = ""
-    if headers != None:
+    if headers is not None:
         hdr_row = []
         for header in headers:
             hdr_row.append(ColorFormat(Colors.Grey, header))
@@ -236,7 +236,7 @@ def RemoveSequentialDuplicates(str, sub_str):
     return NewStr
 
 def IsEmpty(object):
-    if object == None:
+    if object is None:
         return True
 
     if type(object) == type({}):
@@ -268,7 +268,7 @@ def GetValueOrDefault(dict, name, default = None):
     if name in dict.keys():
         # If there is a default value, enforce the type is the same to the
         # existing value
-        if default != None and type(default) != type(dict[name]):
+        if default is not None and type(default) != type(dict[name]):
             raise Exception(f"Incorrect type \"{type(dict[name])}\" for value named {name}. Should be {type(default)}")
         return dict[name]
     return default
@@ -278,11 +278,11 @@ Remove 'None' elements from a list
 """
 def RemoveEmpty(iterable):
     if type(iterable) == type(list()):
-        return [list_el for list_el in iterable if IsEmpty(list_el) == False]
+        return [list_el for list_el in iterable if IsEmpty(list_el) is False]
     else:
         new_dict = {}
         for key in iterable:
-            if IsEmpty(iterable[key]) == False:
+            if IsEmpty(iterable[key]) is False:
                 new_dict[key] = iterable[key]
         return new_dict
 def StringIsNumber(Str):
@@ -353,7 +353,7 @@ If obj is string, returns it
 Otherwise assumes it is a function that returns a string, calls that function and returns the result
 """
 def GetText(obj):
-    if obj == None:
+    if obj is None:
         return ""
     # Only accept strings or functions
     if type(obj) == type(""):

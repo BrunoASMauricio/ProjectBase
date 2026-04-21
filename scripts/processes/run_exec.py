@@ -159,12 +159,12 @@ def __ParseInput(og_user_input, executables_available):
     input_list = og_user_input.split(" ")
 
     modifier, input_list = __GetModifier(input_list)
-    if input_list == None:
+    if input_list is None:
         return None
 
     # Locate executable. After modifier has been parsed out, the executable is the first element
     executable = __LocateExecutable(input_list[0], executables_available)
-    if executable == None:
+    if executable is None:
         PrintError(f"Executable not found for input: {og_user_input}")
         return None
 
@@ -181,10 +181,10 @@ def __ParseInput(og_user_input, executables_available):
         args = ' '.join([x for x in input_list[1:] if x != ""])
 
     # Either assemble full command based on modifier, or by itself
-    if modifier != None:
+    if modifier is not None:
         if type(modifier["cmd"]) == type(__ParseInput):
             full_command, msg = modifier["cmd"](executable, args)
-            if msg != None:
+            if msg is not None:
                 SetExecMenuMessage(msg)
         else:
             # Text based modifier, just append
@@ -282,7 +282,7 @@ def ExecuteMenu(PathToScan):
         try:
             # Properly parse input
             full_command = ParseInput(GetNextInput(single_string=True), executables_available)
-            if full_command == None:
+            if full_command is None:
                 continue
 
             print("Running: \"" + full_command + "\"")

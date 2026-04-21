@@ -52,7 +52,7 @@ def ParseConfigs(configs, variable_data):
             elif type(config) == type({}):
                 configs[i] = ParseConfigs(config, variable_data)
 
-            elif config == None:
+            elif config is None:
                 pass
             else:
                 pass
@@ -76,7 +76,7 @@ def ParseConfigs(configs, variable_data):
             elif type(config) == type({}):
                 configs[key] = ParseConfigs(config, variable_data)
 
-            elif config == None:
+            elif config is None:
                 pass
             else:
                 pass
@@ -128,7 +128,7 @@ global_configs_state = {}
 def UpdateState(folder_path, current_state=None):
     global global_configs_state
 
-    if current_state == None:
+    if current_state is None:
         current_state = __GetConfigsFolderState(folder_path)
 
     global_configs_state[folder_path] = current_state
@@ -142,7 +142,7 @@ def ConfigsChanged(folder_path):
     # Configs dont exist
     if not os.path.isdir(folder_path):
         # Did they exist before?
-        if folder_path in global_configs_state.keys() and global_configs_state[folder_path] != None:
+        if folder_path in global_configs_state.keys() and global_configs_state[folder_path] is not None:
             # Delete and return confirmation of change
             return f"was removed (used to be at {global_configs_state[folder_path]})"
         return None
@@ -150,7 +150,7 @@ def ConfigsChanged(folder_path):
     current_state = __GetConfigsFolderState(folder_path)
 
     # Configs exist, are they already loaded?
-    if folder_path not in global_configs_state.keys() or global_configs_state[folder_path] == None:
+    if folder_path not in global_configs_state.keys() or global_configs_state[folder_path] is None:
         return "was not loaded"
 
     # Configs existed, load current and previous state

@@ -133,7 +133,7 @@ from data.common import PrintError, PrintWarning
 
 def __AbortRebaseOrMerge(outputs, operation):
     for path, output in outputs.items():
-        if output.error_nessage != None:
+        if output.error_nessage is not None:
             if operation == "rebase":
                 if CheckRebaseOperationConflict(output.returned["out"]):
                     GitRebaseOrMergeAbort(path, operation)
@@ -147,7 +147,7 @@ def _RebaseOrMergeBranch(branch_name, operation):
     statuses = RunOnAllManagedRepos(GetRepoStatus)
     bad_stats = []
     for path, status in statuses.items():
-        if CheckIfStatusIsClean(status) == False:
+        if CheckIfStatusIsClean(status) is False:
             bad_stats.append(path)
 
     if len(bad_stats) != 0:
@@ -163,7 +163,7 @@ def _RebaseOrMergeBranch(branch_name, operation):
 
     issue = False
     for path, output in outputs.items():
-        if output.error_nessage != None:
+        if output.error_nessage is not None:
             issue = True
 
     if issue:
@@ -424,7 +424,7 @@ def __AssembleReposStatusMessage(statuses)-> ProjectStatusInfo:
 
 def CheckoutBranch():
     branch = GetNextInput("New branch name: ")
-    while IsValidGitBranch(branch) == False:
+    while IsValidGitBranch(branch) is False:
         PrintWarning("Invalid git branch")
         branch = GetNextInput("New branch name: ")
 

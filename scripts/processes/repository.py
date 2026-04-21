@@ -78,11 +78,11 @@ def __LoadRepositoryFolder(imposed_configs):
     current_location = None
 
     # We already have cached metadata on this repo
-    if repo_id in repositories.keys() and repositories[repo_id] != None and repositories[repo_id]["reloaded"] == True:
+    if repo_id in repositories.keys() and repositories[repo_id] is not None and repositories[repo_id]["reloaded"] is True:
         repository = repositories[repo_id]
         # Is the repository where we expect it to be?
         current_location  = FindGitRepo(repository["full worktree path"], imposed_configs["url"], imposed_configs["commitish"], depth=1)
-        if current_location == None:
+        if current_location is None:
             logging.warning(f"Repo {imposed_configs["name"]} is not in the expected path of: {repository["full worktree path"]}")
             state_changed_detected = True
 
@@ -93,7 +93,7 @@ def __LoadRepositoryFolder(imposed_configs):
         state_changed_detected = True
 
     # Try to see if repository is still on the cached localization
-    if current_location == None:
+    if current_location is None:
         if "repo source" in imposed_configs:
             repo_path_cached = imposed_configs["repo source"]
             if repo_path_cached != "":
@@ -102,11 +102,11 @@ def __LoadRepositoryFolder(imposed_configs):
                     current_location = repo_path_cached
 
     # Repo path unknown, or not where expected. Find repository
-    if current_location == None:
+    if current_location is None:
         current_location = FindGitRepo(Settings["paths"]["project code"], imposed_configs["url"], imposed_configs["commitish"])
 
     # Repo nowhere to be found, add it
-    if current_location == None:
+    if current_location is None:
         PrintWarning(f"Repository {imposed_configs} not found")
         # Setup helper worktree
         helper_path = AddWorkTree(imposed_configs["bare path"], imposed_configs["url"], imposed_configs["commitish"], Settings["paths"]["temporary"])
@@ -199,7 +199,7 @@ def __RunRepoCommands(command_set_name, commands):
             except ProcessError as proc_error:
                 if proc_error.returned["code"] == 1:
                     result = False
-            if result == False:
+            if result is False:
                 PrintDebug("\t Condition to proceed: '" + proceed_condition + "' is False, skipping " + str(len(command_list)) + " commands")
                 return
 
@@ -245,18 +245,18 @@ def ConflictsPresent(dependency_configs):
         conflict = True
         configs = repositories[url_to_id[dep_url]]
 
-        if __ConflictingConfigs(dependency_configs, configs) == True:
+        if __ConflictingConfigs(dependency_configs, configs) is True:
             msg = CLICenterString(f"Incompatible configs for url {dep_url} (1)", "X")
             msg = f"{msg}\nA: {pformat(dependency_configs)}\nB: {pformat(configs)}"
 
     ## It is setup to be loaded next
     if dep_url in next_dependencies.keys():
         conflict = True
-        if __ConflictingConfigs(dependency_configs, next_dependencies[dep_url]) == True:
+        if __ConflictingConfigs(dependency_configs, next_dependencies[dep_url]) is True:
             msg = CLICenterString(f"Incompatible configs for url {dep_url} (2)", "X")
             msg = f"{msg}\nA: {pformat(dependency_configs)}\nB: {pformat(next_dependencies[dep_url])}"
 
-    if msg != None:
+    if msg is not None:
         raise Exception(msg)
 
     return conflict
@@ -269,7 +269,7 @@ def __AddNewDependency(dependency_configs):
     global next_dependencies
 
     with repositories_lock:
-        if ConflictsPresent(dependency_configs) == True:
+        if ConflictsPresent(dependency_configs) is True:
             return
 
         next_dependencies[dependency_configs["url"]] = dependency_configs
@@ -318,11 +318,11 @@ def _LoadRepository(imposed_configs):
                     # This means that settings should use the path ont he file system that has commits not in the remote in CI build
                     dependency_configs["url"] = Settings["commitJson"][dependency_configs["url"]]
 
-            if "commit" in base_dependency and base_dependency["commit"] != None:
+            if "commit" in base_dependency and base_dependency["commit"] is not None:
                 dependency_configs["commitish"] = {}
                 dependency_configs["commitish"]["type"] = "commit"
                 dependency_configs["commitish"]["commit"] = base_dependency["commit"]
-            elif "branch" in base_dependency and base_dependency["branch"] != None:
+            elif "branch" in base_dependency and base_dependency["branch"] is not None:
                 dependency_configs["commitish"] = {}
                 dependency_configs["commitish"]["type"] = "branch"
                 dependency_configs["commitish"]["branch"] = base_dependency["branch"]
@@ -362,7 +362,7 @@ def LoadRepositories(root_configs, cache_path):
     # Load repositories from cache (if any)
     LoadReposFromCache(cache_path)
 
-    if root_data == None:
+    if root_data is None:
         # No root set. Configure it (first load)
         root_configs["bare path"] = GetBareGit(root_configs["url"])
         root_configs["repo ID"]   = GetRepoIdFromPath(root_configs["bare path"])
@@ -414,7 +414,7 @@ def LoadRepositories(root_configs, cache_path):
         PrintInfo("Finished dependency round")
         repos_being_loaded.clear()
 
-    if state_changed_detected == True:
+    if state_changed_detected is True:
         PrintInfo("Saving "+str(len(repositories))+" repositories in cache")
         SaveReposToCache(repositories, cache_path)
 
@@ -434,7 +434,7 @@ def __InitKconfigRepoSettings(repositories):
                 logging.error(f"Invalid Kconfig file path {kconfig_path}")
                 kconfig_path = None
 
-        if kconfig_path == None:
+        if kconfig_path is None:
             kconfig_path = JoinPaths(repository['current repo path'], "configs", "Kconfig")
             logging.error(f"kconfig path path {kconfig_path}")
             if not os.path.isfile(kconfig_path):

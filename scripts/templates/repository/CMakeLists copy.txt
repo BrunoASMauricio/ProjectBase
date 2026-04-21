@@ -1,0 +1,216 @@
+# PROJECTBASE
+### <- CMake related configs (dont change)
+##  <- Project related templates (adapt)
+#   <- Project specific add-ons (add as needed)
+
+### RESPECT THE CURRENT ORDER OF COMMANDS
+function(filter_existing_dirs out_var)
+    set(result "")
+    foreach(d ${ARGN})
+        if(IS_DIRECTORY "${d}")
+            list(APPEND result "${d}")
+        endif()
+    endforeach()
+    set(${out_var} "${result}" PARENT_SCOPE)
+endfunction()
+
+### Remove existing variables
+unset(repository_source_files)
+unset(REPO_NAME)
+unset(REPO_ID)
+unset(REPO_SRC_PATH)
+unset(REPO_BUILD_PATH)
+unset(REPO_EXEC_PATH)
+unset(REPO_TESTS_PATH)
+unset(REPO_LIB_PATH)
+
+unset(PUBLIC_HEADERS)
+unset(PRIVATE_HEADERS)
+unset(TEST_HEADERS)
+unset(DEPENDENCY_LIBS)
+unset(EXECUTABLES)
+unset(REP_C_FLAGS)
+unset(CUSTOM_C_FLAGS)
+unset(REP_DEBUG_C_FLAGS)
+unset(REP_RELEASE_C_FLAGS)
+
+### Setup useful variables
+SET(REPO_NAME       $$REPO_NAME$$)
+SET(REPO_ID         $$REPO_ID$$)
+SET(REPO_SRC_PATH   $$REPO_SRC_PATH$$)
+SET(REPO_BUILD_PATH $$REPO_BUILD_PATH$$)
+SET(REPO_EXEC_PATH  $$REPO_EXEC_PATH$$)
+SET(REPO_TESTS_PATH $$REPO_TESTS_PATH$$)
+SET(REPO_LIB_PATH   $$REPO_LIB_PATH$$)
+
+### Obtain this repositorys' name
+get_filename_component(RepositoryName $$REPO_SRC_PATH$$ NAME)
+string(REPLACE " " "_" RepositoryName ${RepositoryName})
+
+MESSAGE("Generating ${RepositoryName}")
+
+link_directories(${PROJ_LIB_PATH}/elfutils/elfutils)
+
+### Headers available from dependency repositories
+SET(PUBLIC_HEADERS
+$$PUBLIC_INCLUDES$$
+)
+
+### Headers local to this repository
+SET(PRIVATE_HEADERS
+$$PRIVATE_INCLUDES$$
+)
+
+### Headers for testing only
+SET(TEST_HEADERS
+$$TESTS_INCLUDES$$
+)
+
+filter_existing_dirs(PUBLIC_HEADERS  ${PUBLIC_HEADERS})
+filter_existing_dirs(PRIVATE_HEADERS ${PRIVATE_HEADERS})
+filter_existing_dirs(TEST_HEADERS    ${TEST_HEADERS})
+
+SET(DEPENDENCY_LIBS
+$$LINK_DEPENDENCIES$$
+)
+
+SET(EXECUTABLES)
+SET(TESTS)
+
+### Load build spec.
+### Priority 1: the repository's own hand-written configs/CMakeLists.txt
+###             (backward-compatible path — existing repos are unchanged).
+### Priority 2: a PB-generated pb_build_spec.cmake derived from the "build"
+###             section in configs.json.
+### If neither exists the lists stay empty and nothing is compiled (no-code repo).
+if(EXISTS $$REPO_SRC_PATH$$/configs/CMakeLists.txt)
+	include($$REPO_SRC_PATH$$/configs/CMakeLists.txt)
+elseif(EXISTS $$REPO_BUILD_PATH$$/pb_build_spec.cmake)
+	include($$REPO_BUILD_PATH$$/pb_build_spec.cmake)
+endif()
+
+### Assemble base flags (applied to all targets: library, executables, tests)
+SET(CUSTOM_C_FLAGS "")
+if( DEFINED REP_C_FLAGS )
+	LIST(APPEND CUSTOM_C_FLAGS ${REP_C_FLAGS})
+endif()
+IF ( DEFINED REP_DEBUG_C_FLAGS  AND "${BUILD_MODE}" STREQUAL "Debug")
+	LIST(APPEND CUSTOM_C_FLAGS ${REP_DEBUG_C_FLAGS})
+ENDIF()
+IF ( DEFINED REP_RELEASE_C_FLAGS  AND "${BUILD_MODE}" STREQUAL "Release")
+	LIST(APPEND CUSTOM_C_FLAGS ${REP_RELEASE_C_FLAGS})
+ENDIF()
+if(CUSTOM_C_FLAGS)
+    list(REMOVE_DUPLICATES CUSTOM_C_FLAGS)
+endif()
+
+### Assemble target-specific flag sets (merged with base flags)
+SET(LIB_C_FLAGS  ${CUSTOM_C_FLAGS})
+SET(EXE_C_FLAGS  ${CUSTOM_C_FLAGS})
+SET(TEST_C_FLAGS ${CUSTOM_C_FLAGS})
+if( DEFINED REP_LIB_C_FLAGS )
+	LIST(APPEND LIB_C_FLAGS ${REP_LIB_C_FLAGS})
+endif()
+if( DEFINED REP_EXE_C_FLAGS )
+	LIST(APPEND EXE_C_FLAGS ${REP_EXE_C_FLAGS})
+endif()
+if( DEFINED REP_TEST_C_FLAGS )
+	LIST(APPEND TEST_C_FLAGS ${REP_TEST_C_FLAGS})
+endif()
+if(LIB_C_FLAGS)
+    list(REMOVE_DUPLICATES LIB_C_FLAGS)
+endif()
+if(EXE_C_FLAGS)
+    list(REMOVE_DUPLICATES EXE_C_FLAGS)
+endif()
+if(TEST_C_FLAGS)
+    list(REMOVE_DUPLICATES TEST_C_FLAGS)
+endif()
+if(PUBLIC_HEADERS)
+    list(REMOVE_DUPLICATES PUBLIC_HEADERS)
+endif()
+if(PRIVATE_HEADERS)
+    list(REMOVE_DUPLICATES PRIVATE_HEADERS)
+endif()
+if(TEST_HEADERS)
+    list(REMOVE_DUPLICATES TEST_HEADERS)
+endif()
+if(DEPENDENCY_LIBS)
+    list(REMOVE_DUPLICATES DEPENDENCY_LIBS)
+endif()
+
+### In case the build spec defined any source files, create a static library
+list(LENGTH repository_source_files ${RepositoryName}ListSize)
+if( NOT ${RepositoryName}ListSize EQUAL 0)
+
+	### Setup library to be imported by other repositorys
+	add_library(${RepositoryName}_lib STATIC ${repository_source_files})
+
+	target_include_directories(${RepositoryName}_lib
+		PUBLIC
+		${PUBLIC_HEADERS}
+		${PRIVATE_HEADERS}
+		${TEST_HEADERS}
+	)
+
+	target_compile_options(${RepositoryName}_lib PRIVATE ${LIB_C_FLAGS})
+
+	### Allow extra links to be made
+	if( DEFINED extra_libraries_to_link )
+		### Set to PRIVATE to isolate the library
+		target_link_libraries(${RepositoryName}_lib PRIVATE ${extra_libraries_to_link})
+	endif()
+
+	list(APPEND DEPENDENCY_LIBS ${RepositoryName}_lib)
+	list(REMOVE_DUPLICATES DEPENDENCY_LIBS)
+endif()
+
+foreach(EXECUTABLE ${EXECUTABLES})
+	### Setup executable path
+	set_target_properties(${EXECUTABLE} PROPERTIES
+		RUNTIME_OUTPUT_DIRECTORY ${REPO_EXEC_PATH}
+	)
+
+	target_compile_options(${EXECUTABLE} PRIVATE ${EXE_C_FLAGS})
+
+	### Include dependency repository directories
+	target_include_directories(${EXECUTABLE}
+		PUBLIC
+		${PUBLIC_HEADERS}
+		${PRIVATE_HEADERS}
+		${TEST_HEADERS}
+	)
+
+	### Link executable to dependency repositories
+	target_link_libraries(${EXECUTABLE}
+		-Wl,--whole-archive
+		${DEPENDENCY_LIBS}
+		-Wl,--no-whole-archive
+	)
+endforeach()
+
+foreach(TEST ${TESTS})
+
+	### Setup test path
+	set_target_properties(${TEST} PROPERTIES
+		RUNTIME_OUTPUT_DIRECTORY ${REPO_TESTS_PATH}
+	)
+
+	### Use repository specific C Flags
+	target_compile_options(${TEST} PRIVATE ${TEST_C_FLAGS})
+
+	### Include dependency repository directories
+	target_include_directories(${TEST}
+		PUBLIC
+		${PUBLIC_HEADERS}
+		${PRIVATE_HEADERS}
+		${TEST_HEADERS}
+	)
+
+	### Link test against dependency repositories (whole-archive for static libs)
+	target_link_libraries(${TEST}
+		-Wl,--whole-archive
+		${DEPENDENCY_LIBS}
+		-Wl,--no-whole-archive
+	)
+endforeach()

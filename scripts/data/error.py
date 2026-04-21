@@ -60,7 +60,7 @@ Abort if a condition is false
 """
 def Assert(condition, message=None):
     if not condition:
-        if message == None:
+        if message is None:
             Abort("Failed condition")
         else:
             Abort(message)

@@ -166,7 +166,7 @@ def _Test5(branch, push):
     ], PB_out)
     # Test with pushing the branches to the remote and without
     # Result should be the same
-    if push == True:
+    if push is True:
         # Push branch and check the warning no longer appears
         RunPB(repo_a.url, "1 2 5 3 2 4 2", branch)
         TestInFile([

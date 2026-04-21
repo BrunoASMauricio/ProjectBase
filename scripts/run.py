@@ -42,7 +42,7 @@ logging.info("\n\n\n=============== PROJECTBASE start ===============")
 logging.info("=============== at " + GetNow() + " ===============")
 logging.info("=============== at " + os.getcwd() + " ===============")
 
-if Settings["debug"] == True:
+if Settings["debug"] is True:
     for handler in logging.getLogger().handlers:
         handler.setFormatter(Formatter)
 

@@ -58,7 +58,7 @@ def GetNextInput(prompt = "[<] ", single_string = False):
         print("[< Auto " + prompt + " <] {" + next_input + "}")
     else:
         # Called with --exit and no command, just exit
-        if Settings["exit"] == True:
+        if Settings["exit"] is True:
             raise EOFError
         next_input = input(prompt)
 
@@ -74,7 +74,7 @@ def GetNextInput(prompt = "[<] ", single_string = False):
 
 def MenuExit(input):
     # If "exit" is entered, ProjectBase exits ()
-    # if Settings["exit"] == True or input == "out":??
+    # if Settings["exit"] is True or input == "out":??
     if input == "out":
         return True
     if input == "exit":
@@ -99,7 +99,7 @@ class Menu():
         self.help = help
         self.name = None
         # Make sure menus don't have colliding names
-        if name != None:
+        if name is not None:
             name = RemoveNonAlfanumeric(name)
             Assert(name not in all_menu_names, "Repeated name " + name)
             self.history_file = JoinPaths(Settings["paths"]["history"], name)
@@ -158,7 +158,7 @@ class Menu():
                 index += 1
 
                 # Print help information
-                if help == True and len(entry) == 4 and entry[3] != None:
+                if help is True and len(entry) == 4 and entry[3] is not None:
                     table_entry.append(f" {ColorFormat(Colors.Green, entry[3])}")
                 else:
                     table_entry.append("")
@@ -191,7 +191,7 @@ class Menu():
                     break
                 current_index += 1
 
-        if picked_entry == None:
+        if picked_entry is None:
             print("Menu has " + str(current_index) + " entries, input " + str(index) + " is not valid")
             return
 
@@ -232,7 +232,7 @@ class Menu():
             current_time = time.time()
 
             # First try
-            if previous_time == None:
+            if previous_time is None:
                 previous_time = current_time
                 current_tries -= 1
                 return
@@ -266,7 +266,7 @@ class Menu():
                     print(self.GetMenu(depth, help))
 
                 help = False
-                if previous_command != None:
+                if previous_command is not None:
                     print("Previous command: " +str(previous_command))
 
                 # Setup completer
@@ -274,7 +274,7 @@ class Menu():
                 # Get next input and save to history
                 try:
                     next_input_str = GetNextInput()
-                    if (MenuExit(next_input_str) == True):
+                    if (MenuExit(next_input_str) is True):
                         return Settings.return_code
                     
                     next_input = int(next_input_str)
@@ -291,7 +291,7 @@ class Menu():
                         help = True
                         continue
 
-                    if previous_invalid == False:
+                    if previous_invalid is False:
                         print("Invalid input")
                         previous_invalid = True
                     continue
@@ -311,7 +311,7 @@ class Menu():
                 # An error has already been printed, stop here
                 PrintError(f"\nA thread errored out, operation canceled: {ex}")
 
-                if Settings["exit"] == True:
+                if Settings["exit"] is True:
                     PrintNotice("\nEarly exit")
                     raise ex
             except EOFError:
@@ -328,5 +328,5 @@ class Menu():
 
             # Always reset directory after running an operation
             os.chdir(current_dir)
-            if self.stay_in_menu == False:
+            if self.stay_in_menu is False:
                 break

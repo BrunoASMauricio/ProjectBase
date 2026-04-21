@@ -111,7 +111,7 @@ def LazyAccepBothChanges(src_path):
             if line.startswith(marker):
                 skip = True
                 break
-        if skip == True:
+        if skip is True:
             continue
         new_data.append(line)
         # print(line)

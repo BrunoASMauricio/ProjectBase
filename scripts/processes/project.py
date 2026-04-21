@@ -66,11 +66,11 @@ class PROJECT(dict):
         # Build root repo configs from CLI
         self.root_repo_base_config = {"url": Settings["url"]}
 
-        if "commit" in Settings and Settings["commit"] != None:
+        if "commit" in Settings and Settings["commit"] is not None:
             self.root_repo_base_config["commitish"] = {}
             self.root_repo_base_config["commitish"]["type"] = "commit"
             self.root_repo_base_config["commitish"]["commit"] = Settings["commit"]
-        elif "branch" in Settings and Settings["branch"] != None:
+        elif "branch" in Settings and Settings["branch"] is not None:
             self.root_repo_base_config["commitish"] = {}
             self.root_repo_base_config["commitish"]["type"] = "branch"
             self.root_repo_base_config["commitish"]["branch"] = Settings["branch"]
@@ -144,7 +144,7 @@ class PROJECT(dict):
             return self.repositories
 
         # print(f"X2 {id(full_load)} {full_load}")
-        if GetFullLoad() == False:
+        if GetFullLoad() is False:
             self.load()
             PrintNotice(f"Last load failed")
             return self.repositories
@@ -155,7 +155,7 @@ class PROJECT(dict):
             # speed it up. TODO 
             for repo_id in self.repositories:
                 config_change = ConfigsChanged(self.repositories[repo_id]["configs path"])
-                if config_change != None:
+                if config_change is not None:
                     PrintNotice(f"Config change detected ({self.repositories[repo_id]["configs path"]}: {config_change}), reloading")
                     self.load()
                     break
