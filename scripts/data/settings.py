@@ -123,7 +123,9 @@ class SETTINGS(dict):
                             help = "Do not run PB in multiple threads",
                             default=False, required=False, action=argparse.BooleanOptionalAction)
 
-        parser.add_argument("--selftest", action='store_true', help="Use the current working directory as the project URL (shorthand for --url=<cwd>)", default=False, required=False)
+        parser.add_argument("--self", action='store_true', dest='use_self', help="Use the current working directory as the project URL (shorthand for --url=<cwd>)", default=False, required=False)
+
+        parser.add_argument("--selftest", action='store_true', help="Run a full self-test: setup, build, and run all tests using cwd as the project URL, then exit with an appropriate error code", default=False, required=False)
 
         parser.add_argument("-e", "--exit", action='store_true', help = "Exit after running command line arguments. Performs early exit in case one of the operations ends in error", default=False, required=False)
 
@@ -142,18 +144,28 @@ class SETTINGS(dict):
         self["out_file"]      = project_args.out_file
 
         if project_args.selftest:
-            self["url"] = os.getcwd()
+            # Full self-test: setup, build, run all tests, then exit
+            self["url"]           = os.getcwd()
+            self["commit"]        = None
+            self["branch"]        = None
+            self["exit"]          = True
+            self["single thread"] = False
+            self["debug"]         = False
+            self["fast"]          = False
+            self["action"]        = ["1", "2", "3", "4"]
         else:
-            self["url"] = project_args.url
-
-        self["commit"]        = project_args.commit
-        self["branch"]        = project_args.branch
-        self["exit"]          = project_args.exit
-        self["single thread"] = project_args.single_thread
-        self["debug"]         = project_args.debug
-        self["fast"]          = project_args.fast
-        # Trailing unknown arguments
-        self["action"] = action_args
+            if project_args.use_self:
+                self["url"]       = os.getcwd()
+            else:
+                self["url"]       = project_args.url
+            self["commit"]        = project_args.commit
+            self["branch"]        = project_args.branch
+            self["exit"]          = project_args.exit
+            self["single thread"] = project_args.single_thread
+            self["debug"]         = project_args.debug
+            self["fast"]          = project_args.fast
+            # Trailing unknown arguments
+            self["action"]        = action_args
 
         # CI Build options (they will mimick original options with extra commit Json option)
         self["commitJsonPath"] = project_args.commitJsonPath
