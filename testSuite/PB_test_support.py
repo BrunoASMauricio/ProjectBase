@@ -1,4 +1,5 @@
 import os
+import sys
 import subprocess
 from pathlib import Path
 
@@ -9,14 +10,47 @@ from processes.process import _LaunchCommand
 from processes.filesystem import RemoveDirectory, CreateDirectory, WriteFile, ReadFile, CreateParentDirectory, NewRandomName
 from data.json import dump_json_file, load_json_file
 
-base_path = "/tmp/PBTests"
-tmp_path = f"{base_path}/tmp"
-repos_path = f"{base_path}/RemoteRepos"
-PB_path = f"{base_path}/ProjectBase"
-PB_out = f"{base_path}/PBOut"
-PB_log = f"{base_path}/PBLog"
-test_path = f"{base_path}/Tests"
 PB_url = "https://gitlab.com/brunoasmauricio/ProjectBase"
+
+# Per-test paths, initialized by InitTestPaths()
+base_path = ""
+tmp_path = ""
+repos_path = ""
+PB_path = ""
+PB_out = ""
+PB_log = ""
+test_path = ""
+
+_PATH_NAMES = ["base_path", "tmp_path", "repos_path", "PB_path", "PB_out", "PB_log", "test_path"]
+
+def InitTestPaths():
+    """
+    Derive a unique base directory from the test executable name,
+    so that parallel test suites don't interfere with each other.
+    Updates the path globals in this module and in every module that
+    imported them via 'from PB_test_support import *'.
+    """
+    global base_path, tmp_path, repos_path, PB_path, PB_out, PB_log, test_path
+    test_name = Path(sys.argv[0]).stem
+    base_path  = f"/tmp/PBTests/{test_name}"
+    tmp_path   = f"{base_path}/tmp"
+    repos_path = f"{base_path}/RemoteRepos"
+    PB_path    = f"{base_path}/ProjectBase"
+    PB_out     = f"{base_path}/PBOut"
+    PB_log     = f"{base_path}/PBLog"
+    test_path  = f"{base_path}/Tests"
+
+    # Propagate to all modules that copied these names via 'from ... import *'
+    new_values = {name: globals()[name] for name in _PATH_NAMES}
+    for mod in sys.modules.values():
+        if mod is None:
+            continue
+        mod_dict = getattr(mod, "__dict__", None)
+        if mod_dict is None:
+            continue
+        for name, val in new_values.items():
+            if name in mod_dict:
+                mod_dict[name] = val
 
 def TestNotFile(path):
     if True == os.path.isfile(path):

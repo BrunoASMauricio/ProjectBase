@@ -37,7 +37,7 @@ class GIT_CMD():
             self.proc_error = ex
             self.returned = ex.returned
 
-        if Settings["debug"]:
+        if Settings.get("debug", False):
             logging.debug(f"Git Operation return: {self.returned}")
 
     def __str__(self):

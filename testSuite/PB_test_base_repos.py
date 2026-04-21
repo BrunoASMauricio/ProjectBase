@@ -150,6 +150,8 @@ def CreateBaseRepos():
     return repo_a, repo_b, repo_c, repo_d
 
 def RunTests(tests):
+    InitTestPaths()
+
     if len(sys.argv) == 1:
         branch = "main"
     else:
@@ -165,9 +167,7 @@ def RunTests(tests):
         LaunchCommand(f"git clone {PB_url} /tmp/PB")
     else:
         # If it exists, make sure it is up to date
-        LaunchCommand(f"git -C /tmp/PB fetch")
-        LaunchCommand(f"git -C /tmp/PB checkout {branch}")
-        LaunchCommand(f"git -C /tmp/PB pull origin {branch}")
+        LaunchCommand(f"git -C /tmp/PB pull")
 
     try:
         Reset()
