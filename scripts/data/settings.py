@@ -144,8 +144,25 @@ class SETTINGS(dict):
         self["out_file"]      = project_args.out_file
 
         if project_args.selftest:
-            # Full self-test: setup, build, run all tests, then exit
-            self["url"]           = os.getcwd()
+            # Full self-test: setup, build, run all tests, then exit.
+            # Clean any cached project state so we always test from scratch
+            # with the latest committed code.
+            import shutil
+            from data.git import GetRepoNameFromURL, GetRepoBareTreePath
+            from data.paths import GetBasePaths
+            url = os.getcwd()
+            project_name = GetRepoNameFromURL(url)
+            base_paths = GetBasePaths()
+            project_dir = f"{base_paths['project base']}/projects/{project_name}.ProjectBase"
+            cache_dir = f"{base_paths['caches']}/{project_name}"
+            bare_git_dir = GetRepoBareTreePath(base_paths["bare gits"], url)
+            for path in [project_dir, bare_git_dir]:
+                if os.path.isdir(path):
+                    shutil.rmtree(path)
+            if os.path.exists(cache_dir):
+                os.remove(cache_dir)
+
+            self["url"]           = url
             self["commit"]        = None
             self["branch"]        = None
             self["exit"]          = True
