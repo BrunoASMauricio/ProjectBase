@@ -29,7 +29,7 @@ def Test2(branch):
     data_to_print =  AddPrintToExecBreaking(inst_1.path, 0)
 
     inst_1.Add(f"{inst_1.path}/{src_file}").Commit("Add print").Push()
-    RunPB(repo_a.url, "1 5 3 1", branch)
+    RunPB(repo_a.url, "1 5 4 1", branch)
     try:
         return_info = RunPB(repo_a.url, "1 7 1", branch)
     except CommandExecutionError as e:
@@ -75,7 +75,7 @@ def Test4(branch):
     inst_1.Add(f"{inst_1.path}/{src_file}").Commit("Add print 1").Push()
 
     # Attempt to update PB
-    RunPB(repo_a.url, "1 2 5 3 1", branch)
+    RunPB(repo_a.url, "1 2 5 4 1", branch)
     # Validate message
     TestInFile(["source/code.c: needs merge", "WARNING: Code needs merge"], PB_out)
 

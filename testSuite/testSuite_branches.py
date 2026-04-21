@@ -12,7 +12,7 @@ def Test1(branch):
     RunPB(repo_a.url, "1 2 3 3", branch)
     TestInFile("Built target RepoA_RepoA_Test", PB_out)
 
-    RunPB(repo_a.url, "1 5 4 1", branch)
+    RunPB(repo_a.url, "1 5 5 1", branch)
     TestInFile([
     " | RepoA | master | master",
     " | RepoB | master | master",
@@ -21,7 +21,7 @@ def Test1(branch):
     ], PB_out)
 
     # Create new branch and check it out
-    RunPB(repo_a.url, "1 5 4 4 Test 4 1", branch)
+    RunPB(repo_a.url, "1 5 5 4 Test 5 1", branch)
     TestInFile([
     " | RepoA | Test  | Test",
     " | RepoB | Test  | Test",
@@ -29,8 +29,8 @@ def Test1(branch):
     " | RepoC | Test  | Test"
     ], PB_out)
 
-    # Go back to maser
-    RunPB(repo_a.url, "1 5 4 4 master 4 1", branch)
+    # Go back to master
+    RunPB(repo_a.url, "1 5 5 4 master 5 1", branch)
     TestInFile([
     " | RepoA | master | master",
     " | RepoB | master | master",
@@ -49,7 +49,7 @@ def Test2(branch):
     TestInFile("Built target RepoA_RepoA_Test", PB_out)
 
     # Create new branch and validate it exists
-    RunPB(repo_a.url, "1 5 4 4 Test 4 1", branch)
+    RunPB(repo_a.url, "1 5 5 4 Test 5 1", branch)
     TestInFile([
     " | RepoA | Test  | Test",
     " | RepoB | Test  | Test",
@@ -57,7 +57,7 @@ def Test2(branch):
     " | RepoC | Test  | Test"
     ], PB_out)
     # Merge branch
-    RunPB(repo_a.url, "1 2 5 4 5 2", branch)
+    RunPB(repo_a.url, "1 2 5 5 5 2", branch)
     TestInFile("merge with branch master completed with success", PB_out)
     TestNotInFile("There was an issue", PB_out)
 
@@ -76,7 +76,7 @@ def Test3(branch):
     TestInFile("Built target RepoA_RepoA_Test", PB_out)
 
     # Create new branch and validate it exists
-    RunPB(repo_a.url, "1 5 4 4 Test 4 1", branch)
+    RunPB(repo_a.url, "1 5 5 4 Test 5 1", branch)
     TestInFile([
     " | RepoA | Test  | Test",
     " | RepoB | Test  | Test",
@@ -86,7 +86,7 @@ def Test3(branch):
     ], PB_out)
 
     # Create another branch and validate it exists
-    RunPB(repo_a.url, "1 5 4 4 Test2 4 1", branch)
+    RunPB(repo_a.url, "1 5 5 4 Test2 5 1", branch)
     TestInFile([
     " | RepoA | Test2 | Test2",
     " | RepoB | Test2 | Test2",
@@ -96,7 +96,7 @@ def Test3(branch):
     ], PB_out)
 
     # Switch branch
-    RunPB(repo_a.url, "1 5 4 4 Test 4 1", branch)
+    RunPB(repo_a.url, "1 5 5 4 Test 5 1", branch)
     TestInFile([
     " | RepoA | Test  | Test",
     " | RepoB | Test  | Test",
@@ -117,21 +117,21 @@ def Test4(branch):
 
     # Setup repos and run test for sanity
     # Create new branch and validate it exists
-    RunPB(repo_a.url, "1 2 3 3 5 4 4 Test", branch)
+    RunPB(repo_a.url, "1 2 3 3 5 5 4 Test", branch)
     TestInFile([
     "Built target RepoA_RepoA_Test",
     "Creating local branch Test"
     ], PB_out)
 
     # Attempt to delete currently checked out branch (expect failure)
-    RunPB(repo_a.url, "1 2 5 4 7 1", branch)
+    RunPB(repo_a.url, "1 2 5 5 7 1", branch)
     TestInFile("Cannot delete. Please check out a different branch and then retry", PB_out)
 
     # Change to master
-    RunPB(repo_a.url, "1 2 5 4 3 2", branch)
+    RunPB(repo_a.url, "1 2 5 5 3 2", branch)
 
     # Attempt to delete again
-    RunPB(repo_a.url, "1 2 5 4 7 1", branch)
+    RunPB(repo_a.url, "1 2 5 5 7 1", branch)
     TestInFile("Deleted local branch (PB generated branch): Test", PB_out)
 
 """
@@ -147,7 +147,7 @@ def _Test5(branch, push):
     repo_a, _, _, _ = CreateBaseRepos()
 
     # Create branch, print branches, check it wasnt pushed
-    RunPB(repo_a.url, "1 2 3 3 5 4 4 Test 4 2", branch)
+    RunPB(repo_a.url, "1 2 3 3 5 5 4 Test 5 2", branch)
     TestInFile([
     "Built target RepoA_RepoA_Test",
     "Creating local branch Test",
@@ -168,7 +168,7 @@ def _Test5(branch, push):
     # Result should be the same
     if push is True:
         # Push branch and check the warning no longer appears
-        RunPB(repo_a.url, "1 2 5 3 2 4 2", branch)
+        RunPB(repo_a.url, "1 2 5 4 2 5 2", branch)
         TestInFile([
             "Pushing all managed repositories",
             "==== Checkedout branches ====",
@@ -182,7 +182,7 @@ def _Test5(branch, push):
         ], PB_out)
 
     # Delete the branch remotely (first check out to different branch)
-    RunPB(repo_a.url, "1 2 5 4 3 2 4 8 1 4 2", branch)
+    RunPB(repo_a.url, "1 2 5 5 3 2 5 8 1 5 2", branch)
     TestInFile([
         "==== Checkedout branches ====",
         "master: RepoA, RepoB, RepoC, RepoD",
@@ -196,7 +196,7 @@ def _Test5(branch, push):
     TestNotInFile("origin/Test: RepoA, RepoB, RepoC, RepoD", PB_out)
 
     # Delete the branch locally
-    RunPB(repo_a.url, "1 2 5 4 7 1 4 2", branch)
+    RunPB(repo_a.url, "1 2 5 5 7 1 5 2", branch)
     TestInFile([
         "==== Checkedout branches ====",
         "master: RepoA, RepoB, RepoC, RepoD",
@@ -224,14 +224,14 @@ def Test7(branch):
     repo_a, _, _, _ = CreateBaseRepos()
 
     # Create new branch and validate it exists
-    RunPB(repo_a.url, "1 2 3 3 5 4 4 Test", branch)
+    RunPB(repo_a.url, "1 2 3 3 5 5 4 Test", branch)
     TestInFile([
     "Built target RepoA_RepoA_Test",
     "Creating local branch Test"
     ], PB_out)
 
     # Rebase against the master
-    RunPB(repo_a.url, "1 2 5 4 6 2", branch)
+    RunPB(repo_a.url, "1 2 5 5 6 2", branch)
     TestInFile("Rebased branches into master", PB_out)
     TestNotInFile("There was an issue", PB_out)
 
@@ -256,7 +256,7 @@ def Test8(branch):
     inst_1.ComplexCommit(GIT_COMMIT("Add random file").AddFile("some_file", "some_content")).Push()
 
     # Update
-    RunPB(repo_a.url, "1 2 5 3 1", branch)
+    RunPB(repo_a.url, "1 2 5 4 1", branch)
     commits_after = GetAllCommitsFromPath(inst_1.GetPBPath(repo_a))
 
     Assert(len(commits_before) + 1 == len(commits_after), f"Incorrect amount of commits {len(commits_before)} and {len(commits_after)}")
@@ -268,7 +268,7 @@ def _Test9(branch, undo):
     repo_a, _, _, _ = CreateBaseRepos()
 
     # Create new branch and validate it exists
-    RunPB(repo_a.url, "1 2 3 3 5 4 4 Test", branch)
+    RunPB(repo_a.url, "1 2 3 3 5 5 4 Test", branch)
     TestInFile([
     "Built target RepoA_RepoA_Test",
     "Creating local branch Test"
@@ -279,10 +279,10 @@ def _Test9(branch, undo):
     inst_1.ComplexCommit(GIT_COMMIT("Add random file").AddFile("some_file", "some_content")).Push()
 
     # Update
-    RunPB(repo_a.url, "1 2 5 3 1", branch)
+    RunPB(repo_a.url, "1 2 5 4 1", branch)
 
     # Rebase against the master
-    RunPB(repo_a.url, "1 2 5 4 6 2", branch)
+    RunPB(repo_a.url, "1 2 5 5 6 2", branch)
     TestInFile("Rebased branches into master", PB_out)
     TestNotInFile("There was an issue", PB_out)
 
