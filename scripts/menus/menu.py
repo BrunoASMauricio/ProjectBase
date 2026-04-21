@@ -258,7 +258,7 @@ class Menu():
                 # Newline is useful in general here
                 print()
                 # Show menu (skip full render when there is a queued automated input)
-                if Settings["action"] and not help:
+                if Settings["action"] and not help and not Settings.get("force menus", False):
                     next_action = Settings["action"][0]
                     menu_label = self.name if self.name is not None else "<menu>"
                     print(f"[{menu_label}] Auto: {next_action}")

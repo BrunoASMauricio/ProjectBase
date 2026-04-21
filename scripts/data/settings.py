@@ -133,7 +133,9 @@ class SETTINGS(dict):
 
         parser.add_argument("-f", "--fast", action='store_true', help = "Cache Repositories in pickle and do not consider config changes, deactivate to consider if needed", default=False, required=False)
 
-        # Configurations for CI infrastructure 
+        parser.add_argument("--force-menus", action='store_true', dest='force_menus', help = "Always display full menus, even during automated runs", default=False, required=False)
+
+        # Configurations for CI infrastructure
         parser.add_argument("-ci", "--commitJsonPath", help = "JSON Information with all the repos that have commit changes, that have to be commit copied instead of usual by remote copy", default=None, required=False)
 
         # --exec="...." is accepted for launching executables, but it is not handled here
@@ -169,6 +171,7 @@ class SETTINGS(dict):
             self["single thread"] = False
             self["debug"]         = False
             self["fast"]          = False
+            self["force menus"]   = True
             self["action"]        = ["1", "2", "3", "4"]
         else:
             if project_args.use_self:
@@ -181,6 +184,7 @@ class SETTINGS(dict):
             self["single thread"] = project_args.single_thread
             self["debug"]         = project_args.debug
             self["fast"]          = project_args.fast
+            self["force menus"]   = project_args.force_menus
             # Trailing unknown arguments
             self["action"]        = action_args
 
