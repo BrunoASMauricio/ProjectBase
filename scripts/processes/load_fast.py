@@ -188,15 +188,24 @@ import threading
 from typing import List, Tuple, Set
 import queue
 
+from data.settings import Settings
+
 
 def get_all_project_dependencies(project_path, checked_dependencies=None, to_check_dependencies=None, max_workers=15):
     """
-    Parallel version that uses API calls to discover and gather configurations 
-    for the entire dependency graph.
+    Discovers and gathers configurations for the entire dependency graph.
+    Uses parallel API calls when multi-threading is enabled, or falls back
+    to the single-threaded implementation when Settings["single thread"] is set.
 
     Returns:
         List[Tuple[str, dict]]: List of (project_path, config_data) for all discovered projects.
     """
+    if Settings.get("single thread", False):
+        result_deps, _ = get_all_project_dependencies_single_threaded(
+            project_path, checked_dependencies, to_check_dependencies
+        )
+        return result_deps
+
     if checked_dependencies is None:
         checked_dependencies = []
     if to_check_dependencies is None:
@@ -204,45 +213,45 @@ def get_all_project_dependencies(project_path, checked_dependencies=None, to_che
 
     queue = [project_path] + list(to_check_dependencies)
     visited = set(queue)
-    
+
     # Store results: {project_path: config_data}
     repo_configs = {}
-    
+
     while queue:
         current_batch = queue
         queue = []
-        
-        # Ensure thread safety for shared data if necessary, 
+
+        # Ensure thread safety for shared data if necessary,
         # but for this logic, each thread only returns its results.
-        
+
         def process_project(proj):
             # The result will be (project_path, config_data, new_dependency_configs)
             if proj in repo_configs or proj in checked_dependencies: # Use repo_configs as main check
-                return None, None, [] 
-            
+                return None, None, []
+
             data = get_project_config_from_git_api(proj)
-                
+
                 # Extract all dependency config dicts from the found data
             new_dependency_configs = extract_dependencies_from_json(data)
 
-                # Append to checked list (note: this list is no longer strictly necessary 
+                # Append to checked list (note: this list is no longer strictly necessary
                 # if we use repo_configs and visited)
-            checked_dependencies.append(proj) 
-                
+            checked_dependencies.append(proj)
+
             return proj, data, new_dependency_configs
-                
-        
+
+
         # Process batch in parallel
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             # We map the function to the current batch of project paths
             results = list(executor.map(process_project, current_batch))
-            
+
             # Collect results and new dependencies
             for proj, config_data, new_dependency_configs in results:
                 if proj and config_data is not None:
                     # 1. Store the found configuration data
                     repo_configs[proj] = config_data
-                
+
                 # 2. Collect paths of *new* dependencies to queue for the next batch
                 for dep_config in new_dependency_configs:
                     # We assume 'url' is the path we need to normalize and check against 'visited'
@@ -250,7 +259,7 @@ def get_all_project_dependencies(project_path, checked_dependencies=None, to_che
                     if dep_path and dep_path not in visited:
                         visited.add(dep_path)
                         queue.append(dep_path) # Queue the path for the next API call
-    
+
     # Convert the results dictionary back into the required list format
     final_results = [
         (path, config) for path, config in repo_configs.items()
