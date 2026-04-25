@@ -220,9 +220,18 @@ class ProcessError(Exception):
         message += f"{simple_message}\nTrace:\n{trace_message}"
         message += "\n\t========================= Process failed (end) =========================\n"
 
-        super().__init__(f"Message:{message}\nReturned: {returned}")
+        returned_str = "\n".join(f"  {k}: {v}" for k, v in returned.items())
+        self.message = f"Message:{message}\nReturned:\n{returned_str}"
+        super().__init__(self.message)
         self.returned = returned
         self.simple_message = simple_message
+
+    def __str__(self):
+        return self.message
+
+    def __repr__(self):
+        return self.message
+
     def RaiseIfNotInOutput(self, data):
         if data in self.returned["stdout"] or data in self.returned["stderr"]:
             return
@@ -233,7 +242,7 @@ def GetEnvVars():
     # Settings["paths"] may not be initialized (e.g. in standalone test processes)
     if "paths" in Settings:
         env["PYTHONPATH"] = Settings["paths"]["scripts"]
-        env["EXEC_PATH"]  = Settings["paths"]["executables"]
+        env["BIN_PATH"]  = Settings["paths"]["binaries"]
     if "name" in Settings:
         env["PB_ROOT_NAME"] = Settings["name"]
     # The ':' in `Settings["url"]` is creating serious issues. Commenting for now
