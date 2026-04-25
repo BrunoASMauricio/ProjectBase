@@ -315,6 +315,10 @@ class Menu():
                     if next_input_str == "?" or next_input_str == "help":
                         help = True
                         continue
+                    # Clear screen and redisplay menu
+                    if next_input_str == "clear":
+                        os.system("clear")
+                        continue
 
                     if previous_invalid is False:
                         print("Invalid input")

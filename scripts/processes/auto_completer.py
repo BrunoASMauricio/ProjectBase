@@ -11,6 +11,8 @@ class ActiveCompleter():
         # Only 1 instance of this object exists, we can setup one-off readline stuff here
         readline.set_completer_delims(' \t\n;')
         readline.parse_and_bind("tab: complete")
+        # Ctrl+L: clear current input, insert "clear", and submit
+        readline.parse_and_bind(r'"\C-l": "\C-a\C-kclear\C-m"')
 
     def set(self, active_completer):
         self.active_completer = active_completer
