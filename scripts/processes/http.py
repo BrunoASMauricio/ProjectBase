@@ -1,6 +1,7 @@
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from processes.filesystem import CreateDirectory
 from data.print import *
+import logging
 import threading
 
 from data.paths import GetBasePaths
@@ -18,10 +19,10 @@ class CustomHandler(SimpleHTTPRequestHandler):
         super().__init__(*args, directory=htt_root_path, **kwargs)
 
     def log_message(self, format, *args):
-        PrintNotice("%s - %s" % (self.address_string(), format % args))
+        logging.info("HTTP: %s - %s" % (self.address_string(), format % args))
 
     def log_error(self, format, *args):
-        PrintError("%s - %s" % (self.address_string(), format % args))
+        logging.error("HTTP: %s - %s" % (self.address_string(), format % args))
 
 def StartHTTPServer(host="0.0.0.0", port=8000):
     global http_servers
