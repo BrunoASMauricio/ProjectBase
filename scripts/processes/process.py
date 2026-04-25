@@ -102,7 +102,7 @@ Run run_callback in a separate thread for each argument in run_args (which is al
 def RunInThreads(run_callback, run_args):
     threads = []
     for run_arg in run_args:
-        thread = Thread(target=ThreadWrapper, args=[run_callback,run_arg])
+        thread = Thread(target=ThreadWrapper, args=[run_callback,run_arg], daemon=True)
         threads.append(thread)
         thread.start()
     return threads
