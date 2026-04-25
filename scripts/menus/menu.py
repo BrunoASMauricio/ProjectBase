@@ -169,6 +169,30 @@ class Menu():
         menu += GetText(self.epilogue)
 
         return menu
+    def GetCompletionOptions(self):
+        """
+        Extract entry numbers and labels from the current (already resolved) entries.
+        Must be called after GetMenu() so that dynamic entries are populated.
+        """
+        options = []
+        index = 1
+        for entry in self.entries:
+            if entry[1] == EntryType.DYNAMIC:
+                if len(entry) >= 4 and isinstance(entry[3], list):
+                    for dynamic_entry in entry[3]:
+                        options.append(str(index))
+                        label = RemoveAllNonPrintable(dynamic_entry[0])
+                        if label:
+                            options.append(label)
+                        index += 1
+            else:
+                options.append(str(index))
+                label = RemoveAllNonPrintable(GetText(entry[0]))
+                if label:
+                    options.append(label)
+                index += 1
+        return options
+
     """
     Activate the entry selected via its' index
     """
@@ -269,7 +293,8 @@ class Menu():
                 if previous_command is not None:
                     print("Previous command: " +str(previous_command))
 
-                # Setup completer
+                # Update completer with current menu entries and activate it
+                self.completer.set_options(self.GetCompletionOptions())
                 self.completer.setup()
                 # Get next input and save to history
                 try:
