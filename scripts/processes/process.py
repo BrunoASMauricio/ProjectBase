@@ -125,8 +125,7 @@ def RunInThreadsWithProgress(run_callback, run_args, max_delay=None, print_callb
 
     try:
         if Settings["single thread"]:
-            for run_arg_ind in run_args:
-                run_arg = run_args[run_arg_ind]
+            for run_arg_ind, run_arg in enumerate(run_args):
                 run_callback(*run_arg)
                 if print_callback is not None:
                     if print_args is not None:
