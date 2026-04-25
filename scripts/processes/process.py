@@ -104,7 +104,8 @@ def _kill_all_active_processes():
         for tid, proc in active_processes.items():
             killed_threads.add(tid)
             try:
-                proc.kill()
+                # Kill the entire process group (includes child processes)
+                os.killpg(proc.pid, 9)
             except OSError:
                 pass
 
@@ -425,7 +426,8 @@ def _LaunchCommand(command, path=None, interactive=False):
         proc = subprocess.Popen(['bash', '-c', command],
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE,
-                                text=True)
+                                text=True,
+                                start_new_session=True)
         _register_process(proc)
         try:
             stdout, stderr = proc.communicate()
