@@ -426,17 +426,16 @@ def _LaunchCommand(command, path=None, interactive=False):
         proc = subprocess.Popen(['bash', '-c', command],
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE,
-                                text=True,
                                 start_new_session=True)
         _register_process(proc)
         try:
-            stdout, stderr = proc.communicate()
+            stdout_bytes, stderr_bytes = proc.communicate()
         finally:
             _unregister_process()
 
         returned["command"] = command
-        returned["stdout"]  = stdout.rstrip()
-        returned["stderr"]  = stderr.rstrip()
+        returned["stdout"]  = stdout_bytes.decode('utf-8', errors='replace').rstrip()
+        returned["stderr"]  = stderr_bytes.decode('utf-8', errors='replace').rstrip()
         returned["code"]    = int(proc.returncode)
 
         returned["out"] = f"{returned["stdout"]}{returned["stderr"]}"
