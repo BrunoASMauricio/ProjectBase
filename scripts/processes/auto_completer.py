@@ -2,6 +2,8 @@ import readline
 import glob
 import sys
 import os
+from difflib import SequenceMatcher
+from data.common import PrintInColumns
 
 class ActiveCompleter():
     def __init__(self):
@@ -17,6 +19,35 @@ class ActiveCompleter():
         return self.active_completer
 
 active_completer = ActiveCompleter()
+
+MIN_MATCH_SCORE = 0.6
+
+def _match_score(option, query):
+    """
+    Score how well the query matches the option.
+    Prioritizes contiguous substring matches over scattered subsequences.
+    Returns 0.0 - 1.5, where below MIN_MATCH_SCORE is filtered out.
+    """
+    if not query:
+        return MIN_MATCH_SCORE
+
+    query_lower = query.lower()
+    option_lower = option.lower()
+
+    # Best case: prefix match
+    if option_lower.startswith(query_lower):
+        return 1.0 + (len(query_lower) / len(option_lower)) * 0.5
+
+    # Contiguous substring match
+    if query_lower in option_lower:
+        return 0.8 + (len(query_lower) / len(option_lower)) * 0.2
+
+    # Longest common substring (contiguous, not subsequence)
+    matcher = SequenceMatcher(None, query_lower, option_lower)
+    longest_block = max((size for _, _, size in matcher.get_matching_blocks()), default=0)
+    contiguity = longest_block / len(query_lower)
+
+    return contiguity * 0.7
 
 class CustomCompleter(object):  # Custom completer
 
@@ -37,20 +68,34 @@ class CustomCompleter(object):  # Custom completer
         readline.append_history_file(input, self.histfile)
         self.old_len = readline.get_current_history_length()
 
+    def _ranked_matches(self, query):
+        """
+        Return options that match the query, sorted by relevance (best first).
+        Includes file glob matches as lowest priority.
+        """
+        scored = []
+        for opt in self.options:
+            score = _match_score(opt, query)
+            if score >= MIN_MATCH_SCORE:
+                scored.append((score, opt))
+
+        # Add file path matches
+        if query:
+            for path in glob.glob(os.path.expanduser(query) + '*'):
+                scored.append((MIN_MATCH_SCORE, path))
+
+        # Sort by score descending, then alphabetically
+        scored.sort(key=lambda x: (-x[0], x[1]))
+        return [opt for _, opt in scored]
+
     def complete(self, text, state):
         # Only complete based on the last word of the current input, not the full line.
         # This prevents "3 3 " + TAB from trying to complete "3.3" style paths.
         line_buffer = readline.get_line_buffer()
         last_word = line_buffer.split(' ')[-1]
 
-        # Add paths as options
-        current_opts = self.options + list(glob.glob(os.path.expanduser(last_word)+'*')+[None])
-
-        if state == 0:  # on first trigger, build possible matches
-            if not last_word:
-                self.matches = self.options[:]
-            else:
-                self.matches = [s for s in current_opts if s and s.startswith(last_word)]
+        if state == 0:
+            self.matches = self._ranked_matches(last_word)
         try:
             return self.matches[state]
         except IndexError:
@@ -58,21 +103,18 @@ class CustomCompleter(object):  # Custom completer
 
     def display_matches(self, substitution, matches, longest_match_length):
         line_buffer = readline.get_line_buffer()
-        columns = os.environ.get("COLUMNS", 80)
-        print("\n[>] Available completions:")
-        tpl = "{:<" + str(int(max(map(len, matches)) * 1.2)) + "}"
-        buffer = ""
-        for match in matches:
-            match = tpl.format(match[len(substitution):])
-            if len(buffer + match) > columns:
-                print(buffer)
-                buffer = ""
-            buffer += match
-        if buffer:
-            print(buffer)
-        print("[<]\n"+line_buffer, end="")
+
+        # Use our ranked matches (readline sorts alphabetically, losing our order)
+        display = self.matches if self.matches else matches
+
+        if not display:
+            return
+
+        print("\n[>] Completions:")
+        PrintInColumns(display)
+        print("[<] " + line_buffer, end="")
         sys.stdout.flush()
-    
+
     def setup(self):
         # Only change if self isn't currently active
         if active_completer.get() == self:
