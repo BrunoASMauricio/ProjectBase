@@ -76,6 +76,7 @@ $$LINK_DEPENDENCIES$$
 
 SET(EXECUTABLES)
 SET(TESTS)
+SET(TEST_LIBS)
 
 ### Include custom CMakeLists
 if(EXISTS $$REPO_SRC_PATH$$/configs/CMakeLists.txt)
@@ -180,6 +181,28 @@ if(EXISTS $$REPO_SRC_PATH$$/configs/CMakeLists.txt)
 
 		### Link executable to dependency repositories
 		target_link_libraries(${TEST}
+			${DEPENDENCY_LIBS}
+		)
+	endforeach()
+
+	### Setup test shared libraries (for unified test aggregation)
+	foreach(TEST_LIB ${TEST_LIBS})
+
+		### Output .so alongside test executables
+		set_target_properties(${TEST_LIB} PROPERTIES
+			LIBRARY_OUTPUT_DIRECTORY ${REPO_LIB_PATH}
+		)
+
+		target_compile_options(${TEST_LIB} PRIVATE ${CUSTOM_C_FLAGS} -fPIC)
+
+		target_include_directories(${TEST_LIB}
+			PUBLIC
+			${PUBLIC_HEADERS}
+			${PRIVATE_HEADERS}
+			${TEST_HEADERS}
+		)
+
+		target_link_libraries(${TEST_LIB}
 			${DEPENDENCY_LIBS}
 		)
 	endforeach()
