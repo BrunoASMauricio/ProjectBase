@@ -2,6 +2,7 @@ from menus.menu import Menu
 from data.colors import ColorFormat, Colors
 from processes.project import Project
 from data.settings import CLONE_TYPE, Settings, GetBranch, GetLogLevel
+from menus.settings import MODE_COLORS, CLONE_COLORS, SPEED_COLORS, THREADING_COLORS, LOG_LEVEL_COLORS
 
 from menus.run import RunMenu
 from menus.settings import SettingsMenu
@@ -20,35 +21,21 @@ first_time = True
 def main_description():
     global first_time
     active_settings = Settings["active"]
-    if active_settings["Mode"] == "Release":
-        build_type = ColorFormat(Colors.Blue, "Release build")
-    else:
-        build_type = ColorFormat(Colors.Yellow, "Debug build")
-    
-    if active_settings["Clone Type"] == CLONE_TYPE.SSH.value:
-        clone_type = ColorFormat(Colors.Magenta, "ssh access")
-    else:
-        clone_type = ColorFormat(Colors.Cyan, "http[s] access")
-    
-    if active_settings["Speed"] == "Safe":
-        speed_type = ColorFormat(Colors.Green, "Safe")
-    else:
-        speed_type = ColorFormat(Colors.Yellow, "Fast")
 
-    if Settings["single thread"]:
-        threading_type = ColorFormat(Colors.Yellow, "Single Thread")
-    else:
-        threading_type = ColorFormat(Colors.Blue, "Multi Thread")
+    mode = active_settings["Mode"]
+    build_type = ColorFormat(MODE_COLORS[mode], f"{mode} build")
 
-    log_level_colors = {
-        "Error":   Colors.Red,
-        "Warning": Colors.Magenta,
-        "Notice":  Colors.Blue,
-        "Info":    Colors.Green,
-    }
+    clone = active_settings["Clone Type"]
+    clone_type = ColorFormat(CLONE_COLORS[clone], clone)
+
+    speed = active_settings["Speed"]
+    speed_type = ColorFormat(SPEED_COLORS[speed], speed)
+
+    threading = "Single Thread" if Settings["single thread"] else "Multi Thread"
+    threading_type = ColorFormat(THREADING_COLORS[threading], threading)
+
     log_level = GetLogLevel()
-    log_color = log_level_colors.get(log_level, Colors.Grey)
-    log_level_tag = ColorFormat(log_color, f"Log: {log_level}")
+    log_level_tag = ColorFormat(LOG_LEVEL_COLORS.get(log_level, Colors.Grey), f"Log: {log_level}")
 
     branch = GetBranch()
     if branch is not None:

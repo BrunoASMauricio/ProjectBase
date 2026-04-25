@@ -8,17 +8,27 @@ from data.settings import ToggleCloneType, ToggleSpeed, ToggleMode, CycleLogLeve
 from processes.PB_debug_terminal import PBTerminal
 from data.print import SetLogLevel, LogLevels
 
+# Single source of truth for setting color mappings (used here and in main menu)
+SPEED_COLORS = {"Fast": Colors.Yellow, "Safe": Colors.Green}
+MODE_COLORS = {"Release": Colors.Blue, "Debug": Colors.Yellow}
+THREADING_COLORS = {"Multi Thread": Colors.Blue, "Single Thread": Colors.Yellow}
+CLONE_COLORS = {CLONE_TYPE.SSH.value: Colors.Magenta, CLONE_TYPE.HTTPS.value: Colors.Cyan}
+LOG_LEVEL_COLORS = {"Error": Colors.Red, "Warning": Colors.Magenta, "Notice": Colors.Blue, "Info": Colors.Green}
+
+def _colored_toggle(current, other, color_map):
+    return "Change from " + ColorFormat(color_map[current], current) + " to " + ColorFormat(color_map[other], other)
+
 def CurrentSpeedEntry():
     if Settings["active"]["Speed"] == "Fast":
-        return "Change from Fast to Safe"
+        return _colored_toggle("Fast", "Safe", SPEED_COLORS)
     else:
-        return "Change from Safe to Fast"
+        return _colored_toggle("Safe", "Fast", SPEED_COLORS)
 
 def CurrentModeEntry():
     if Settings["active"]["Mode"] == "Release":
-        return "Change from Release to Debug"
+        return _colored_toggle("Release", "Debug", MODE_COLORS)
     else:
-        return "Change from Debug to Release"
+        return _colored_toggle("Debug", "Release", MODE_COLORS)
 
 def _ToggleCloneType():
     if ToggleCloneType():
@@ -26,15 +36,15 @@ def _ToggleCloneType():
 
 def CurrentThreadingEntry():
     if Settings["active"].get("Threading", "Multi") == "Multi":
-        return "Change from Multi Thread to Single Thread"
+        return _colored_toggle("Multi Thread", "Single Thread", THREADING_COLORS)
     else:
-        return "Change from Single Thread to Multi Thread"
+        return _colored_toggle("Single Thread", "Multi Thread", THREADING_COLORS)
 
 def CurrentCloneTypeEntry():
     if Settings["active"]["Clone Type"] == CLONE_TYPE.HTTPS.value:
-        return "Change from " + CLONE_TYPE.HTTPS.value + " to " + CLONE_TYPE.SSH.value
+        return _colored_toggle(CLONE_TYPE.HTTPS.value, CLONE_TYPE.SSH.value, CLONE_COLORS)
     else:
-        return "Change from " + CLONE_TYPE.SSH.value + " to " + CLONE_TYPE.HTTPS.value
+        return _colored_toggle(CLONE_TYPE.SSH.value, CLONE_TYPE.HTTPS.value, CLONE_COLORS)
 
 _log_level_to_enum = {
     "Error":   LogLevels.ERR,
@@ -44,7 +54,9 @@ _log_level_to_enum = {
 }
 
 def CurrentLogLevelEntry():
-    return f"Log level: {GetLogLevel()} (click to cycle)"
+    level = GetLogLevel()
+    color = LOG_LEVEL_COLORS.get(level, Colors.Grey)
+    return f"Log level: {ColorFormat(color, level)} (click to cycle)"
 
 def _CycleLogLevel():
     new_level = CycleLogLevel()
@@ -52,27 +64,20 @@ def _CycleLogLevel():
         SetLogLevel(_log_level_to_enum[new_level])
 
 def SettingsPrologue():
-    prologue = ""
     ActiveSettings = Settings["active"]
-    if ActiveSettings["Mode"] == "Release":
-        prologue = ColorFormat(Colors.Blue, "Release")
-    else:
-        prologue = ColorFormat(Colors.Yellow, "Debug")
-    
-    prologue += "/"
 
-    if ActiveSettings["Clone Type"] == CLONE_TYPE.SSH.value:
-        prologue += ColorFormat(Colors.Magenta, CLONE_TYPE.SSH.value)
-    else:
-        prologue += ColorFormat(Colors.Cyan, CLONE_TYPE.HTTPS.value)
+    mode = ActiveSettings["Mode"]
+    prologue = ColorFormat(MODE_COLORS[mode], mode)
 
     prologue += "/"
 
-    threading_mode = ActiveSettings.get("Threading", "Multi")
-    if threading_mode == "Multi":
-        prologue += ColorFormat(Colors.Blue, "Multi Thread")
-    else:
-        prologue += ColorFormat(Colors.Yellow, "Single Thread")
+    clone = ActiveSettings["Clone Type"]
+    prologue += ColorFormat(CLONE_COLORS[clone], clone)
+
+    prologue += "/"
+
+    threading = "Multi Thread" if ActiveSettings.get("Threading", "Multi") == "Multi" else "Single Thread"
+    prologue += ColorFormat(THREADING_COLORS[threading], threading)
 
     return prologue + "\n"
 
