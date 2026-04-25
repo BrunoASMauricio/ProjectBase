@@ -8,6 +8,7 @@ from data.print import *
 from processes.process import _LaunchCommand, SetupLocalEnvVars
 from processes.process import LaunchSilentProcess, ProcessError, RunInThreadsWithProgress
 from menus.menu import GetNextInput, MenuExit
+from processes.auto_completer import CustomCompleter
 from data.paths import JoinPaths
 from processes.flamegraph import *
 
@@ -276,6 +277,21 @@ def ExecuteMenu(PathToScan):
             print(exec_menu_mesg)
             exec_menu_mesg = ""
         print()
+
+        # Build completion options from executable indices and names
+        exec_options = []
+        for index, path in enumerate(executables_available):
+            exec_options.append(str(index))
+            basename = os.path.basename(path)
+            exec_options.append(basename)
+            parts = basename.split("_", 1)
+            if len(parts) > 1:
+                exec_options.append(parts[1])
+        exec_completer = CustomCompleter(
+            JoinPaths(Settings["paths"]["history"], "ExecuteMenu"),
+            exec_options
+        )
+        exec_completer.setup()
 
         print("Input 'help' or '?' for exec launch information")
         print("exit or Ctr+D to exit")
