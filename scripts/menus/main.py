@@ -1,7 +1,7 @@
 from menus.menu import Menu
 from data.colors import ColorFormat, Colors
 from processes.project import Project
-from data.settings import CLONE_TYPE, Settings, GetBranch
+from data.settings import CLONE_TYPE, Settings, GetBranch, GetLogLevel
 
 from menus.run import RunMenu
 from menus.settings import SettingsMenu
@@ -35,6 +35,21 @@ def main_description():
     else:
         speed_type = ColorFormat(Colors.Yellow, "Fast")
 
+    if Settings["single thread"]:
+        threading_type = ColorFormat(Colors.Yellow, "Single Thread")
+    else:
+        threading_type = ColorFormat(Colors.Blue, "Multi Thread")
+
+    log_level_colors = {
+        "Error":   Colors.Red,
+        "Warning": Colors.Magenta,
+        "Notice":  Colors.Blue,
+        "Info":    Colors.Green,
+    }
+    log_level = GetLogLevel()
+    log_color = log_level_colors.get(log_level, Colors.Grey)
+    log_level_tag = ColorFormat(log_color, f"Log: {log_level}")
+
     branch = GetBranch()
     if branch is not None:
         checkedout_branch = ColorFormat(Colors.Magenta, branch)
@@ -55,7 +70,7 @@ def main_description():
 |    __/|   _|  _  ||  ||  -__|  __||   _|   __ <|  _  |__ --|  -__|
 |___|   |__| |_____||  ||_____|____||____|______/|___._|_____|_____|
                    |___|
-""" ) + first_time_msg + PB_commit + f"\n{build_type} - {checkedout_branch}\n({Settings["url"]})\n({clone_type} - {speed_type})\n({Settings["paths"]["project main"]})\n"
+""" ) + first_time_msg + PB_commit + f"\n{build_type} - {checkedout_branch}\n({Settings["url"]})\n({clone_type} - {speed_type} - {threading_type} - {log_level_tag})\n({Settings["paths"]["project main"]})\n"
 
 def generate_project_description():
     return "Load project (" + str(len(Project.repositories)) + " loaded)"

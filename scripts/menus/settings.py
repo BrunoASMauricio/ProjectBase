@@ -4,7 +4,7 @@ from data.colors import ColorFormat, Colors
 from processes.project import Project
 from dependency_graph import BuildGraph, VisualizeGraph
 from processes.project import CleanPBCache, PurgePB
-from data.settings import ToggleCloneType, ToggleSpeed, ToggleMode, CycleLogLevel, GetLogLevel
+from data.settings import ToggleCloneType, ToggleSpeed, ToggleMode, CycleLogLevel, GetLogLevel, ToggleThreading
 from processes.PB_debug_terminal import PBTerminal
 from data.print import SetLogLevel, LogLevels
 
@@ -23,6 +23,12 @@ def CurrentModeEntry():
 def _ToggleCloneType():
     if ToggleCloneType():
         Project.SetCloneType(Settings["active"]["Clone Type"])
+
+def CurrentThreadingEntry():
+    if Settings["active"].get("Threading", "Multi") == "Multi":
+        return "Change from Multi Thread to Single Thread"
+    else:
+        return "Change from Single Thread to Multi Thread"
 
 def CurrentCloneTypeEntry():
     if Settings["active"]["Clone Type"] == CLONE_TYPE.HTTPS.value:
@@ -59,7 +65,15 @@ def SettingsPrologue():
         prologue += ColorFormat(Colors.Magenta, CLONE_TYPE.SSH.value)
     else:
         prologue += ColorFormat(Colors.Cyan, CLONE_TYPE.HTTPS.value)
-    
+
+    prologue += "/"
+
+    threading_mode = ActiveSettings.get("Threading", "Multi")
+    if threading_mode == "Multi":
+        prologue += ColorFormat(Colors.Blue, "Multi Thread")
+    else:
+        prologue += ColorFormat(Colors.Yellow, "Single Thread")
+
     return prologue + "\n"
 
 
@@ -92,6 +106,7 @@ SettingsMenu.AddCallbackEntry(CurrentModeEntry, ToggleMode, "Toggle release type
 SettingsMenu.AddCallbackEntry(CurrentLogLevelEntry, _CycleLogLevel, "Cycle log verbosity: Error → Warning → Notice → Info")
 SettingsMenu.AddCallbackEntry(CurrentCloneTypeEntry, _ToggleCloneType, "Toggle how clone is performed")
 SettingsMenu.AddCallbackEntry(CurrentSpeedEntry, ToggleSpeed, "Toggle fast vs stable behaviors")
+SettingsMenu.AddCallbackEntry(CurrentThreadingEntry, ToggleThreading, "Toggle between multi-threaded and single-threaded execution")
 SettingsMenu.AddCallbackEntry("Create dependency graph", CreateDependencyGraph, "Create a graph based on repo dependencies")
 SettingsMenu.AddCallbackEntry("Create API graph", CreateApiGraph, "Create a graph based on repo API")
 SettingsMenu.AddCallbackEntry("Show repositories", ShowRepositories, "Print PB view of the projects' repos")

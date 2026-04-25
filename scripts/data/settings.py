@@ -18,7 +18,8 @@ DEFAULT_SETTINGS = {
     "Speed":      "Safe",
     "Mode":       "Debug",
     "Clone Type": CLONE_TYPE.SSH.value,
-    "Log Level":  "Error"
+    "Log Level":  "Error",
+    "Threading":  "Multi"
 }
 
 LOG_LEVEL_OPTIONS = ["Error", "Warning", "Notice", "Info"]
@@ -66,6 +67,17 @@ def CycleLogLevel():
     Settings["active"]["Log Level"] = next_level
     Settings.save_persisted_settings()
     return next_level
+
+def ToggleThreading():
+    current = Settings["active"]["Threading"]
+    if current == "Multi":
+        Settings["active"]["Threading"] = "Single"
+    else:
+        Settings["active"]["Threading"] = "Multi"
+
+    if current != Settings["active"]["Threading"]:
+        Settings["single thread"] = (Settings["active"]["Threading"] == "Single")
+        Settings.save_persisted_settings()
 
 """
 Return True if the clone type changed
@@ -223,6 +235,15 @@ class SETTINGS(dict):
         self["persisted"] = persisted_settings
         self["active"]    = persisted_settings[project_name]
         # self["active"]    = GetValueOrDefault(persisted_settings[ProjectName][""])
+
+        # Ensure the Threading key exists for older persisted settings
+        if "Threading" not in self["active"]:
+            self["active"]["Threading"] = DEFAULT_SETTINGS["Threading"]
+
+        # CLI --single_thread overrides persisted setting;
+        # otherwise, sync from the persisted Threading value.
+        if not self["single thread"]:
+            self["single thread"] = (self["active"]["Threading"] == "Single")
 
 Settings = SETTINGS()
 
