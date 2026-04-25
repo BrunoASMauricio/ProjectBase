@@ -46,15 +46,21 @@ def PrintProgressWhileWaitOnThreads(thread_data, max_delay=None, print_function=
             prev_alive = threads_alive
 
         if max_delay is not None and time() - initial_timestamp > max_delay:
-            initial_timestamp = time()
-            print(f"\n{threads_alive - progress} threads are taking more time than expected ({max_delay}s). Currently running threads:")
+            alive_descriptions = []
             for thread_ind in range(len(threads)):
-                thread = threads[thread_ind]
-                if not thread.is_alive():
-                    continue
+                if threads[thread_ind].is_alive():
+                    alive_descriptions.append(str(args[thread_ind]))
 
-                print(f"Thread alive for {callback} with arguments: {args[thread_ind]}")
-            # Ask user if we should kill, reset timer, or ignore
+            choice = _prompt_timeout_action(alive_descriptions)
+            if choice == -1:
+                max_delay = None
+            elif choice == 0:
+                _kill_all_active_processes()
+                sleep(0.5)
+                break
+            else:
+                max_delay = choice
+                initial_timestamp = time()
 
         # Keep flushing log
         FlushthreadLog()
@@ -74,6 +80,87 @@ def __PrintRunOnFoldersProgress(paths):
         PrintProgressBar(current_progress, total_repos, prefix = 'Running:', suffix = "Done on " + str(current_progress) + "/" + str(total_repos) + " folders")
 
 thread_return = {}
+
+# Registry of active subprocess.Popen objects, keyed by thread ID.
+# Allows the main thread to kill subprocesses running in worker threads.
+active_processes = {}
+active_processes_lock = Lock()
+killed_threads = set()
+
+def _register_process(proc):
+    with active_processes_lock:
+        active_processes[threading.get_ident()] = proc
+
+def _unregister_process():
+    with active_processes_lock:
+        active_processes.pop(threading.get_ident(), None)
+
+def was_killed():
+    """Check if the current thread's process was killed by a timeout."""
+    return threading.get_ident() in killed_threads
+
+def _kill_all_active_processes():
+    with active_processes_lock:
+        for tid, proc in active_processes.items():
+            killed_threads.add(tid)
+            try:
+                proc.kill()
+            except OSError:
+                pass
+
+def _parse_timeout_choice(choice):
+    """
+    Parse a timeout prompt answer.
+    Returns: seconds (int >0), None (wait indefinitely), 0 (stop), or None for invalid.
+    """
+    parts = choice.split()
+    if len(parts) == 1:
+        if parts[0] == "0":
+            return 60
+        if parts[0] == "1":
+            return -1  # sentinel for "indefinitely"
+        if parts[0] == "2":
+            return 0
+    if len(parts) == 2 and parts[0] == "3":
+        if StringIsNumber(parts[1]) and int(parts[1]) > 0:
+            return int(parts[1])
+    return None  # invalid
+
+def _prompt_timeout_action(alive_descriptions):
+    """
+    Prompt user for what to do about stuck tests/tasks.
+    Returns: number of seconds to wait (>0), None (wait indefinitely), or 0 (stop all).
+    """
+    # Non-interactive mode: auto-stop
+    if Settings.get("exit", False) and len(Settings.get("action", [])) == 0:
+        print("  (non-interactive mode: auto-stopping)")
+        return 0
+
+    print(f"\nThe following tests are still running:")
+    for desc in alive_descriptions:
+        print(f"  - {desc}")
+    print("Please choose:")
+    print("  0 - Wait for 1 minute")
+    print("  1 - Wait indefinitely")
+    print("  2 - Stop them all")
+    print("  3 <N> - Wait for N more seconds (e.g. 3 300)")
+
+    # Check automated-input queue
+    if len(Settings.get("action", [])) > 0:
+        answer = Settings["action"][0]
+        del Settings["action"][0]
+        print(f"  [< Auto timeout choice <] {{{answer}}}")
+        return _parse_timeout_choice(answer)
+
+    while True:
+        try:
+            choice = input("[0/1/2/3 N]: ").strip()
+            result = _parse_timeout_choice(choice)
+            if result is not None:
+                return result
+            print("Invalid choice, please enter 0, 1, 2, or 3 followed by seconds")
+        except (EOFError, KeyboardInterrupt):
+            return 0
 
 # Wrapper for threads
 def ThreadWrapper(run_callback, run_arg):
@@ -116,6 +203,7 @@ def RunInThreadsWithProgress(run_callback, run_args, max_delay=None, print_callb
     global thread_return
 
     thread_return.clear()
+    killed_threads.clear()
     if len(run_args) == 0:
         return
 
@@ -125,16 +213,41 @@ def RunInThreadsWithProgress(run_callback, run_args, max_delay=None, print_callb
 
     try:
         if Settings["single thread"]:
+            stop_requested = False
             for run_arg_ind, run_arg in enumerate(run_args):
-                run_callback(*run_arg)
+                if stop_requested:
+                    thread_return[run_arg_ind] = False
+                    continue
+
+                # Run in a temporary thread so we can apply timeout
+                worker = Thread(target=ThreadWrapper, args=[run_callback, run_arg], daemon=True)
+                worker.start()
+
+                start_time = time()
+                current_delay = max_delay
+                while worker.is_alive():
+                    if current_delay is not None and time() - start_time > current_delay:
+                        choice = _prompt_timeout_action([str(run_arg)])
+                        if choice == -1:
+                            current_delay = None
+                        elif choice == 0:
+                            _kill_all_active_processes()
+                            stop_requested = True
+                            sleep(0.5)
+                            break
+                        else:
+                            current_delay = choice
+                            start_time = time()
+                    sleep(0.05)
+
                 if print_callback is not None:
                     if print_args is not None:
                         print_callback(print_args)
                     else:
                         print_callback()
                 else:
-                    PrintProgressBar(run_arg_ind, len(run_args), prefix = 'Running:', suffix = 'Work finished ' + str(run_arg_ind) + '/' + str(len(run_args)))
-                thread_return[run_arg_ind] = True
+                    PrintProgressBar(run_arg_ind + 1, len(run_args), prefix = 'Running:', suffix = 'Work finished ' + str(run_arg_ind + 1) + '/' + str(len(run_args)))
+                thread_return[run_arg_ind] = thread_return.get(worker.ident, True)
         else:
             threads = RunInThreads(run_callback, run_args)
             PrintProgressWhileWaitOnThreads((threads, run_callback, run_args), max_delay, print_callback, print_args)
@@ -309,31 +422,20 @@ def _LaunchCommand(command, path=None, interactive=False):
         else:
             returned["stdout"] = ""
     else:
-        result = subprocess.run(['bash', '-c', command],
+        proc = subprocess.Popen(['bash', '-c', command],
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE,
                                 text=True)
-        returned["command"] = command
-        returned["stdout"]  = result.stdout
-        returned["stderr"]  = result.stderr
-        # try:
-        #     returned["stdout"]  = result.stdout
-        #     returned["stderr"]  = result.stderr
-        #     # returned["stdout"]  = result.stdout.decode('utf-8')
-        #     # returned["stderr"]  = result.stderr.decode('utf-8')
-        # except UnicodeDecodeError as Ex:
-        #     print(f"Decoding error: {Ex}")
-        #     try:
-        #         returned["stdout"]  = RemoveNonAscii(RemoveControlCharacters(result.stdout))
-        #         returned["stderr"]  = RemoveNonAscii(RemoveControlCharacters(result.stderr))
-        #     except Exception as Ex:
-        #         print(f"Exception trying to handle decoding error: {Ex}")
-        #         returned["stdout"] = result.stdout
-        #         returned["stderr"] = result.stderr
-        returned["stdout"] = returned["stdout"].rstrip()
-        returned["stderr"] = returned["stderr"].rstrip()
+        _register_process(proc)
+        try:
+            stdout, stderr = proc.communicate()
+        finally:
+            _unregister_process()
 
-        returned["code"] = int(result.returncode)
+        returned["command"] = command
+        returned["stdout"]  = stdout.rstrip()
+        returned["stderr"]  = stderr.rstrip()
+        returned["code"]    = int(proc.returncode)
 
         returned["out"] = f"{returned["stdout"]}{returned["stderr"]}"
         returned["out"] = RemoveNonAscii(RemoveControlCharacters(returned["out"]))

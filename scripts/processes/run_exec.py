@@ -6,7 +6,7 @@ from data.common import StringIsNumber
 from data.colors import *
 from data.print import *
 from processes.process import _LaunchCommand, SetupLocalEnvVars
-from processes.process import LaunchSilentProcess, ProcessError, RunInThreadsWithProgress
+from processes.process import LaunchSilentProcess, ProcessError, RunInThreadsWithProgress, was_killed
 from menus.menu import GetNextInput, MenuExit
 from processes.auto_completer import CustomCompleter
 from data.paths import JoinPaths
@@ -360,6 +360,7 @@ def _RunAllTests(Prefix="", module_filter=None):
         except ProcessError as ex:
             Result = ex.returned
         Result["test name"] = TestPath.split(" ")[-1]
+        Result["timed_out"] = was_killed()
         all_outputs.append(Result)
 
     tests_args = []
@@ -367,17 +368,33 @@ def _RunAllTests(Prefix="", module_filter=None):
         test_name = tests[test_index]
         tests_args.append((test_name, ))
 
-    RunInThreadsWithProgress(Run, tests_args, None)
+    DEFAULT_TEST_TIMEOUT = 10  # seconds
+    # DEFAULT_TEST_TIMEOUT = 120  # seconds
+    RunInThreadsWithProgress(Run, tests_args, DEFAULT_TEST_TIMEOUT)
     print("\n")
 
     return all_outputs
 
+def _short_test_name(name):
+    """Shorten test path to start from projects/."""
+    marker = "/projects/"
+    idx = name.find(marker)
+    if idx != -1:
+        return name[idx + 1:]
+    return name
+
 def RunAllTests(module_filter=None):
     errors = []
+    timeouts = []
     all_outputs = _RunAllTests(module_filter=module_filter)
     for output in all_outputs:
-        if output["code"] != 0:
-            header_msg = ColorFormat(Colors.Red, output["test name"] + " ( " + str(output["code"]) + " )")
+        short_name = _short_test_name(output["test name"])
+        if output.get("timed_out", False):
+            header_msg = ColorFormat(Colors.Yellow, short_name + " (timed out)")
+            timeouts.append(header_msg)
+            print(header_msg)
+        elif output["code"] != 0:
+            header_msg = ColorFormat(Colors.Red, short_name + " ( " + str(output["code"]) + " )")
             errors.append(header_msg)
             print(header_msg)
             if len(output["stdout"]) != 0:
@@ -385,17 +402,22 @@ def RunAllTests(module_filter=None):
             if len(output["stderr"]) != 0:
                 print(ColorFormat(Colors.Yellow, "\t\tSTDERR\n") + output["stderr"])
         else:
-            print(ColorFormat(Colors.Green, '"' + output["test name"] + '" returned code = '+str(output["code"])))
+            print(ColorFormat(Colors.Green, '"' + short_name + '" returned code = ' + str(output["code"])))
 
-    if len(errors) == 0:
-        print(ColorFormat(Colors.Green, "All "+str(len(all_outputs))+" tests successful!"))
+    total_failures = len(errors) + len(timeouts)
+    if total_failures == 0:
+        print(ColorFormat(Colors.Green, "All " + str(len(all_outputs)) + " tests successful!"))
         return
 
-    if(len(errors) > 0):
-        Settings.return_code = len(errors)
+    Settings.return_code = total_failures
 
-    print(ColorFormat(Colors.Red, f"\nErrors reported {len(errors)}\n" + ("="*40)+"\n" + '\n'.join(errors) + "\n" + ("="*40)))
-    print(ColorFormat(Colors.Green, "Successes: ["+str(len(all_outputs) - len(errors))+"]"))
+    summary = ""
+    if len(errors) > 0:
+        summary += f"\nErrors reported: {len(errors)}\n" + ("="*40) + "\n" + '\n'.join(errors) + "\n" + ("="*40)
+    if len(timeouts) > 0:
+        summary += f"\nTimed out: {len(timeouts)}\n" + ("="*40) + "\n" + '\n'.join(timeouts) + "\n" + ("="*40)
+    print(ColorFormat(Colors.Red, summary))
+    print(ColorFormat(Colors.Green, "Successes: [" + str(len(all_outputs) - total_failures) + "]"))
 
 def _GetTestModule(test_name):
     """Extract module/repo name from a test path like /path/to/RepoName_TestName."""
