@@ -125,18 +125,11 @@ def __LocateExecutable(executable, executables_available):
             return None
         path_to_exec = executables_available[exec_ind]
     else:
-        # Name-based lookup: match against the exec name (part after the repo prefix)
+        # Name-based lookup: match against the executable basename
         matches = []
         for idx, path in enumerate(executables_available):
             basename = os.path.basename(path)
-            # Try exact basename match first
             if basename == executable:
-                matches.append(idx)
-                continue
-            # Try matching just the name part (after first underscore = repo prefix)
-            parts = basename.split("_", 1)
-            exec_name = parts[1] if len(parts) > 1 else parts[0]
-            if exec_name == executable:
                 matches.append(idx)
 
         if len(matches) == 1:
@@ -247,22 +240,21 @@ def ExecuteMenu(PathToScan):
         # Pad index prefix to a fixed width so names align across rows
         idx_width = len(str(len(executables_available) - 1))
 
-        # Group executables by repo for columnar display
+        # Group executables by parent directory (repo name)
         grouped = {}
         ungrouped = []
         for index in range(len(executables_available)):
-            exploded = executables_available[index].split("_")
-            repo = exploded[0]
-            name = '_'.join(exploded[1:])
-            repo = repo.split("/")[-1]
+            path = executables_available[index]
+            name = os.path.basename(path)
+            repo = os.path.basename(os.path.dirname(path))
 
             prefix = f"[{index:>{idx_width}}] "
-            if len(name) != 0:
+            if repo and repo != os.path.basename(PathToScan):
                 if repo not in grouped:
                     grouped[repo] = []
                 grouped[repo].append(prefix + ColorFormat(Colors.Blue, name))
             else:
-                ungrouped.append(prefix + ColorFormat(Colors.Yellow, "<" + repo + ">"))
+                ungrouped.append(prefix + ColorFormat(Colors.Yellow, name))
 
         # Assemble all groups for a single aligned render
         layout_input = []
@@ -282,11 +274,7 @@ def ExecuteMenu(PathToScan):
         exec_options = []
         for index, path in enumerate(executables_available):
             exec_options.append(str(index))
-            basename = os.path.basename(path)
-            exec_options.append(basename)
-            parts = basename.split("_", 1)
-            if len(parts) > 1:
-                exec_options.append(parts[1])
+            exec_options.append(os.path.basename(path))
         exec_completer = CustomCompleter(
             JoinPaths(Settings["paths"]["history"], "ExecuteMenu"),
             exec_options

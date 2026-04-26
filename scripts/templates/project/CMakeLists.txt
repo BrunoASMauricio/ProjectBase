@@ -57,12 +57,16 @@ ENDMACRO()
 ### Prepare a test executable to be compiled.
 ### Also setup a shared object which can be used for test aggregation
 MACRO(COMPILE_TEST TEST_NAME TEST_SOURCE)
-    set(FULL_TEST_NAME "${REPO_NAME}_${TEST_NAME}")
-    ADD_EXECUTABLE(${FULL_TEST_NAME} ${TEST_SOURCE})
-    LIST(APPEND TESTS ${FULL_TEST_NAME})
+    # Use REPO_NAME as namespace to avoid CMake target collisions across repos,
+    # but set OUTPUT_NAME so the executable on disk is just the test name.
+    set(CMAKE_TARGET_NAME "${REPO_NAME}.${TEST_NAME}")
+    ADD_EXECUTABLE(${CMAKE_TARGET_NAME} ${TEST_SOURCE})
+    SET_TARGET_PROPERTIES(${CMAKE_TARGET_NAME} PROPERTIES OUTPUT_NAME ${TEST_NAME})
+    LIST(APPEND TESTS ${CMAKE_TARGET_NAME})
 
-    set(FULL_TEST_LIB_NAME "${REPO_NAME}_${TEST_NAME}_Shared")
+    set(FULL_TEST_LIB_NAME "${REPO_NAME}.${TEST_NAME}.Shared")
     ADD_LIBRARY(${FULL_TEST_LIB_NAME} SHARED ${TEST_SOURCE})
+    SET_TARGET_PROPERTIES(${FULL_TEST_LIB_NAME} PROPERTIES OUTPUT_NAME "${TEST_NAME}.Shared")
     LIST(APPEND TEST_LIBS ${FULL_TEST_LIB_NAME})
 ENDMACRO()
 
