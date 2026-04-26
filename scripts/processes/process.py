@@ -34,6 +34,7 @@ def PrintProgressWhileWaitOnThreads(thread_data, max_delay=None, print_function=
     progress = 0
     prev_alive = threads_alive
     initial_timestamp = time()
+    timeout_count = 0
 
     while threads_alive != progress:
         threads_alive = len(threads)
@@ -46,12 +47,13 @@ def PrintProgressWhileWaitOnThreads(thread_data, max_delay=None, print_function=
             prev_alive = threads_alive
 
         if max_delay is not None and time() - initial_timestamp > max_delay:
+            timeout_count += 1
             alive_descriptions = []
             for thread_ind in range(len(threads)):
                 if threads[thread_ind].is_alive():
                     alive_descriptions.append(str(args[thread_ind]))
 
-            choice = _prompt_timeout_action(alive_descriptions)
+            choice = _prompt_timeout_action(alive_descriptions, timeout_count)
             if choice == -1:
                 max_delay = None
             elif choice == 0:
@@ -109,57 +111,62 @@ def _kill_all_active_processes():
             except OSError:
                 pass
 
-def _parse_timeout_choice(choice):
+def _parse_timeout_choice(choice, single_thread=False):
     """
     Parse a timeout prompt answer.
-    Returns: seconds (int >0), None (wait indefinitely), 0 (stop), or None for invalid.
+    Returns: seconds (int >0), -1 (indefinitely), 0 (stop all), -2 (stop current), None (invalid).
     """
     parts = choice.split()
     if len(parts) == 1:
         if parts[0] == "0":
-            return 60
+            return 30
         if parts[0] == "1":
-            return -1  # sentinel for "indefinitely"
+            return -1  # wait indefinitely
         if parts[0] == "2":
-            return 0
+            return 0   # stop all
+        if parts[0] == "4" and single_thread:
+            return -2  # stop current only
     if len(parts) == 2 and parts[0] == "3":
         if StringIsNumber(parts[1]) and int(parts[1]) > 0:
             return int(parts[1])
     return None  # invalid
 
-def _prompt_timeout_action(alive_descriptions):
+def _prompt_timeout_action(alive_descriptions, timeout_count=0, single_thread=False):
     """
     Prompt user for what to do about stuck tests/tasks.
-    Returns: number of seconds to wait (>0), None (wait indefinitely), or 0 (stop all).
+    Returns: seconds (>0), -1 (wait indefinitely), 0 (stop all), -2 (stop current, single-thread only).
     """
     # Non-interactive mode: auto-stop
     if Settings.get("exit", False) and len(Settings.get("action", [])) == 0:
         print("  (non-interactive mode: auto-stopping)")
         return 0
 
-    print(f"\nThe following tests are still running:")
+    print(f"\nThe following tests are still running (timed out {timeout_count} time{'s' if timeout_count != 1 else ''}):")
     for desc in alive_descriptions:
         print(f"  - {desc}")
     print("Please choose:")
-    print("  0 - Wait for 1 minute")
+    print("  0 - Wait for 30 seconds")
     print("  1 - Wait indefinitely")
     print("  2 - Stop them all")
     print("  3 <N> - Wait for N more seconds (e.g. 3 300)")
+    if single_thread:
+        print("  4 - Stop current test (continue with next)")
 
     # Check automated-input queue
     if len(Settings.get("action", [])) > 0:
         answer = Settings["action"][0]
         del Settings["action"][0]
         print(f"  [< Auto timeout choice <] {{{answer}}}")
-        return _parse_timeout_choice(answer)
+        return _parse_timeout_choice(answer, single_thread)
 
     while True:
         try:
-            choice = input("[0/1/2/3 N]: ").strip()
-            result = _parse_timeout_choice(choice)
+            prompt = "[0/1/2/3 N/4]: " if single_thread else "[0/1/2/3 N]: "
+            choice = input(prompt).strip()
+            result = _parse_timeout_choice(choice, single_thread)
             if result is not None:
                 return result
-            print("Invalid choice, please enter 0, 1, 2, or 3 followed by seconds")
+            print("Invalid choice")
         except (EOFError, KeyboardInterrupt):
             return 0
 
@@ -214,9 +221,9 @@ def RunInThreadsWithProgress(run_callback, run_args, max_delay=None, print_callb
 
     try:
         if Settings["single thread"]:
-            stop_requested = False
+            stop_all = False
             for run_arg_ind, run_arg in enumerate(run_args):
-                if stop_requested:
+                if stop_all:
                     thread_return[run_arg_ind] = False
                     continue
 
@@ -226,14 +233,20 @@ def RunInThreadsWithProgress(run_callback, run_args, max_delay=None, print_callb
 
                 start_time = time()
                 current_delay = max_delay
+                timeout_count = 0
                 while worker.is_alive():
                     if current_delay is not None and time() - start_time > current_delay:
-                        choice = _prompt_timeout_action([str(run_arg)])
+                        timeout_count += 1
+                        choice = _prompt_timeout_action([str(run_arg)], timeout_count, single_thread=True)
                         if choice == -1:
                             current_delay = None
                         elif choice == 0:
                             _kill_all_active_processes()
-                            stop_requested = True
+                            stop_all = True
+                            sleep(0.5)
+                            break
+                        elif choice == -2:
+                            _kill_all_active_processes()
                             sleep(0.5)
                             break
                         else:
