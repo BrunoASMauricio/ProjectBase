@@ -35,6 +35,8 @@ def PrintProgressWhileWaitOnThreads(thread_data, max_delay=None, print_function=
     prev_alive = threads_alive
     initial_timestamp = time()
     timeout_count = 0
+    auto_policy = None
+    policy_initial_count = 0
 
     while threads_alive != progress:
         threads_alive = len(threads)
@@ -48,18 +50,49 @@ def PrintProgressWhileWaitOnThreads(thread_data, max_delay=None, print_function=
 
         if max_delay is not None and time() - initial_timestamp > max_delay:
             timeout_count += 1
+
             alive_descriptions = []
             for thread_ind in range(len(threads)):
                 if threads[thread_ind].is_alive():
                     alive_descriptions.append(str(args[thread_ind]))
 
+            # Check if an auto-policy is active
+            if auto_policy is not None:
+                policy_secs, policy_max, policy_action = auto_policy
+                if timeout_count >= policy_initial_count + policy_max:
+                    # Policy exhausted, execute the final action
+                    action_name = _ACTION_NAMES.get(policy_action, "unknown")
+                    print(f"\n[Auto-policy] Exhausted — executing '{action_name}'.")
+                    for desc in alive_descriptions:
+                        print(f"  - {desc}")
+                    if policy_action == TIMEOUT_STOP_ALL:
+                        auto_policy = None
+                        _kill_all_active_processes()
+                        sleep(0.5)
+                        break
+                    elif policy_action == TIMEOUT_INDEFINITELY:
+                        auto_policy = None
+                        max_delay = None
+                    # TIMEOUT_STOP_CURRENT not applicable in multi-thread
+                else:
+                    _print_auto_policy_timeout(timeout_count, policy_max, policy_initial_count, policy_secs, policy_action, alive_descriptions)
+                    max_delay = policy_secs
+                    initial_timestamp = time()
+                continue
+
             choice = _prompt_timeout_action(alive_descriptions, timeout_count)
-            if choice == -1:
+            if choice == TIMEOUT_INDEFINITELY:
                 max_delay = None
-            elif choice == 0:
+            elif choice == TIMEOUT_STOP_ALL:
                 _kill_all_active_processes()
                 sleep(0.5)
                 break
+            elif isinstance(choice, tuple):
+                policy_secs, policy_max, policy_action = choice
+                auto_policy = choice
+                policy_initial_count = timeout_count
+                max_delay = policy_secs
+                initial_timestamp = time()
             else:
                 max_delay = choice
                 initial_timestamp = time()
@@ -111,35 +144,68 @@ def _kill_all_active_processes():
             except OSError:
                 pass
 
+# Timeout action constants
+TIMEOUT_STOP_ALL     = 0
+TIMEOUT_INDEFINITELY = -1
+TIMEOUT_STOP_CURRENT = -2
+
+_ACTION_NAMES = {
+    TIMEOUT_STOP_ALL: "stop all",
+    TIMEOUT_INDEFINITELY: "wait indefinitely",
+    TIMEOUT_STOP_CURRENT: "stop current",
+}
+
+def _print_auto_policy_timeout(timeout_count, policy_max, policy_initial_count, policy_secs, policy_action, alive_descriptions):
+    remaining = policy_initial_count + policy_max - timeout_count
+    action_name = _ACTION_NAMES.get(policy_action, "unknown")
+    print(f"\n[Auto-policy] Timeout {timeout_count} — {remaining} remaining before '{action_name}'. Waiting {policy_secs}s.")
+    for desc in alive_descriptions:
+        print(f"  - {desc}")
+
 def _parse_timeout_choice(choice, single_thread=False):
     """
     Parse a timeout prompt answer.
-    Returns: seconds (int >0), -1 (indefinitely), 0 (stop all), -2 (stop current), None (invalid).
+    Returns: seconds (int >0), TIMEOUT_INDEFINITELY, TIMEOUT_STOP_ALL,
+             TIMEOUT_STOP_CURRENT, a (seconds, max_count, action) tuple, or None (invalid).
     """
     parts = choice.split()
     if len(parts) == 1:
         if parts[0] == "0":
             return 30
         if parts[0] == "1":
-            return -1  # wait indefinitely
+            return TIMEOUT_INDEFINITELY
         if parts[0] == "2":
-            return 0   # stop all
+            return TIMEOUT_STOP_ALL
         if parts[0] == "4" and single_thread:
-            return -2  # stop current only
+            return TIMEOUT_STOP_CURRENT
     if len(parts) == 2 and parts[0] == "3":
         if StringIsNumber(parts[1]) and int(parts[1]) > 0:
             return int(parts[1])
+    # Option 5: "5 <seconds> <max_count> <action>"
+    # e.g. "5 30 3 stop_current" → wait 30s, up to 3 times, then stop current
+    if len(parts) == 4 and parts[0] == "5":
+        if StringIsNumber(parts[1]) and StringIsNumber(parts[2]):
+            secs = int(parts[1])
+            count = int(parts[2])
+            action_map = {
+                "stop_current": TIMEOUT_STOP_CURRENT,
+                "stop_all":     TIMEOUT_STOP_ALL,
+                "wait":         TIMEOUT_INDEFINITELY,
+            }
+            if secs > 0 and count > 0 and parts[3] in action_map:
+                return (secs, count, action_map[parts[3]])
     return None  # invalid
 
 def _prompt_timeout_action(alive_descriptions, timeout_count=0, single_thread=False):
     """
     Prompt user for what to do about stuck tests/tasks.
-    Returns: seconds (>0), -1 (wait indefinitely), 0 (stop all), -2 (stop current, single-thread only).
+    Returns: seconds (>0), TIMEOUT_INDEFINITELY, TIMEOUT_STOP_ALL,
+             TIMEOUT_STOP_CURRENT, or a (seconds, max_count, action) policy tuple.
     """
     # Non-interactive mode: auto-stop
     if Settings.get("exit", False) and len(Settings.get("action", [])) == 0:
         print("  (non-interactive mode: auto-stopping)")
-        return 0
+        return TIMEOUT_STOP_ALL
 
     print(f"\nThe following tests are still running (timed out {timeout_count} time{'s' if timeout_count != 1 else ''}):")
     for desc in alive_descriptions:
@@ -151,6 +217,9 @@ def _prompt_timeout_action(alive_descriptions, timeout_count=0, single_thread=Fa
     print("  3 <N> - Wait for N more seconds (e.g. 3 300)")
     if single_thread:
         print("  4 - Stop current test (continue with next)")
+    action_names = "stop_current/stop_all/wait"
+    print(f"  5 <secs> <max_count> <action> - Auto-apply (e.g. 5 30 3 stop_current)")
+    print(f"      actions: {action_names}")
 
     # Check automated-input queue
     if len(Settings.get("action", [])) > 0:
@@ -161,14 +230,13 @@ def _prompt_timeout_action(alive_descriptions, timeout_count=0, single_thread=Fa
 
     while True:
         try:
-            prompt = "[0/1/2/3 N/4]: " if single_thread else "[0/1/2/3 N]: "
-            choice = input(prompt).strip()
+            choice = input("> ").strip()
             result = _parse_timeout_choice(choice, single_thread)
             if result is not None:
                 return result
             print("Invalid choice")
         except (EOFError, KeyboardInterrupt):
-            return 0
+            return TIMEOUT_STOP_ALL
 
 # Wrapper for threads
 def ThreadWrapper(run_callback, run_arg):
@@ -222,33 +290,76 @@ def RunInThreadsWithProgress(run_callback, run_args, max_delay=None, print_callb
     try:
         if Settings["single thread"]:
             stop_all = False
+            auto_policy = None
+            policy_initial_count = 0
             for run_arg_ind, run_arg in enumerate(run_args):
                 if stop_all:
                     thread_return[run_arg_ind] = False
                     continue
+
+                # Clear killed state from previous test
+                killed_threads.clear()
 
                 # Run in a temporary thread so we can apply timeout
                 worker = Thread(target=ThreadWrapper, args=[run_callback, run_arg], daemon=True)
                 worker.start()
 
                 start_time = time()
-                current_delay = max_delay
+                current_delay = auto_policy[0] if auto_policy else max_delay
                 timeout_count = 0
+                policy_initial_count = 0
                 while worker.is_alive():
                     if current_delay is not None and time() - start_time > current_delay:
                         timeout_count += 1
+
+                        # Check if an auto-policy is active
+                        alive_desc = [str(run_arg)]
+                        if auto_policy is not None:
+                            policy_secs, policy_max, policy_action = auto_policy
+                            if timeout_count >= policy_initial_count + policy_max:
+                                # Policy exhausted, execute the final action
+                                action_name = _ACTION_NAMES.get(policy_action, "unknown")
+                                print(f"\n[Auto-policy] Exhausted — executing '{action_name}'.")
+                                for desc in alive_desc:
+                                    print(f"  - {desc}")
+                                if policy_action == TIMEOUT_STOP_ALL:
+                                    auto_policy = None
+                                    _kill_all_active_processes()
+                                    stop_all = True
+                                    sleep(0.5)
+                                    break
+                                elif policy_action == TIMEOUT_STOP_CURRENT:
+                                    # Keep auto_policy for next test
+                                    _kill_all_active_processes()
+                                    sleep(0.5)
+                                    break
+                                elif policy_action == TIMEOUT_INDEFINITELY:
+                                    auto_policy = None
+                                    current_delay = None
+                            else:
+                                _print_auto_policy_timeout(timeout_count, policy_max, policy_initial_count, policy_secs, policy_action, alive_desc)
+                                current_delay = policy_secs
+                                start_time = time()
+                            continue
+
                         choice = _prompt_timeout_action([str(run_arg)], timeout_count, single_thread=True)
-                        if choice == -1:
+                        if choice == TIMEOUT_INDEFINITELY:
                             current_delay = None
-                        elif choice == 0:
+                        elif choice == TIMEOUT_STOP_ALL:
                             _kill_all_active_processes()
                             stop_all = True
                             sleep(0.5)
                             break
-                        elif choice == -2:
+                        elif choice == TIMEOUT_STOP_CURRENT:
                             _kill_all_active_processes()
                             sleep(0.5)
                             break
+                        elif isinstance(choice, tuple):
+                            policy_secs, policy_max, policy_action = choice
+                            auto_policy = choice
+                            policy_initial_count = timeout_count
+                            current_delay = policy_secs
+                            start_time = time()
                         else:
                             current_delay = choice
                             start_time = time()
