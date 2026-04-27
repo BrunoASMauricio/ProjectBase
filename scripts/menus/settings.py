@@ -92,13 +92,13 @@ def CreateApiGraph():
 
 def PrintRepo(repo):
     print(f"{repo["repo name"]}")
+    print(f"\tPath: {repo.get("local path", "")}")
     if len(repo["flags"]) == 0:
         print(f"\tNo flags")
     else:
         print(f"\tFlags: {repo["flags"]}")
     print(f"\tURL: {repo["url"]}")
     print(f"\tComittish: {repo["commitish"]}")
-    # print(f"\tURL: {repo["flags"]}")
 
 def ShowRepositories():
     repos = Project.GetRepositories()
