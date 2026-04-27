@@ -10,6 +10,7 @@ from processes.process import LaunchSilentProcess, ProcessError, RunInThreadsWit
 from menus.menu import GetNextInput, MenuExit
 from processes.auto_completer import CustomCompleter
 from data.paths import JoinPaths
+from processes.filesystem import CreateDirectory, WriteFile
 from processes.flamegraph import *
 
 exec_menu_mesg = ""
@@ -332,7 +333,7 @@ def _RunAllTests(Prefix="", module_filter=None):
                   f"No tests found in module '{module_filter}'."))
             return []
 
-    print("Running " + str(len(tests)) + " tests in " + Settings["paths"]["tests"].replace(Settings["paths"]["project base"], ""))
+    print("Running " + str(len(tests)) + " tests in " + Settings["paths"]["tests"].replace(Settings["paths"]["project base"], "") + " > /tmp/project_base/tests/")
     # Allow python scripts to use ProjectBase scripts
     SetupLocalEnvVars()
 
@@ -347,8 +348,18 @@ def _RunAllTests(Prefix="", module_filter=None):
             Result = LaunchSilentProcess(Command)
         except ProcessError as ex:
             Result = ex.returned
-        Result["test name"] = TestPath.split(" ")[-1]
         Result["timed_out"] = was_killed()
+
+        # Save stdout/stderr to /tmp/project_base/tests/<repo>/<test_name>
+        repo_name = os.path.basename(os.path.dirname(TestPath))
+        test_name = os.path.basename(TestPath)
+        log_dir = f"/tmp/project_base/tests/{repo_name}"
+        log_path = f"{log_dir}/{test_name}"
+        CreateDirectory(log_dir)
+        WriteFile(log_path, Result.get("stdout", "") + "\n" + Result.get("stderr", ""))
+
+        Result["test name"] = f"{repo_name}/{test_name}"
+
         all_outputs.append(Result)
 
     tests_args = []
@@ -363,20 +374,13 @@ def _RunAllTests(Prefix="", module_filter=None):
 
     return all_outputs
 
-def _short_test_name(name):
-    """Shorten test path to start from projects/."""
-    marker = "/projects/"
-    idx = name.find(marker)
-    if idx != -1:
-        return name[idx + 1:]
-    return name
-
 def RunAllTests(module_filter=None):
+    successes = []
     errors = []
     timeouts = []
     all_outputs = _RunAllTests(module_filter=module_filter)
     for output in all_outputs:
-        short_name = _short_test_name(output["test name"])
+        short_name = output["test name"]
         if output.get("timed_out", False):
             header_msg = ColorFormat(Colors.Yellow, short_name + " (timed out)")
             timeouts.append(header_msg)
@@ -390,6 +394,7 @@ def RunAllTests(module_filter=None):
             if len(output["stderr"]) != 0:
                 print(ColorFormat(Colors.Yellow, "\t\tSTDERR\n") + output["stderr"])
         else:
+            successes.append(ColorFormat(Colors.Green, short_name))
             print(ColorFormat(Colors.Green, '"' + short_name + '" returned code = ' + str(output["code"])))
 
     total_failures = len(errors) + len(timeouts)
@@ -400,12 +405,13 @@ def RunAllTests(module_filter=None):
     Settings.return_code = total_failures
 
     summary = ""
+    if len(successes) > 0:
+        summary += f"\nSuccessful: {len(successes)}\n" + ("="*40) + "\n" + '\n'.join(successes) + "\n" + ("="*40)
     if len(errors) > 0:
         summary += f"\nErrors reported: {len(errors)}\n" + ("="*40) + "\n" + '\n'.join(errors) + "\n" + ("="*40)
     if len(timeouts) > 0:
         summary += f"\nTimed out: {len(timeouts)}\n" + ("="*40) + "\n" + '\n'.join(timeouts) + "\n" + ("="*40)
-    print(ColorFormat(Colors.Red, summary))
-    print(ColorFormat(Colors.Green, "Successes: [" + str(len(all_outputs) - total_failures) + "]"))
+    print(summary)
 
 def _GetTestModule(test_name):
     """Extract module/repo name from a test path like /path/to/RepoName_TestName."""
