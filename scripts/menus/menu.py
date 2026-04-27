@@ -107,8 +107,12 @@ class Menu():
             all_menu_names.append(name)
             self.name = name
 
-    def AddCallbackEntry(self, entry, Callback, help=None):
-        self.entries.append([entry, EntryType.CALLBACK, Callback, help])
+    def AddCallbackEntry(self, entry, Callback, help=None, completions=None):
+        """
+        completions: optional callable returning a list of completion strings
+                     for this callback's input context (e.g. available test names).
+        """
+        self.entries.append([entry, EntryType.CALLBACK, Callback, help, completions])
     
     def AddSubmenuEntry(self, entry, menu, help=None):
         self.entries.append([entry, EntryType.MENU, menu, help])
@@ -169,6 +173,28 @@ class Menu():
         menu += GetText(self.epilogue)
 
         return menu
+    def GetEntryAtIndex(self, index):
+        """
+        Return (entry_type, entry_object, completions_fn) at the given 1-based index.
+        For MENU entries, entry_object is the submenu Menu instance.
+        For CALLBACK entries, completions_fn is an optional callable returning completion strings.
+        Returns (None, None, None) if out of range.
+        """
+        picked_index = index - 1
+        current_index = 0
+        for entry in self.entries:
+            if entry[1] == EntryType.DYNAMIC:
+                count = len(entry[3]) if len(entry) >= 4 and isinstance(entry[3], list) else 0
+                if picked_index - current_index < count:
+                    return (EntryType.DYNAMIC, entry[3][picked_index - current_index], None)
+                current_index += count
+            else:
+                if current_index == picked_index:
+                    completions_fn = entry[4] if len(entry) > 4 else None
+                    return (entry[1], entry[2], completions_fn)
+                current_index += 1
+        return (None, None, None)
+
     def GetCompletionOptions(self):
         """
         Extract entry numbers and labels from the current (already resolved) entries.
@@ -294,6 +320,7 @@ class Menu():
                     print("Previous command: " +str(previous_command))
 
                 # Update completer with current menu entries and activate it
+                self.completer.set_menu(self)
                 self.completer.set_options(self.GetCompletionOptions())
                 self.completer.setup()
                 # Get next input and save to history

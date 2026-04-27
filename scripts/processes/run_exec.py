@@ -315,6 +315,15 @@ def ExecuteMenu(PathToScan):
         except EOFError:
             break
 
+def _get_completions(path_key):
+    """Return a callable that provides executable basenames for auto-completion."""
+    def completions():
+        return [os.path.basename(p) for p in __GetAvailableExecutables(Settings["paths"][path_key])]
+    return completions
+
+GetTestCompletions = _get_completions("tests")
+GetExecutableCompletions = _get_completions("executables")
+
 def RunSingleTest():
     ExecuteMenu(Settings["paths"]["tests"])
 
@@ -388,7 +397,6 @@ def RunAllTests(module_filter=None):
         if output.get("timed_out", False):
             header_msg = ColorFormat(Colors.Yellow, short_name + " (timed out)")
             timeouts.append(header_msg)
-            print(header_msg)
         elif output["code"] != 0:
             log_ref = ""
             log_path = output.get("log_path", "")
@@ -396,10 +404,8 @@ def RunAllTests(module_filter=None):
                 log_ref = f" -> {log_path}"
             header_msg = ColorFormat(Colors.Red, short_name + " ( " + str(output["code"]) + " )" + log_ref)
             errors.append(header_msg)
-            print(header_msg)
         else:
             successes.append(ColorFormat(Colors.Green, short_name))
-            print(ColorFormat(Colors.Green, '"' + short_name + '" returned code = ' + str(output["code"])))
 
     total_failures = len(errors) + len(timeouts)
     if total_failures == 0:
