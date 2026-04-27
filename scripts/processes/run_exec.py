@@ -338,27 +338,31 @@ def _RunAllTests(Prefix="", module_filter=None):
     SetupLocalEnvVars()
 
     def Run(TestPath):
+        repo_name = os.path.basename(os.path.dirname(TestPath))
+        test_name = os.path.basename(TestPath)
+        log_dir = f"/tmp/project_base/tests/{repo_name}"
+        log_path = f"{log_dir}/{test_name}"
+        CreateDirectory(log_dir)
+
+        # Redirect stdout/stderr directly to the log file
         Command = Prefix + " " + TestPath
         if TestPath.endswith(".py"):
-            # Specify venvs' python executable, to keep the same Venv
-            #  across python executables (i.e. pip installations and modules available)
             Command = f"{sys.executable} {Command}"
+        Command += f" > {log_path} 2>&1"
 
         try:
             Result = LaunchSilentProcess(Command)
         except ProcessError as ex:
             Result = ex.returned
         Result["timed_out"] = was_killed()
-
-        # Save stdout/stderr to /tmp/project_base/tests/<repo>/<test_name>
-        repo_name = os.path.basename(os.path.dirname(TestPath))
-        test_name = os.path.basename(TestPath)
-        log_dir = f"/tmp/project_base/tests/{repo_name}"
-        log_path = f"{log_dir}/{test_name}"
-        CreateDirectory(log_dir)
-        WriteFile(log_path, Result.get("stdout", "") + "\n" + Result.get("stderr", ""))
-
         Result["test name"] = f"{repo_name}/{test_name}"
+        Result["log_path"] = log_path
+
+        # Clean up empty log files
+        if os.path.isfile(log_path) and os.path.getsize(log_path) == 0:
+            os.remove(log_path)
+            if os.path.isdir(log_dir) and not os.listdir(log_dir):
+                os.rmdir(log_dir)
 
         all_outputs.append(Result)
 
@@ -386,13 +390,13 @@ def RunAllTests(module_filter=None):
             timeouts.append(header_msg)
             print(header_msg)
         elif output["code"] != 0:
-            header_msg = ColorFormat(Colors.Red, short_name + " ( " + str(output["code"]) + " )")
+            log_ref = ""
+            log_path = output.get("log_path", "")
+            if log_path and os.path.isfile(log_path):
+                log_ref = f" -> {log_path}"
+            header_msg = ColorFormat(Colors.Red, short_name + " ( " + str(output["code"]) + " )" + log_ref)
             errors.append(header_msg)
             print(header_msg)
-            if len(output["stdout"]) != 0:
-                print(ColorFormat(Colors.Blue, "\t\tSTDOUT\n") + output["stdout"])
-            if len(output["stderr"]) != 0:
-                print(ColorFormat(Colors.Yellow, "\t\tSTDERR\n") + output["stderr"])
         else:
             successes.append(ColorFormat(Colors.Green, short_name))
             print(ColorFormat(Colors.Green, '"' + short_name + '" returned code = ' + str(output["code"])))
