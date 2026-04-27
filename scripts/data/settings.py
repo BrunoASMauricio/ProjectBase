@@ -121,7 +121,7 @@ class SETTINGS(dict):
         # Adding optional argument
         parser.add_argument("-u", "--url", help = "Root repository's URL", default=None, required=False)
         parser.add_argument("-o", "--out_file", help = "Output to file", default="", required=False)
-        parser.add_argument("-l", "--log_file", help = "Pipe internal logs to file", default="/tmp/project_base.log", required=False)
+        parser.add_argument("-l", "--log_file", help = "Pipe internal logs to file", default="/tmp/project_base/run.log", required=False)
 
         parser.add_argument("-c", "--commit",
                             help = "Root repository's commit",
