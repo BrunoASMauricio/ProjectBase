@@ -3,6 +3,7 @@ import sys
 import pty
 import traceback
 import threading
+from collections import namedtuple
 from time import time
 import subprocess
 
@@ -17,161 +18,62 @@ from processes.filesystem import WriteFile
 
 #                           PROCESS OPERATIONS
 
-def PrintProgressWhileWaitOnThreads(thread_data, max_delay=None, print_function=None, print_arguments=None):
-    threads, callback, args = thread_data
-    if print_arguments is None:
-        print_arguments = {}
+POLL_INTERVAL     = 0.05   # seconds between alive checks
+KILL_SETTLE_TIME  = 0.5    # seconds to wait after killing processes
+DEFAULT_WAIT_SECS = 30     # default "wait a bit" duration (option 0)
 
-    def PrintProgress():
-        if print_function is not None:
-            print_function(**print_arguments)
-        else:
-            progress = len(threads) - threads_alive
-            PrintProgressBar(progress, len(threads), prefix = 'Running:', suffix = 'Threads finished ' + str(progress) + '/' + str(len(threads)))
-
-    # Wait for all threads
-    threads_alive = len(threads)
-    progress = 0
-    prev_alive = threads_alive
-    initial_timestamp = time()
-    timeout_count = 0
-    auto_policy = None
-    policy_initial_count = 0
-
-    while threads_alive != progress:
-        threads_alive = len(threads)
-        for thread in threads:
-            if thread.is_alive():
-                continue
-            threads_alive -= 1
-        if prev_alive != threads_alive:
-            PrintProgress()
-            prev_alive = threads_alive
-
-        if max_delay is not None and time() - initial_timestamp > max_delay:
-            timeout_count += 1
-
-            alive_descriptions = []
-            for thread_ind in range(len(threads)):
-                if threads[thread_ind].is_alive():
-                    alive_descriptions.append(str(args[thread_ind]))
-
-            # Check if an auto-policy is active
-            if auto_policy is not None:
-                policy_secs, policy_max, policy_action = auto_policy
-                if timeout_count >= policy_initial_count + policy_max:
-                    # Policy exhausted, execute the final action
-                    action_name = _ACTION_NAMES.get(policy_action, "unknown")
-                    print(f"\n[Auto-policy] Exhausted — executing '{action_name}'.")
-                    for desc in alive_descriptions:
-                        print(f"  - {desc}")
-                    if policy_action == TIMEOUT_STOP_ALL:
-                        auto_policy = None
-                        _kill_all_active_processes()
-                        sleep(0.5)
-                        break
-                    elif policy_action == TIMEOUT_INDEFINITELY:
-                        auto_policy = None
-                        max_delay = None
-                    # TIMEOUT_STOP_CURRENT not applicable in multi-thread
-                else:
-                    _print_auto_policy_timeout(timeout_count, policy_max, policy_initial_count, policy_secs, policy_action, alive_descriptions)
-                    max_delay = policy_secs
-                    initial_timestamp = time()
-                continue
-
-            choice = _prompt_timeout_action(alive_descriptions, timeout_count)
-            if choice == TIMEOUT_INDEFINITELY:
-                max_delay = None
-            elif choice == TIMEOUT_STOP_ALL:
-                _kill_all_active_processes()
-                sleep(0.5)
-                break
-            elif isinstance(choice, tuple):
-                policy_secs, policy_max, policy_action = choice
-                auto_policy = choice
-                policy_initial_count = timeout_count
-                max_delay = policy_secs
-                initial_timestamp = time()
-            else:
-                max_delay = choice
-                initial_timestamp = time()
-
-        # Keep flushing log
-        FlushthreadLog()
-        sleep(0.05)
-
-    PrintProgress()
-
-operation_status = {}
-operation_lock = Lock()
-
-def __PrintRunOnFoldersProgress(paths):
-    current_progress = len(operation_status)
-    total_repos      = len(paths)
-    if total_repos == current_progress:
-        PrintProgressBar(current_progress, total_repos, prefix = 'Running:', suffix = 'Ran on ('+str(current_progress)+') folders')
-    else:
-        PrintProgressBar(current_progress, total_repos, prefix = 'Running:', suffix = "Done on " + str(current_progress) + "/" + str(total_repos) + " folders")
-
-thread_return = {}
-
-# Registry of active subprocess.Popen objects, keyed by thread ID.
-# Allows the main thread to kill subprocesses running in worker threads.
-active_processes = {}
-active_processes_lock = Lock()
-killed_threads = set()
-
-def _register_process(proc):
-    with active_processes_lock:
-        active_processes[threading.get_ident()] = proc
-
-def _unregister_process():
-    with active_processes_lock:
-        active_processes.pop(threading.get_ident(), None)
-
-def was_killed():
-    """Check if the current thread's process was killed by a timeout."""
-    return threading.get_ident() in killed_threads
-
-def _kill_all_active_processes():
-    with active_processes_lock:
-        for tid, proc in active_processes.items():
-            killed_threads.add(tid)
-            try:
-                # Kill the entire process group (includes child processes)
-                os.killpg(proc.pid, 9)
-            except OSError:
-                pass
-
-# Timeout action constants
 TIMEOUT_STOP_ALL     = 0
 TIMEOUT_INDEFINITELY = -1
 TIMEOUT_STOP_CURRENT = -2
 
 _ACTION_NAMES = {
-    TIMEOUT_STOP_ALL: "stop all",
+    TIMEOUT_STOP_ALL:     "stop all",
     TIMEOUT_INDEFINITELY: "wait indefinitely",
     TIMEOUT_STOP_CURRENT: "stop current",
 }
 
-def _print_auto_policy_timeout(timeout_count, policy_max, policy_initial_count, policy_secs, policy_action, alive_descriptions):
-    remaining = policy_initial_count + policy_max - timeout_count
-    action_name = _ACTION_NAMES.get(policy_action, "unknown")
-    print(f"\n[Auto-policy] Timeout {timeout_count} — {remaining} remaining before '{action_name}'. Waiting {policy_secs}s.")
-    for desc in alive_descriptions:
-        print(f"  - {desc}")
+TimeoutPolicy = namedtuple("TimeoutPolicy", ["seconds", "max_count", "action"])
+
+# Track active subprocess.Popen objects by thread ID so the main thread can
+# kill them on timeout. Also track which threads were killed.
+_process_lock = Lock()
+active_processes = {}
+killed_threads = set()
+thread_return = {}
+
+def _register_process(proc):
+    with _process_lock:
+        active_processes[threading.get_ident()] = proc
+
+def _unregister_process():
+    with _process_lock:
+        active_processes.pop(threading.get_ident(), None)
+
+def was_killed():
+    """Check if the current thread's process was killed by a timeout."""
+    with _process_lock:
+        return threading.get_ident() in killed_threads
+
+def _kill_all_active_processes():
+    """Kill all registered subprocesses and their children (entire process group)."""
+    with _process_lock:
+        for tid, proc in active_processes.items():
+            killed_threads.add(tid)
+            try:
+                os.killpg(proc.pid, 9)
+            except OSError:
+                pass
 
 def _parse_timeout_choice(choice, single_thread=False):
     """
     Parse a timeout prompt answer.
-    Returns: seconds (int >0), TIMEOUT_INDEFINITELY, TIMEOUT_STOP_ALL,
-             TIMEOUT_STOP_CURRENT, a (seconds, max_count, action) tuple, or None (invalid).
+    Returns: wait seconds (int >0), TIMEOUT_INDEFINITELY, TIMEOUT_STOP_ALL,
+             TIMEOUT_STOP_CURRENT, a TimeoutPolicy, or None (invalid).
     """
     parts = choice.split()
     if len(parts) == 1:
         if parts[0] == "0":
-            return 30
+            return DEFAULT_WAIT_SECS
         if parts[0] == "1":
             return TIMEOUT_INDEFINITELY
         if parts[0] == "2":
@@ -182,7 +84,6 @@ def _parse_timeout_choice(choice, single_thread=False):
         if StringIsNumber(parts[1]) and int(parts[1]) > 0:
             return int(parts[1])
     # Option 5: "5 <seconds> <max_count> <action>"
-    # e.g. "5 30 3 stop_current" → wait 30s, up to 3 times, then stop current
     if len(parts) == 4 and parts[0] == "5":
         if StringIsNumber(parts[1]) and StringIsNumber(parts[2]):
             secs = int(parts[1])
@@ -193,16 +94,15 @@ def _parse_timeout_choice(choice, single_thread=False):
                 "wait":         TIMEOUT_INDEFINITELY,
             }
             if secs > 0 and count > 0 and parts[3] in action_map:
-                return (secs, count, action_map[parts[3]])
-    return None  # invalid
+                return TimeoutPolicy(secs, count, action_map[parts[3]])
+    return None
 
 def _prompt_timeout_action(alive_descriptions, timeout_count=0, single_thread=False):
     """
     Prompt user for what to do about stuck tests/tasks.
-    Returns: seconds (>0), TIMEOUT_INDEFINITELY, TIMEOUT_STOP_ALL,
-             TIMEOUT_STOP_CURRENT, or a (seconds, max_count, action) policy tuple.
+    Returns: wait seconds (int >0), TIMEOUT_INDEFINITELY, TIMEOUT_STOP_ALL,
+             TIMEOUT_STOP_CURRENT, or a TimeoutPolicy.
     """
-    # Non-interactive mode: auto-stop
     if Settings.get("exit", False) and len(Settings.get("action", [])) == 0:
         print("  (non-interactive mode: auto-stopping)")
         return TIMEOUT_STOP_ALL
@@ -211,15 +111,14 @@ def _prompt_timeout_action(alive_descriptions, timeout_count=0, single_thread=Fa
     for desc in alive_descriptions:
         print(f"  - {desc}")
     print("Please choose:")
-    print("  0 - Wait for 30 seconds")
+    print(f"  0 - Wait for {DEFAULT_WAIT_SECS} seconds")
     print("  1 - Wait indefinitely")
     print("  2 - Stop them all")
     print("  3 <N> - Wait for N more seconds (e.g. 3 300)")
     if single_thread:
         print("  4 - Stop current test (continue with next)")
-    action_names = "stop_current/stop_all/wait"
-    print(f"  5 <secs> <max_count> <action> - Auto-apply (e.g. 5 30 3 stop_current)")
-    print(f"      actions: {action_names}")
+    print("  5 <secs> <max_count> <action> - Auto-apply (e.g. 5 30 3 stop_current)")
+    print("      actions: stop_current/stop_all/wait")
 
     # Check automated-input queue
     if len(Settings.get("action", [])) > 0:
@@ -237,6 +136,155 @@ def _prompt_timeout_action(alive_descriptions, timeout_count=0, single_thread=Fa
             print("Invalid choice")
         except (EOFError, KeyboardInterrupt):
             return TIMEOUT_STOP_ALL
+
+# ── Timeout handling (shared logic) ──
+
+def _handle_timeout(timeout_count, auto_policy, policy_initial_count,
+                    alive_descriptions, single_thread=False):
+    """
+    Handle a single timeout event: apply auto-policy or prompt the user.
+
+    Returns: (action, new_delay, new_auto_policy, new_policy_initial_count)
+      action: "wait" | "stop_all" | "stop_current" | "indefinite"
+      new_delay: seconds for next wait (only meaningful when action == "wait")
+    """
+    # Auto-policy active: check if exhausted
+    if auto_policy is not None:
+        if timeout_count >= policy_initial_count + auto_policy.max_count:
+            # Policy exhausted
+            action_name = _ACTION_NAMES.get(auto_policy.action, "unknown")
+            print(f"\n[Auto-policy] Exhausted — executing '{action_name}'.")
+            for desc in alive_descriptions:
+                print(f"  - {desc}")
+
+            if auto_policy.action == TIMEOUT_STOP_ALL:
+                return "stop_all", None, None, 0
+            elif auto_policy.action == TIMEOUT_STOP_CURRENT:
+                # Keep policy for next test (don't clear it)
+                return "stop_current", None, auto_policy, 0
+            else:
+                return "indefinite", None, None, 0
+        else:
+            remaining = policy_initial_count + auto_policy.max_count - timeout_count
+            action_name = _ACTION_NAMES.get(auto_policy.action, "unknown")
+            print(f"\n[Auto-policy] Timeout {timeout_count} — {remaining} remaining before '{action_name}'. Waiting {auto_policy.seconds}s.")
+            for desc in alive_descriptions:
+                print(f"  - {desc}")
+            return "wait", auto_policy.seconds, auto_policy, policy_initial_count
+
+    # No auto-policy: prompt user
+    choice = _prompt_timeout_action(alive_descriptions, timeout_count, single_thread)
+
+    if choice == TIMEOUT_INDEFINITELY:
+        return "indefinite", None, auto_policy, policy_initial_count
+    elif choice == TIMEOUT_STOP_ALL:
+        return "stop_all", None, auto_policy, policy_initial_count
+    elif choice == TIMEOUT_STOP_CURRENT:
+        return "stop_current", None, auto_policy, policy_initial_count
+    elif isinstance(choice, TimeoutPolicy):
+        return "wait", choice.seconds, choice, timeout_count
+    else:
+        return "wait", choice, auto_policy, policy_initial_count
+
+def _wait_for_threads(threads, args, max_delay, print_function=None, print_arguments=None):
+    """Wait for multiple threads with timeout handling. Used by multi-thread path."""
+    if print_arguments is None:
+        print_arguments = {}
+
+    threads_alive = len(threads)
+    progress = 0
+    prev_alive = threads_alive
+    initial_timestamp = time()
+    timeout_count = 0
+    auto_policy = None
+    policy_initial_count = 0
+
+    def print_progress():
+        if print_function is not None:
+            print_function(**print_arguments)
+        else:
+            done = len(threads) - threads_alive
+            PrintProgressBar(done, len(threads), prefix='Running:',
+                             suffix=f'Threads finished {done}/{len(threads)}')
+
+    while threads_alive != progress:
+        threads_alive = len(threads)
+        for thread in threads:
+            if not thread.is_alive():
+                threads_alive -= 1
+        if prev_alive != threads_alive:
+            print_progress()
+            prev_alive = threads_alive
+
+        if max_delay is not None and time() - initial_timestamp > max_delay:
+            timeout_count += 1
+            alive_descriptions = [str(args[i]) for i in range(len(threads)) if threads[i].is_alive()]
+
+            action, new_delay, auto_policy, policy_initial_count = _handle_timeout(
+                timeout_count, auto_policy, policy_initial_count, alive_descriptions)
+
+            if action == "stop_all":
+                _kill_all_active_processes()
+                sleep(KILL_SETTLE_TIME)
+                break
+            elif action == "indefinite":
+                max_delay = None
+            else:  # "wait"
+                max_delay = new_delay
+                initial_timestamp = time()
+
+        FlushthreadLog()
+        sleep(POLL_INTERVAL)
+
+    print_progress()
+
+def _wait_for_single_worker(worker, run_arg, max_delay, auto_policy, policy_initial_count):
+    """
+    Wait for a single worker thread with timeout handling. Used by single-thread path.
+    Returns: (stop_all, auto_policy, policy_initial_count)
+    """
+    initial_timestamp = time()
+    delay = auto_policy.seconds if auto_policy else max_delay
+    timeout_count = 0
+    stop_all = False
+
+    while worker.is_alive():
+        if delay is not None and time() - initial_timestamp > delay:
+            timeout_count += 1
+            alive_descriptions = [str(run_arg)]
+
+            action, new_delay, auto_policy, policy_initial_count = _handle_timeout(
+                timeout_count, auto_policy, policy_initial_count,
+                alive_descriptions, single_thread=True)
+
+            if action == "stop_all":
+                _kill_all_active_processes()
+                stop_all = True
+                sleep(KILL_SETTLE_TIME)
+                break
+            elif action == "stop_current":
+                _kill_all_active_processes()
+                sleep(KILL_SETTLE_TIME)
+                break
+            elif action == "indefinite":
+                delay = None
+            else:  # "wait"
+                delay = new_delay
+                initial_timestamp = time()
+        sleep(POLL_INTERVAL)
+
+    return stop_all, auto_policy, policy_initial_count
+
+operation_status = {}
+operation_lock = Lock()
+
+def __PrintRunOnFoldersProgress(paths):
+    current_progress = len(operation_status)
+    total_repos      = len(paths)
+    if total_repos == current_progress:
+        PrintProgressBar(current_progress, total_repos, prefix='Running:', suffix=f'Ran on ({current_progress}) folders')
+    else:
+        PrintProgressBar(current_progress, total_repos, prefix='Running:', suffix=f'Done on {current_progress}/{total_repos} folders')
 
 # Wrapper for threads
 def ThreadWrapper(run_callback, run_arg):
@@ -283,7 +331,7 @@ def RunInThreadsWithProgress(run_callback, run_args, max_delay=None, print_callb
     if len(run_args) == 0:
         return
 
-    PrintProgressBar(0, len(run_args), prefix = 'Starting...', suffix = '0/' + str(len(run_args)))
+    PrintProgressBar(0, len(run_args), prefix='Starting...', suffix=f'0/{len(run_args)}')
     ClearThreadLog()
     ToggleThreading(True)
 
@@ -292,93 +340,33 @@ def RunInThreadsWithProgress(run_callback, run_args, max_delay=None, print_callb
             stop_all = False
             auto_policy = None
             policy_initial_count = 0
+
             for run_arg_ind, run_arg in enumerate(run_args):
                 if stop_all:
                     thread_return[run_arg_ind] = False
                     continue
 
-                # Clear killed state from previous test
                 killed_threads.clear()
-
-                # Run in a temporary thread so we can apply timeout
                 worker = Thread(target=ThreadWrapper, args=[run_callback, run_arg], daemon=True)
                 worker.start()
 
-                start_time = time()
-                current_delay = auto_policy[0] if auto_policy else max_delay
-                timeout_count = 0
-                policy_initial_count = 0
-                while worker.is_alive():
-                    if current_delay is not None and time() - start_time > current_delay:
-                        timeout_count += 1
+                stop_all, auto_policy, policy_initial_count = _wait_for_single_worker(
+                    worker, run_arg, max_delay, auto_policy, policy_initial_count)
 
-                        # Check if an auto-policy is active
-                        alive_desc = [str(run_arg)]
-                        if auto_policy is not None:
-                            policy_secs, policy_max, policy_action = auto_policy
-                            if timeout_count >= policy_initial_count + policy_max:
-                                # Policy exhausted, execute the final action
-                                action_name = _ACTION_NAMES.get(policy_action, "unknown")
-                                print(f"\n[Auto-policy] Exhausted — executing '{action_name}'.")
-                                for desc in alive_desc:
-                                    print(f"  - {desc}")
-                                if policy_action == TIMEOUT_STOP_ALL:
-                                    auto_policy = None
-                                    _kill_all_active_processes()
-                                    stop_all = True
-                                    sleep(0.5)
-                                    break
-                                elif policy_action == TIMEOUT_STOP_CURRENT:
-                                    # Keep auto_policy for next test
-                                    _kill_all_active_processes()
-                                    sleep(0.5)
-                                    break
-                                elif policy_action == TIMEOUT_INDEFINITELY:
-                                    auto_policy = None
-                                    current_delay = None
-                            else:
-                                _print_auto_policy_timeout(timeout_count, policy_max, policy_initial_count, policy_secs, policy_action, alive_desc)
-                                current_delay = policy_secs
-                                start_time = time()
-                            continue
-
-                        choice = _prompt_timeout_action([str(run_arg)], timeout_count, single_thread=True)
-                        if choice == TIMEOUT_INDEFINITELY:
-                            current_delay = None
-                        elif choice == TIMEOUT_STOP_ALL:
-                            _kill_all_active_processes()
-                            stop_all = True
-                            sleep(0.5)
-                            break
-                        elif choice == TIMEOUT_STOP_CURRENT:
-                            _kill_all_active_processes()
-                            sleep(0.5)
-                            break
-                        elif isinstance(choice, tuple):
-                            policy_secs, policy_max, policy_action = choice
-                            auto_policy = choice
-                            policy_initial_count = timeout_count
-                            current_delay = policy_secs
-                            start_time = time()
-                        else:
-                            current_delay = choice
-                            start_time = time()
-                    sleep(0.05)
-
+                # Print progress
                 if print_callback is not None:
-                    if print_args is not None:
-                        print_callback(print_args)
-                    else:
-                        print_callback()
+                    print_callback(print_args) if print_args is not None else print_callback()
                 else:
-                    PrintProgressBar(run_arg_ind + 1, len(run_args), prefix = 'Running:', suffix = 'Work finished ' + str(run_arg_ind + 1) + '/' + str(len(run_args)))
+                    done = run_arg_ind + 1
+                    PrintProgressBar(done, len(run_args), prefix='Running:',
+                                     suffix=f'Work finished {done}/{len(run_args)}')
                 thread_return[run_arg_ind] = thread_return.get(worker.ident, True)
         else:
             threads = RunInThreads(run_callback, run_args)
-            PrintProgressWhileWaitOnThreads((threads, run_callback, run_args), max_delay, print_callback, print_args)
+            _wait_for_threads(threads, run_args, max_delay, print_callback, print_args)
+
     except Exception as ex:
         AddTothreadLog(str(ex))
-        thread_return[run_arg_ind] = False
         raise
     except KeyboardInterrupt:
         PrintNotice("Keyboard Interrupt, stopping")
